@@ -108,28 +108,11 @@ const ensureSupabase = async () => {
     if (!sess) window.location.href = 'index.html';
   });
 
-  // Integrar sistema de suscripciones
+  // Integrar sistema de suscripciones - SIMPLIFICADO
   try {
-    // Verificar estado de suscripción después de cargar el usuario
-    const userId = session.user.id;
-    const subscription = await window.subscriptionService?.getCurrentSubscription(userId);
-    
-    if (subscription && subscription.plan_type && subscription.plan_type !== 'premium') {
-      // Si tiene trial o monthly, mostrar botón de upgrade
-      // NOTA: La función showUpgradeButton fue eliminada y ahora se maneja desde calculadora.html
-      setTimeout(() => {
-        // Intentar llamar función de calculadora.html si existe
-        if (typeof window.showUpgradeButtonInHeader === 'function') {
-          window.showUpgradeButtonInHeader();
-        }
-      }, 1000);
-    }
-
-    // El manejo de suscripciones ahora se hace desde calculadora.html
-    // para usar el formato mejorado y mantener consistencia
-    
-    // Disparar evento para que calculadora.html inicialice las suscripciones
+    // Solo disparar evento para inicializar sistema - sin botones de upgrade
     window.dispatchEvent(new Event('userReady'));
+    console.log('✅ Sistema de autenticación cargado - solo botón Suscripciones');
   } catch (error) {
     console.log('Sistema de suscripciones no disponible:', error);
   }

@@ -646,23 +646,7 @@ class AccessControlService {
         transform: scale(1.05);
       }
       
-      .upgrade-indicator {
-        background: linear-gradient(135deg, #FFD700, #FFA500) !important;
-        color: white !important;
-        cursor: pointer;
-        animation: premium-pulse 3s infinite;
-        border: none !important;
-      }
-      
-      .upgrade-indicator:hover {
-        background: linear-gradient(135deg, #FFA500, #FFD700) !important;
-        transform: scale(1.05);
-      }
-      
-      @keyframes premium-pulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
-        50% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
-      }
+      /* Estilos de upgrade indicator removidos - ya no se usa el botón "Upgrade a Premium" */
       
       .access-control-modal {
         position: fixed;

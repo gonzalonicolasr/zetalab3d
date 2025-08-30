@@ -28,7 +28,12 @@
       <div class="header-subtitle muted">Costeo de piezas 3D • PLA/PETG/ABS/TPU</div>
     </div>
     
-    <div class="header-actions">
+    <!-- Mobile Navigation Toggle -->
+    <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Abrir menú de navegación">
+      <span>☰</span>
+    </button>
+    
+    <div class="header-actions" id="headerActions">
       <!-- Botón Suscripciones MercadoPago -->
       <button id="subscriptionButton" class="pill subscription-btn enhanced-btn" data-tooltip="Gestionar suscripción">
         <span class="btn-icon">💳</span>
@@ -301,6 +306,9 @@
 <!-- Sistema de control de acceso -->
 <script src="access-control.js"></script>
 
+<!-- Sistema simple de control premium -->
+<script src="simple-premium-control.js"></script>
+
 <!-- Test de control de acceso (solo para desarrollo) -->
 <script src="test-access-control.js"></script>
 
@@ -535,6 +543,86 @@
   // SUSCRIPCIONES - SIMPLIFICADO
   // ============================================================================
 
+  // ============================================================================
+  // MOBILE NAVIGATION SYSTEM
+  // ============================================================================
+  
+  // Mobile navigation toggle functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const mobileToggle = document.getElementById('mobileNavToggle');
+    const headerActions = document.getElementById('headerActions');
+    
+    if (mobileToggle && headerActions) {
+      mobileToggle.addEventListener('click', function() {
+        const isExpanded = headerActions.classList.contains('mobile-expanded');
+        
+        if (isExpanded) {
+          // Collapse menu
+          headerActions.classList.remove('mobile-expanded');
+          headerActions.classList.add('mobile-collapsed');
+          mobileToggle.classList.remove('active');
+          mobileToggle.setAttribute('aria-expanded', 'false');
+          mobileToggle.querySelector('span').textContent = '☰';
+        } else {
+          // Expand menu
+          headerActions.classList.remove('mobile-collapsed');
+          headerActions.classList.add('mobile-expanded');
+          mobileToggle.classList.add('active');
+          mobileToggle.setAttribute('aria-expanded', 'true');
+          mobileToggle.querySelector('span').textContent = '✕';
+        }
+      });
+      
+      // Close mobile menu when clicking outside
+      document.addEventListener('click', function(event) {
+        if (!event.target.closest('.enhanced-header') && 
+            headerActions.classList.contains('mobile-expanded')) {
+          headerActions.classList.remove('mobile-expanded');
+          headerActions.classList.add('mobile-collapsed');
+          mobileToggle.classList.remove('active');
+          mobileToggle.setAttribute('aria-expanded', 'false');
+          mobileToggle.querySelector('span').textContent = '☰';
+        }
+      });
+      
+      // Close mobile menu on window resize if switching to desktop
+      window.addEventListener('resize', function() {
+        if (window.innerWidth >= 768 && headerActions.classList.contains('mobile-expanded')) {
+          headerActions.classList.remove('mobile-expanded', 'mobile-collapsed');
+          mobileToggle.classList.remove('active');
+          mobileToggle.setAttribute('aria-expanded', 'false');
+          mobileToggle.querySelector('span').textContent = '☰';
+        }
+      });
+      
+      // Initialize mobile menu state
+      mobileToggle.setAttribute('aria-expanded', 'false');
+    }
+    
+    // Enhanced touch feedback for mobile devices
+    if ('ontouchstart' in window) {
+      document.body.classList.add('touch-device');
+      
+      // Add haptic feedback simulation for buttons
+      const buttons = document.querySelectorAll('button, .pill, .enhanced-btn');
+      buttons.forEach(button => {
+        button.addEventListener('touchstart', function() {
+          this.style.transform = 'scale(0.95)';
+        });
+        
+        button.addEventListener('touchend', function() {
+          setTimeout(() => {
+            this.style.transform = '';
+          }, 150);
+        });
+      });
+    }
+  });
+
+  // ============================================================================
+  // SUBSCRIPTION SYSTEM
+  // ============================================================================
+  
   // Conectar botón de suscripciones al SubscriptionService
   document.addEventListener('DOMContentLoaded', function() {
     const subscriptionButton = document.getElementById('subscriptionButton');

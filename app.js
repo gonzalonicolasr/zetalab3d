@@ -470,14 +470,10 @@ async function renderPresetList() {
 
 // Guardar nuevo preset
 async function savePreset() {
-  // ACCESS CONTROL: Verificar acceso a función premium para presets avanzados
-  if (!window.checkFeatureAccess('advanced-presets')) {
-    if (window.accessControl) {
-      window.accessControl.showUpgradePrompt('advanced-presets');
-    } else {
-      toast('❌ Presets personalizados requieren suscripción Premium', 'warning');
-    }
-    return;
+  // SIMPLE ACCESS CONTROL: Verificar acceso premium
+  const hasAccess = await window.checkPremiumAccess('guardar perfiles personalizados');
+  if (!hasAccess) {
+    return; // El popup ya se mostró
   }
   
   try {
@@ -727,15 +723,11 @@ function buildClientHtml(r) {
 </html>`;
 }
 
-function downloadClientHtml() {
-  // ACCESS CONTROL: Verificar acceso a función premium
-  if (!window.checkFeatureAccess('export-html')) {
-    if (window.accessControl) {
-      window.accessControl.showUpgradePrompt('export-html');
-    } else {
-      toast('❌ Exportar presupuestos requiere suscripción Premium', 'warning');
-    }
-    return;
+async function downloadClientHtml() {
+  // SIMPLE ACCESS CONTROL: Verificar acceso premium
+  const hasAccess = await window.checkPremiumAccess('exportar presupuestos');
+  if (!hasAccess) {
+    return; // El popup ya se mostró
   }
   
   const r = calcular();
@@ -877,14 +869,10 @@ $("imageUrl")?.addEventListener("input", (e) =>
    Autocompletar título + imagen desde URL (Edge Function: og-proxy)
 ============================== */
 async function autoCompleteFromUrl() {
-  // ACCESS CONTROL: Verificar acceso a función premium
-  if (!window.checkFeatureAccess('auto-url-complete')) {
-    if (window.accessControl) {
-      window.accessControl.showUpgradePrompt('auto-url-complete');
-    } else {
-      toast('❌ Autocompletado desde URL requiere suscripción Premium', 'warning');
-    }
-    return;
+  // SIMPLE ACCESS CONTROL: Verificar acceso premium
+  const hasAccess = await window.checkPremiumAccess('autocompletado desde URLs');
+  if (!hasAccess) {
+    return; // El popup ya se mostró
   }
   
   try {
@@ -957,14 +945,10 @@ let lastSaveTime = 0;
 const SAVE_COOLDOWN = 2000; // 2 segundos entre guardados
 
 async function savePiece() {
-  // ACCESS CONTROL: Verificar acceso a función premium
-  if (!window.checkFeatureAccess('piece-saving')) {
-    if (window.accessControl) {
-      window.accessControl.showUpgradePrompt('piece-saving');
-    } else {
-      toast('❌ Guardar piezas requiere suscripción Premium', 'warning');
-    }
-    return;
+  // SIMPLE ACCESS CONTROL: Verificar acceso premium
+  const hasAccess = await window.checkPremiumAccess('guardar piezas');
+  if (!hasAccess) {
+    return; // El popup ya se mostró
   }
   
   // RATE LIMITING: Prevenir spam de guardados

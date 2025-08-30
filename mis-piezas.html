@@ -13,9 +13,26 @@
 </head>
 <body>
 <div class="container">
-  <header class="row" style="align-items:center; justify-content:space-between; gap:8px;">
-    <h1 style="margin:0; font-size:22px">Mis piezas guardadas</h1>
-    <a href="calculadora.html" class="pill" style="text-decoration:none">Volver a la calculadora</a>
+  <header class="enhanced-header">
+    <div class="header-brand">
+      <div class="pill brand-pill">
+        <img src="logo.png" alt="ZetaLab" onerror="this.style.display='none'" class="brand-logo">
+        <strong class="brand-title">Mis Piezas Guardadas</strong>
+      </div>
+      <div class="header-subtitle muted">Gestión de piezas calculadas</div>
+    </div>
+    
+    <!-- Mobile Navigation Toggle -->
+    <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Abrir menú de navegación">
+      <span>☰</span>
+    </button>
+    
+    <div class="header-actions" id="headerActions">
+      <a href="calculadora.html" class="pill nav-link enhanced-btn" data-tooltip="Volver a la calculadora">
+        <span class="btn-icon">🧮</span>
+        <span class="btn-text">Volver a la calculadora</span>
+      </a>
+    </div>
   </header>
 
   <main id="list" class="row" style="margin-top:12px; gap:16px; flex-direction:column"></main>
@@ -40,9 +57,87 @@
 <!-- Sistema de control de acceso -->
 <script src="access-control.js"></script>
 
+<!-- Sistema simple de control premium -->
+<script src="simple-premium-control.js"></script>
+
 <!-- Guard de sesión (inyecta window.supa y window.currentUser) -->
 <script type="module" src="auth.js"></script>
 <!-- Lógica de listado/edición -->
 <script type="module" src="mis-piezas.js"></script>
+
+<!-- Mobile Navigation System -->
+<script>
+  // Mobile navigation toggle functionality for mis-piezas page
+  document.addEventListener('DOMContentLoaded', function() {
+    const mobileToggle = document.getElementById('mobileNavToggle');
+    const headerActions = document.getElementById('headerActions');
+    
+    if (mobileToggle && headerActions) {
+      mobileToggle.addEventListener('click', function() {
+        const isExpanded = headerActions.classList.contains('mobile-expanded');
+        
+        if (isExpanded) {
+          // Collapse menu
+          headerActions.classList.remove('mobile-expanded');
+          headerActions.classList.add('mobile-collapsed');
+          mobileToggle.classList.remove('active');
+          mobileToggle.setAttribute('aria-expanded', 'false');
+          mobileToggle.querySelector('span').textContent = '☰';
+        } else {
+          // Expand menu
+          headerActions.classList.remove('mobile-collapsed');
+          headerActions.classList.add('mobile-expanded');
+          mobileToggle.classList.add('active');
+          mobileToggle.setAttribute('aria-expanded', 'true');
+          mobileToggle.querySelector('span').textContent = '✕';
+        }
+      });
+      
+      // Close mobile menu when clicking outside
+      document.addEventListener('click', function(event) {
+        if (!event.target.closest('.enhanced-header') && 
+            headerActions.classList.contains('mobile-expanded')) {
+          headerActions.classList.remove('mobile-expanded');
+          headerActions.classList.add('mobile-collapsed');
+          mobileToggle.classList.remove('active');
+          mobileToggle.setAttribute('aria-expanded', 'false');
+          mobileToggle.querySelector('span').textContent = '☰';
+        }
+      });
+      
+      // Close mobile menu on window resize if switching to desktop
+      window.addEventListener('resize', function() {
+        if (window.innerWidth >= 768 && headerActions.classList.contains('mobile-expanded')) {
+          headerActions.classList.remove('mobile-expanded', 'mobile-collapsed');
+          mobileToggle.classList.remove('active');
+          mobileToggle.setAttribute('aria-expanded', 'false');
+          mobileToggle.querySelector('span').textContent = '☰';
+        }
+      });
+      
+      // Initialize mobile menu state
+      mobileToggle.setAttribute('aria-expanded', 'false');
+    }
+    
+    // Enhanced touch feedback for mobile devices
+    if ('ontouchstart' in window) {
+      document.body.classList.add('touch-device');
+      
+      // Add haptic feedback simulation for buttons
+      const buttons = document.querySelectorAll('button, .pill, .enhanced-btn, a');
+      buttons.forEach(button => {
+        button.addEventListener('touchstart', function() {
+          this.style.transform = 'scale(0.95)';
+        });
+        
+        button.addEventListener('touchend', function() {
+          setTimeout(() => {
+            this.style.transform = '';
+          }, 150);
+        });
+      });
+    }
+  });
+</script>
 </body>
 </html>
