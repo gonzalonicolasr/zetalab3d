@@ -682,10 +682,38 @@
     const plan = urlParams.get('plan');
 
     if (payment === 'success' && plan) {
-      // Mostrar mensaje de éxito
-      setTimeout(() => {
-        alert(`¡Suscripción ${plan} activada exitosamente!`);
-        updateSubscriptionUI(plan);
+      // Verificar realmente el estado de suscripción después del pago
+      setTimeout(async () => {
+        try {
+          if (window.currentUser && window.subscriptionService) {
+            // Esperar unos segundos para que el webhook procese el pago
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Verificar el estado actual de la suscripción
+            const hasActive = await window.subscriptionService.hasActiveSubscription(window.currentUser.id);
+            
+            if (hasActive) {
+              alert(`¡Suscripción ${plan} activada exitosamente!`);
+              // Reinicializar el sistema de suscripciones para actualizar UI
+              initializeSubscriptionSystem();
+            } else {
+              // Si aún no está activa, mostrar mensaje de procesamiento
+              alert('Tu pago fue exitoso y está siendo procesado. La suscripción se activará en unos minutos.');
+              // Verificar nuevamente en 30 segundos
+              setTimeout(async () => {
+                const recheckActive = await window.subscriptionService.hasActiveSubscription(window.currentUser.id);
+                if (recheckActive) {
+                  initializeSubscriptionSystem();
+                }
+              }, 30000);
+            }
+          } else {
+            alert(`¡Pago exitoso! Tu suscripción ${plan} se está activando.`);
+          }
+        } catch (error) {
+          console.error('Error verificando suscripción:', error);
+          alert('Pago exitoso. Si no ves tu suscripción activada en unos minutos, contacta soporte.');
+        }
       }, 1000);
       
       // Limpiar URL

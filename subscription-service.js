@@ -19,22 +19,15 @@ class SubscriptionService {
   // Obtener estado actual de suscripción
   async getCurrentSubscription(userId) {
     try {
-      if (!window.supa) {
-        throw new Error('Supabase no disponible');
+      // Usar la API del backend para verificar suscripciones
+      const response = await fetch(`${this.API_BASE}/subscription-status/${userId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error verificando suscripción');
       }
-
-      const { data, error } = await window.supa
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('active', true)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
-        throw error;
-      }
-
-      return data || null;
+      
+      return data.subscription;
     } catch (error) {
       console.error('Error obteniendo suscripción:', error);
       return null;
@@ -43,13 +36,20 @@ class SubscriptionService {
 
   // Verificar si el usuario tiene suscripción activa
   async hasActiveSubscription(userId) {
-    const subscription = await this.getCurrentSubscription(userId);
-    if (!subscription) return false;
-
-    const now = new Date();
-    const expiresAt = new Date(subscription.expires_at);
-    
-    return expiresAt > now;
+    try {
+      // Usar la API del backend para verificar estado
+      const response = await fetch(`${this.API_BASE}/subscription-status/${userId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error verificando suscripción');
+      }
+      
+      return data.hasActiveSubscription;
+    } catch (error) {
+      console.error('Error verificando suscripción activa:', error);
+      return false;
+    }
   }
 
   // Crear pago en MercadoPago - Solo plan mensual
