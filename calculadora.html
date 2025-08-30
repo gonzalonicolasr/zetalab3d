@@ -357,11 +357,16 @@
   document.addEventListener('DOMContentLoaded', function() {
     const subscriptionButton = document.getElementById('subscriptionButton');
     
-    // Usar el modal dinámico del SubscriptionService
+    // Usar el modal dinámico del SubscriptionService (ahora async)
     if (subscriptionButton) {
-      subscriptionButton.addEventListener('click', function() {
+      subscriptionButton.addEventListener('click', async function() {
         if (window.subscriptionService) {
-          window.subscriptionService.showSubscriptionModal();
+          try {
+            await window.subscriptionService.showSubscriptionModal();
+          } catch (error) {
+            console.error('Error mostrando modal de suscripciones:', error);
+            alert('Error al cargar las suscripciones. Por favor intenta nuevamente.');
+          }
         } else {
           alert('Servicio de suscripciones no disponible');
         }

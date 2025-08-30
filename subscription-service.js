@@ -432,6 +432,256 @@ class SubscriptionService {
     }
   }
 
+  // Mostrar modal de gestión para usuarios con suscripción activa
+  async showSubscriptionManagement() {
+    try {
+      const subscription = await this.getCurrentSubscription(window.currentUser.id);
+      const modal = this.createSubscriptionManagementModal(subscription);
+      document.body.appendChild(modal);
+      
+      // Animación de entrada
+      setTimeout(() => modal.classList.add('show'), 10);
+    } catch (error) {
+      console.error('Error obteniendo suscripción:', error);
+      alert('Error al cargar información de tu suscripción');
+    }
+  }
+
+  // Crear modal de gestión de suscripción
+  createSubscriptionManagementModal(subscription) {
+    const modal = document.createElement('div');
+    modal.className = 'subscription-modal';
+    
+    // Calcular días restantes
+    const expiresAt = new Date(subscription.expires_at);
+    const daysLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
+    const formattedDate = expiresAt.toLocaleDateString('es-AR');
+    
+    // Determinar el tipo de plan y estilo
+    let planBadge = '';
+    let planName = '';
+    let statusColor = '';
+    
+    if (subscription.plan_type === 'trial') {
+      planBadge = '🎯 Prueba Gratuita';
+      planName = 'Plan de Prueba';
+      statusColor = '#f59e0b';
+    } else if (subscription.plan_type === 'monthly') {
+      planBadge = '💳 Plan Mensual';
+      planName = 'Acceso Premium Mensual';
+      statusColor = '#10b981';
+    } else if (subscription.plan_type === 'premium') {
+      planBadge = '⭐ Premium';
+      planName = 'Plan Premium';
+      statusColor = '#8b5cf6';
+    }
+
+    modal.innerHTML = `
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>🎛️ Mi Suscripción</h2>
+          <button class="modal-close" onclick="this.closest('.subscription-modal').remove()">✕</button>
+        </div>
+        
+        <div class="subscription-management">
+          <div class="current-subscription">
+            <div class="subscription-badge" style="background: ${statusColor}">
+              ${planBadge}
+            </div>
+            <h3>${planName}</h3>
+            <div class="subscription-status">
+              <div class="status-item">
+                <span class="label">Estado:</span>
+                <span class="value active">✅ Activa</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Días restantes:</span>
+                <span class="value">${daysLeft} días</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Expira:</span>
+                <span class="value">${formattedDate}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="subscription-features">
+            <h4>✨ Tienes acceso a:</h4>
+            <ul class="feature-list">
+              <li>✅ Calculadora de costos profesional</li>
+              <li>✅ Guardado ilimitado de piezas</li>
+              <li>✅ Generación de presupuestos HTML</li>
+              <li>✅ Historial de versiones</li>
+              <li>✅ Perfiles de gastos fijos</li>
+              <li>✅ Autocompletado desde URLs</li>
+              <li>✅ Soporte técnico prioritario</li>
+            </ul>
+          </div>
+
+          ${daysLeft <= 7 ? `
+          <div class="renewal-notice">
+            <h4>⚠️ Renovación próxima</h4>
+            <p>Tu suscripción expira en ${daysLeft} días. Para mantener tu acceso premium:</p>
+            <button class="btn-renew" data-action="renew">
+              🔄 Renovar Suscripción ($5.000 ARS)
+            </button>
+          </div>
+          ` : ''}
+
+          <div class="subscription-actions">
+            <button class="btn-secondary" data-action="close">
+              ← Continuar usando ZetaLab
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // CSS específico para el modal de gestión
+    const style = document.createElement('style');
+    style.textContent = `
+      .subscription-management {
+        text-align: center;
+      }
+      .current-subscription {
+        background: var(--bg-tertiary);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        border: 2px solid var(--border-primary);
+      }
+      .subscription-badge {
+        display: inline-block;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 16px;
+      }
+      .current-subscription h3 {
+        margin: 0 0 20px;
+        color: var(--text-primary);
+        font-size: 1.4em;
+      }
+      .subscription-status {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+      }
+      .status-item .label {
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+      .status-item .value {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+      .status-item .value.active {
+        color: var(--text-success);
+      }
+      .subscription-features {
+        text-align: left;
+        margin-bottom: 24px;
+      }
+      .subscription-features h4 {
+        text-align: center;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+      }
+      .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .feature-list li {
+        padding: 6px 0;
+        color: var(--text-primary);
+        font-size: 14px;
+      }
+      .renewal-notice {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid #f59e0b;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+      .renewal-notice h4 {
+        margin: 0 0 12px;
+        color: #f59e0b;
+      }
+      .renewal-notice p {
+        margin: 0 0 16px;
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+      .btn-renew {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-renew:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        transform: scale(1.02);
+      }
+      .subscription-actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+      }
+      .btn-secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-primary);
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-secondary:hover {
+        background: var(--bg-hover);
+        border-color: var(--border-focus);
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Event listeners
+    modal.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) {
+        modal.remove();
+      }
+      
+      const action = e.target.dataset.action;
+      if (action === 'close') {
+        modal.remove();
+      } else if (action === 'renew') {
+        // Cerrar modal actual y mostrar modal de pago
+        modal.remove();
+        setTimeout(() => {
+          const paymentModal = this.createSubscriptionModal();
+          document.body.appendChild(paymentModal);
+          setTimeout(() => paymentModal.classList.add('show'), 10);
+        }, 100);
+      }
+    });
+
+    return modal;
+  }
+
   // Verificar si es necesario mostrar modal
   async checkSubscriptionStatus(userId) {
     const hasActive = await this.hasActiveSubscription(userId);
