@@ -226,14 +226,15 @@ class SubscriptionService {
         height: 100%;
         background: rgba(0, 0, 0, 0.8);
         backdrop-filter: blur(5px);
+        z-index: 1;
       }
       .modal-content {
-        position: absolute;
+        position: relative;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: var(--panel);
-        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
         border-radius: 20px;
         padding: 32px;
         max-width: 500px;
@@ -241,6 +242,8 @@ class SubscriptionService {
         max-height: 90vh;
         overflow-y: auto;
         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+        z-index: 2;
+        color: var(--text-primary);
       }
       .modal-header {
         display: flex;
@@ -250,16 +253,21 @@ class SubscriptionService {
       }
       .modal-header h2 {
         margin: 0;
-        color: var(--text);
+        color: var(--text-primary);
         font-size: 1.8em;
       }
       .modal-close {
         background: none;
         border: none;
         font-size: 28px;
-        color: var(--muted);
+        color: var(--text-secondary);
         cursor: pointer;
         padding: 4px;
+      }
+      .modal-close:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-radius: 4px;
       }
       .single-plan-container {
         text-align: center;
@@ -269,7 +277,7 @@ class SubscriptionService {
         padding: 24px;
         background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
         border-radius: 16px;
-        border: 2px solid var(--accent);
+        border: 2px solid var(--terminal-green);
         position: relative;
       }
       .plan-badge {
@@ -277,7 +285,7 @@ class SubscriptionService {
         top: -12px;
         left: 50%;
         transform: translateX(-50%);
-        background: var(--accent);
+        background: var(--terminal-green);
         color: white;
         padding: 6px 16px;
         border-radius: 20px;
@@ -288,7 +296,7 @@ class SubscriptionService {
       }
       .plan-hero h3 {
         margin: 16px 0;
-        color: var(--text);
+        color: var(--text-primary);
         font-size: 1.5em;
       }
       .price-display {
@@ -297,16 +305,16 @@ class SubscriptionService {
       }
       .currency {
         font-size: 1.2em;
-        color: var(--accent);
+        color: var(--terminal-green);
         vertical-align: top;
       }
       .amount {
         font-size: 3em;
-        color: var(--accent);
+        color: var(--terminal-green);
       }
       .period {
         font-size: 1em;
-        color: var(--muted);
+        color: var(--text-secondary);
         vertical-align: bottom;
       }
       .plan-description {
@@ -322,7 +330,7 @@ class SubscriptionService {
       .features-list h4 {
         text-align: center;
         margin-bottom: 20px;
-        color: var(--text);
+        color: var(--text-primary);
         font-size: 1.2em;
       }
       .features-list ul {
@@ -332,7 +340,7 @@ class SubscriptionService {
       }
       .features-list li {
         padding: 8px 0;
-        color: var(--text);
+        color: var(--text-primary);
         font-size: 15px;
         display: flex;
         align-items: center;
@@ -343,7 +351,7 @@ class SubscriptionService {
       .btn-subscribe {
         width: 100%;
         padding: 18px 24px;
-        background: linear-gradient(135deg, var(--accent) 0%, #5a9d6b 100%);
+        background: linear-gradient(135deg, var(--terminal-green) 0%, #5a9d6b 100%);
         color: white;
         border: none;
         border-radius: 12px;
@@ -357,10 +365,10 @@ class SubscriptionService {
       .btn-subscribe:hover {
         transform: translateY(-2px);
         box-shadow: 0 12px 30px rgba(79, 154, 101, 0.4);
-        background: linear-gradient(135deg, #5a9d6b 0%, var(--accent) 100%);
+        background: linear-gradient(135deg, #5a9d6b 0%, var(--terminal-green) 100%);
       }
       .payment-info {
-        color: var(--muted);
+        color: var(--text-secondary);
         font-size: 13px;
         line-height: 1.4;
         margin: 0;
@@ -772,35 +780,35 @@ class SubscriptionService {
       }
       .plan-item {
         background: var(--panel2);
-        border: 1px solid var(--border);
+        border: 1px solid var(--border-primary);
         border-radius: 8px;
         padding: 12px 16px;
         min-width: 120px;
       }
       .plan-item.premium {
-        border-color: var(--accent);
+        border-color: var(--terminal-green);
         box-shadow: 0 0 15px rgba(79, 154, 101, 0.2);
       }
       .plan-name {
         display: block;
         font-weight: 600;
-        color: var(--text);
+        color: var(--text-primary);
       }
       .plan-price {
         display: block;
         font-size: 1.2em;
-        color: var(--accent);
+        color: var(--terminal-green);
         font-weight: 700;
       }
       .plan-features {
         display: block;
         font-size: 12px;
-        color: var(--muted);
+        color: var(--text-secondary);
         margin-top: 4px;
       }
       .upgrade-arrow {
         font-size: 24px;
-        color: var(--accent);
+        color: var(--terminal-green);
         font-weight: bold;
       }
       .premium-benefits {
@@ -817,7 +825,7 @@ class SubscriptionService {
       }
       .premium-benefits li {
         padding: 6px 0;
-        color: var(--text);
+        color: var(--text-primary);
       }
       .upgrade-action {
         margin-top: 24px;
@@ -840,7 +848,7 @@ class SubscriptionService {
       }
       .upgrade-note {
         font-size: 12px;
-        color: var(--muted);
+        color: var(--text-secondary);
         margin-top: 12px;
       }
       @media (max-width: 600px) {
