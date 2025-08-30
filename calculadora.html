@@ -306,6 +306,7 @@
     if (!window.subscriptionService || !window.currentUser) return;
 
     try {
+      // Verificar suscripción con double-check para evitar inconsistencias
       const hasActive = await window.subscriptionService.checkSubscriptionStatus(window.currentUser.id);
       const statusEl = document.getElementById('subscriptionStatus');
       const textEl = document.getElementById('subscriptionText');
@@ -313,7 +314,8 @@
       if (hasActive) {
         const subscription = await window.subscriptionService.getCurrentSubscription(window.currentUser.id);
         const expiresAt = new Date(subscription.expires_at);
-        const daysLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
+        const now = new Date();
+        const daysLeft = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
         
         statusEl.style.display = 'flex';
         
@@ -321,21 +323,58 @@
         let statusText = '';
         let statusClass = '';
         
-        if (subscription.plan_type === 'trial') {
-          statusText = `🆓 Prueba Gratis Activa • ${daysLeft} días restantes`;
-          statusClass = 'trial';
-        } else if (subscription.plan_type === 'monthly') {
-          statusText = `✅ Suscripción Activa • ${daysLeft} días restantes`;
-          statusClass = 'monthly';
-        } else if (subscription.plan_type === 'premium') {
-          statusText = `⭐ Plan Premium Activo • ${daysLeft} días restantes`;
-          statusClass = 'premium';
+        // Verificar si la suscripción está realmente activa o expiró
+        if (daysLeft < 0) {
+          // Suscripción expirada - pero si el backend dice que está activa, podría ser un error de datos
+          const daysExpired = Math.abs(daysLeft);
+          console.warn(`Inconsistencia detectada: Backend dice activa pero expiró hace ${daysExpired} días`);
+          
+          // Si son muchos días de diferencia, probablemente sea un error de datos
+          if (daysExpired > 30) {
+            statusText = `⚠️ Verificando estado de suscripción...`;
+            statusClass = 'verifying';
+            statusEl.style.background = '#f59e0b';
+            statusEl.style.color = 'white';
+            
+            // Intentar refrescar después de un momento
+            setTimeout(() => {
+              window.location.reload();
+            }, 3000);
+          } else {
+            statusText = `❌ Suscripción Expirada • Hace ${daysExpired} días`;
+            statusClass = 'expired';
+            statusEl.style.background = '#dc2626';
+            statusEl.style.color = 'white';
+          }
+        } else {
+          // Suscripción activa
+          if (subscription.plan_type === 'trial') {
+            statusText = `🆓 Prueba Gratis Activa • ${daysLeft} días restantes`;
+            statusClass = 'trial';
+            statusEl.style.background = '#f59e0b';
+            statusEl.style.color = 'white';
+          } else if (subscription.plan_type === 'monthly') {
+            statusText = `✅ Suscripción Activa • ${daysLeft} días restantes`;
+            statusClass = 'monthly';
+            statusEl.style.background = '#10b981';
+            statusEl.style.color = 'white';
+          } else if (subscription.plan_type === 'premium') {
+            statusText = `⭐ Plan Premium Activo • ${daysLeft} días restantes`;
+            statusClass = 'premium';
+            statusEl.style.background = '#8b5cf6';
+            statusEl.style.color = 'white';
+          }
+          
+          // Advertencia si quedan pocos días
+          if (daysLeft <= 3 && daysLeft > 0) {
+            statusText = statusText.replace('días restantes', 'días restantes ⚠️');
+            statusEl.style.background = '#d97706';
+          }
         }
         
         statusEl.className = `pill ${statusClass}`;
         textEl.textContent = statusText;
         
-        // Usuario con suscripción activa - no necesita botón de upgrade
       } else {
         statusEl.style.display = 'flex';
         statusEl.style.background = '#d97706';

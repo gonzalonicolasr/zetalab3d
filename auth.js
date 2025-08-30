@@ -125,34 +125,11 @@ const ensureSupabase = async () => {
       }, 1000);
     }
 
-    // Mostrar estado de suscripción en el header
-    const subscriptionStatus = document.getElementById('subscriptionStatus');
-    if (subscriptionStatus && subscription) {
-      const now = new Date();
-      const expiresAt = new Date(subscription.expires_at);
-      const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
-      
-      let statusText = '';
-      let statusClass = '';
-      
-      if (subscription.plan_type === 'trial') {
-        statusText = `✓ Prueba (${daysRemaining}d)`;
-        statusClass = 'trial';
-      } else if (subscription.plan_type === 'monthly') {
-        statusText = `✓ Mensual (${daysRemaining}d)`;
-        statusClass = 'monthly';
-      } else if (subscription.plan_type === 'premium') {
-        statusText = `⭐ Premium (${daysRemaining}d)`;
-        statusClass = 'premium';
-      }
-      
-      const subscriptionText = document.getElementById('subscriptionText');
-      if (subscriptionText) {
-        subscriptionText.textContent = statusText;
-        subscriptionStatus.className = `pill ${statusClass}`;
-        subscriptionStatus.style.display = 'block';
-      }
-    }
+    // El manejo de suscripciones ahora se hace desde calculadora.html
+    // para usar el formato mejorado y mantener consistencia
+    
+    // Disparar evento para que calculadora.html inicialice las suscripciones
+    window.dispatchEvent(new Event('userReady'));
   } catch (error) {
     console.log('Sistema de suscripciones no disponible:', error);
   }

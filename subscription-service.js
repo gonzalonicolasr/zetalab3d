@@ -462,26 +462,42 @@ class SubscriptionService {
     
     // Calcular días restantes
     const expiresAt = new Date(subscription.expires_at);
-    const daysLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
+    const now = new Date();
+    const daysLeft = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
     const formattedDate = expiresAt.toLocaleDateString('es-AR');
+    const isExpired = daysLeft < 0;
     
     // Determinar el tipo de plan y estilo
     let planBadge = '';
     let planName = '';
     let statusColor = '';
     
-    if (subscription.plan_type === 'trial') {
-      planBadge = '🎯 Prueba Gratuita';
-      planName = 'Plan de Prueba';
-      statusColor = '#f59e0b';
-    } else if (subscription.plan_type === 'monthly') {
-      planBadge = '💳 Plan Mensual';
-      planName = 'Acceso Premium Mensual';
-      statusColor = '#10b981';
-    } else if (subscription.plan_type === 'premium') {
-      planBadge = '⭐ Premium';
-      planName = 'Plan Premium';
-      statusColor = '#8b5cf6';
+    if (isExpired) {
+      statusColor = '#dc2626';
+      if (subscription.plan_type === 'trial') {
+        planBadge = '❌ Prueba Expirada';
+        planName = 'Plan de Prueba (Expirado)';
+      } else if (subscription.plan_type === 'monthly') {
+        planBadge = '❌ Plan Expirado';
+        planName = 'Acceso Premium (Expirado)';
+      } else if (subscription.plan_type === 'premium') {
+        planBadge = '❌ Premium Expirado';
+        planName = 'Plan Premium (Expirado)';
+      }
+    } else {
+      if (subscription.plan_type === 'trial') {
+        planBadge = '🎯 Prueba Gratuita';
+        planName = 'Plan de Prueba';
+        statusColor = '#f59e0b';
+      } else if (subscription.plan_type === 'monthly') {
+        planBadge = '💳 Plan Mensual';
+        planName = 'Acceso Premium Mensual';
+        statusColor = '#10b981';
+      } else if (subscription.plan_type === 'premium') {
+        planBadge = '⭐ Premium';
+        planName = 'Plan Premium';
+        statusColor = '#8b5cf6';
+      }
     }
 
     modal.innerHTML = `
@@ -501,14 +517,14 @@ class SubscriptionService {
             <div class="subscription-status">
               <div class="status-item">
                 <span class="label">Estado:</span>
-                <span class="value active">✅ Activa</span>
+                <span class="value ${isExpired ? 'expired' : 'active'}">${isExpired ? '❌ Expirada' : '✅ Activa'}</span>
               </div>
               <div class="status-item">
-                <span class="label">Días restantes:</span>
-                <span class="value">${daysLeft} días</span>
+                <span class="label">${isExpired ? 'Expiró hace:' : 'Días restantes:'}</span>
+                <span class="value">${isExpired ? Math.abs(daysLeft) : daysLeft} días</span>
               </div>
               <div class="status-item">
-                <span class="label">Expira:</span>
+                <span class="label">${isExpired ? 'Expiró el:' : 'Expira el:'}</span>
                 <span class="value">${formattedDate}</span>
               </div>
             </div>
@@ -527,7 +543,15 @@ class SubscriptionService {
             </ul>
           </div>
 
-          ${daysLeft <= 7 ? `
+          ${isExpired ? `
+          <div class="renewal-notice expired">
+            <h4>❌ Suscripción Expirada</h4>
+            <p>Tu suscripción expiró hace ${Math.abs(daysLeft)} días. Renueva para recuperar tu acceso premium:</p>
+            <button class="btn-renew urgent" data-action="renew">
+              🔄 Renovar Ahora ($5.000 ARS)
+            </button>
+          </div>
+          ` : daysLeft <= 7 ? `
           <div class="renewal-notice">
             <h4>⚠️ Renovación próxima</h4>
             <p>Tu suscripción expira en ${daysLeft} días. Para mantener tu acceso premium:</p>
@@ -595,6 +619,9 @@ class SubscriptionService {
       .status-item .value.active {
         color: var(--text-success);
       }
+      .status-item .value.expired {
+        color: #dc2626;
+      }
       .subscription-features {
         text-align: left;
         margin-bottom: 24px;
@@ -622,6 +649,13 @@ class SubscriptionService {
         margin-bottom: 24px;
         text-align: center;
       }
+      .renewal-notice.expired {
+        background: rgba(220, 38, 38, 0.1);
+        border: 1px solid #dc2626;
+      }
+      .renewal-notice.expired h4 {
+        color: #dc2626;
+      }
       .renewal-notice h4 {
         margin: 0 0 12px;
         color: #f59e0b;
@@ -644,6 +678,18 @@ class SubscriptionService {
       .btn-renew:hover {
         background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
         transform: scale(1.02);
+      }
+      .btn-renew.urgent {
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+        animation: pulse 2s infinite;
+      }
+      .btn-renew.urgent:hover {
+        background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
       }
       .subscription-actions {
         display: flex;
