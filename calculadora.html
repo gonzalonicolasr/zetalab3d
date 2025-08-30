@@ -248,63 +248,7 @@
   </main>
 </div>
 
-<!-- Modal MercadoPago Suscripción Simplificada -->
-<div id="mercadopagoModal" class="modal-overlay" style="display: none;">
-  <div class="modal-content mercadopago-modal">
-    <div class="modal-header">
-      <h2>⭐ ZETALAB Premium</h2>
-      <button id="closeMercadopagoModal" class="close-btn">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="single-plan-display">
-        <div class="plan-hero-section">
-          <div class="plan-badge">Plan Único</div>
-          <h3>🚀 Acceso Premium Mensual</h3>
-          <div class="price-section">
-            <span class="currency">$</span>
-            <span class="amount">5.000</span>
-            <span class="period">ARS/mes</span>
-          </div>
-          <p class="plan-desc">
-            Acceso completo a la calculadora más avanzada de impresión 3D
-          </p>
-        </div>
-
-        <div class="features-section">
-          <h4>✨ Todo incluido:</h4>
-          <ul class="feature-list">
-            <li>✅ Calculadora de costos profesional</li>
-            <li>✅ Guardado ilimitado de piezas</li>
-            <li>✅ Generación de presupuestos HTML</li>
-            <li>✅ Historial de versiones</li>
-            <li>✅ Perfiles de gastos fijos</li>
-            <li>✅ Autocompletado desde URLs</li>
-            <li>✅ Soporte técnico prioritario</li>
-          </ul>
-        </div>
-
-        <div class="cta-section">
-          <button class="subscribe-btn" data-plan="monthly">
-            💳 Suscribirse por $5.000/mes
-          </button>
-          <p class="payment-note">
-            💳 Pago seguro con MercadoPago<br>
-            🔒 Puedes cancelar cuando quieras
-          </p>
-        </div>
-      </div>
-      
-      <!-- Loading state -->
-      <div id="mpLoading" class="mp-loading" style="display: none;">
-        <div class="loading-spinner"></div>
-        <p>Procesando pago...</p>
-      </div>
-      
-      <!-- MercadoPago Checkout -->
-      <div id="mpCheckout" style="display: none;"></div>
-    </div>
-  </div>
-</div>
+<!-- Modal removido - Ahora se usa solo el modal dinámico del SubscriptionService -->
 
 <!-- Sistemas de mejoras -->
 <script src="error-handler.js"></script>
@@ -396,28 +340,15 @@
         textEl.textContent = statusText;
         
         // Ocultar botón de upgrade para usuarios con suscripción activa
-        // Solo se muestra para usuarios sin suscripción
         hideUpgradeButtonInHeader();
-        
-        // Asegurar que se oculte después de un momento
-        setTimeout(() => {
-          hideUpgradeButtonInHeader();
-        }, 100);
       } else {
         statusEl.style.display = 'flex';
         statusEl.style.background = '#d97706';
         statusEl.style.color = 'white';
         textEl.textContent = '⚠ Sin suscripción';
         
-        // Mostrar modal de suscripción después de 2 segundos
-        setTimeout(() => {
-          window.subscriptionService.showSubscriptionModal();
-        }, 2000);
-        
         // Mostrar botón de upgrade para usuarios sin suscripción
-        setTimeout(() => {
-          showUpgradeButtonInHeader();
-        }, 1500);
+        showUpgradeButtonInHeader();
       }
     } catch (error) {
       console.error('Error inicializando suscripciones:', error);
@@ -449,230 +380,24 @@
   }
 
   // ============================================================================
-  // MERCADOPAGO INTEGRATION
+  // SUSCRIPCIONES - SIMPLIFICADO
   // ============================================================================
 
-  // Inicializar MercadoPago con credenciales actualizadas
-  const mp = new MercadoPago('TEST-2d0e69bb-e086-4f06-b370-e7fc1f87ad48');
-
-  // Event listeners para modal
+  // Conectar botón de suscripciones al SubscriptionService
   document.addEventListener('DOMContentLoaded', function() {
     const subscriptionButton = document.getElementById('subscriptionButton');
-    const mercadopagoModal = document.getElementById('mercadopagoModal');
-    const closeMercadopagoModal = document.getElementById('closeMercadopagoModal');
-    const subscribeButton = document.querySelector('.subscribe-btn');
-
-    // Abrir modal de suscripciones
-    subscriptionButton.addEventListener('click', function() {
-      mercadopagoModal.style.display = 'flex';
-      document.body.style.overflow = 'hidden'; // Prevenir scroll del body
-    });
-
-    // Cerrar modal
-    function closeModal() {
-      mercadopagoModal.style.display = 'none';
-      document.body.style.overflow = 'auto'; // Restaurar scroll
-      
-      // Limpiar checkout si existe
-      const checkoutContainer = document.getElementById('mpCheckout');
-      if (checkoutContainer) {
-        checkoutContainer.innerHTML = '';
-        checkoutContainer.style.display = 'none';
-      }
-      
-      // Ocultar loading
-      const loadingEl = document.getElementById('mpLoading');
-      if (loadingEl) {
-        loadingEl.style.display = 'none';
-      }
-      
-      // Mostrar plan
-      const planEl = document.querySelector('.single-plan-display');
-      if (planEl) {
-        planEl.style.display = 'block';
-      }
-    }
-
-    // Event listeners para cerrar modal
-    closeMercadopagoModal.addEventListener('click', closeModal);
     
-    // Cerrar con ESC
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && mercadopagoModal.style.display === 'flex') {
-        closeModal();
-      }
-    });
-
-    // Cerrar al hacer click en el overlay
-    mercadopagoModal.addEventListener('click', function(e) {
-      if (e.target === mercadopagoModal) {
-        closeModal();
-      }
-    });
-
-    // Event listener para botón de suscripción
-    if (subscribeButton) {
-      subscribeButton.addEventListener('click', function() {
-        const plan = this.dataset.plan;
-        
-        if (!window.currentUser) {
-          alert('Debes iniciar sesión para suscribirte');
-          return;
+    // Usar el modal dinámico del SubscriptionService
+    if (subscriptionButton) {
+      subscriptionButton.addEventListener('click', function() {
+        if (window.subscriptionService) {
+          window.subscriptionService.showSubscriptionModal();
+        } else {
+          alert('Servicio de suscripciones no disponible');
         }
-
-        createSimplifiedPayment(plan, window.currentUser);
       });
     }
   });
-
-  // Función simplificada para crear pago con backend de Railway
-  async function createSimplifiedPayment(planType, user) {
-    const loadingEl = document.getElementById('mpLoading');
-    const planEl = document.querySelector('.single-plan-display');
-    const subscribeBtn = document.querySelector('.subscribe-btn');
-    
-    // Definir originalText fuera del try/catch para que esté disponible en ambos bloques
-    const originalText = subscribeBtn.textContent;
-
-    try {
-      // Mostrar loading
-      planEl.style.display = 'none';
-      loadingEl.style.display = 'block';
-      
-      // Actualizar botón
-      subscribeBtn.textContent = '⏳ Procesando...';
-      subscribeBtn.disabled = true;
-
-      // Detectar URL del backend - Testing local
-      const backendUrl = 'http://localhost:5000';
-
-      // Llamar al backend simplificado
-      const response = await fetch(`${backendUrl}/create-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userEmail: user.email,
-          userId: user.id
-        })
-      });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Error creando pago');
-      }
-
-      // Ocultar loading
-      loadingEl.style.display = 'none';
-      
-      // Redirigir a MercadoPago
-      window.open(result.initPoint, '_blank');
-      
-      // Cerrar modal
-      document.getElementById('mercadopagoModal').style.display = 'none';
-      document.body.style.overflow = 'auto';
-      
-      // Mostrar estado pendiente
-      setTimeout(() => {
-        const statusEl = document.getElementById('subscriptionStatus');
-        const textEl = document.getElementById('subscriptionText');
-        if (statusEl && textEl) {
-          statusEl.style.display = 'flex';
-          statusEl.style.background = '#f59e0b';
-          statusEl.style.color = 'white';
-          textEl.textContent = '⏳ Pago pendiente';
-        }
-      }, 500);
-
-    } catch (error) {
-      console.error('Error creando pago:', error);
-      
-      // Restaurar estado original
-      loadingEl.style.display = 'none';
-      planEl.style.display = 'block';
-      subscribeBtn.textContent = originalText;
-      subscribeBtn.disabled = false;
-      
-      alert('Error al procesar el pago: ' + error.message);
-    }
-  }
-
-  // Simular pago exitoso
-  function simulatePaymentSuccess(planType, user) {
-    const modal = document.getElementById('mercadopagoModal');
-    
-    // Mostrar mensaje de éxito
-    const checkoutContainer = document.getElementById('mpCheckout');
-    checkoutContainer.innerHTML = `
-      <div style="background: linear-gradient(135deg, var(--terminal-green), var(--terminal-emerald)); color: white; padding: var(--space-2xl); border-radius: 16px; text-align: center;">
-        <div style="font-size: 4rem; margin-bottom: var(--space-lg);">🎉</div>
-        <h3 style="margin-bottom: var(--space-lg); color: white;">¡Suscripción Activada!</h3>
-        <p style="margin-bottom: var(--space-lg); opacity: 0.9;">
-          Tu suscripción ${planType === 'monthly' ? 'mensual' : 'anual'} ha sido activada exitosamente.
-        </p>
-        <p style="opacity: 0.8; font-size: var(--text-sm);">
-          En modo demo - En producción esto se guardaría en la base de datos.
-        </p>
-        <button id="closeSuccessModal" style="background: white; color: var(--terminal-green); border: none; padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 600; margin-top: var(--space-lg); cursor: pointer;">
-          Continuar
-        </button>
-      </div>
-    `;
-
-    document.getElementById('closeSuccessModal').addEventListener('click', () => {
-      modal.style.display = 'none';
-      document.body.style.overflow = 'auto';
-      
-      // Actualizar UI para mostrar suscripción activa
-      updateSubscriptionUI(planType);
-    });
-  }
-
-  // Simular pago fallido
-  function simulatePaymentFailure() {
-    const checkoutContainer = document.getElementById('mpCheckout');
-    checkoutContainer.innerHTML = `
-      <div style="background: var(--text-error); color: white; padding: var(--space-2xl); border-radius: 16px; text-align: center;">
-        <div style="font-size: 4rem; margin-bottom: var(--space-lg);">❌</div>
-        <h3 style="margin-bottom: var(--space-lg); color: white;">Error en el Pago</h3>
-        <p style="margin-bottom: var(--space-lg); opacity: 0.9;">
-          Hubo un problema procesando tu pago. Por favor, intenta nuevamente.
-        </p>
-        <button id="retryPayment" style="background: white; color: var(--text-error); border: none; padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 600; cursor: pointer;">
-          Reintentar
-        </button>
-      </div>
-    `;
-
-    document.getElementById('retryPayment').addEventListener('click', () => {
-      // Volver a mostrar los planes
-      checkoutContainer.style.display = 'none';
-      document.querySelector('.subscription-plans').style.display = 'grid';
-    });
-  }
-
-  // Actualizar UI para mostrar suscripción activa
-  function updateSubscriptionUI(planType) {
-    const statusEl = document.getElementById('subscriptionStatus');
-    const textEl = document.getElementById('subscriptionText');
-    const upgradeBtn = document.getElementById('upgradeButton');
-
-    if (statusEl && textEl) {
-      statusEl.style.display = 'flex';
-      statusEl.style.background = 'var(--terminal-green)';
-      statusEl.style.color = 'white';
-      statusEl.className = 'pill premium';
-      
-      textEl.textContent = planType === 'monthly' ? '✓ Premium Mensual' : '⭐ Premium Anual';
-      
-      // Ocultar botón de upgrade
-      if (upgradeBtn) {
-        upgradeBtn.style.display = 'none';
-      }
-    }
-  }
 
   // Verificar URL parameters al cargar (para manejar redirects de MercadoPago)
   document.addEventListener('DOMContentLoaded', function() {
@@ -734,16 +459,6 @@
       // Limpiar URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  });
-  
-  // Asegurar que el botón de upgrade esté oculto para usuarios suscritos
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-      // Si hay una suscripción activa, ocultar el botón
-      if (document.querySelector('#subscriptionStatus .pill:not([style*="display: none"])')) {
-        hideUpgradeButtonInHeader();
-      }
-    }, 2000);
   });
 </script>
 </body>

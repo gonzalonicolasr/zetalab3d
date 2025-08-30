@@ -419,46 +419,8 @@ class SubscriptionService {
     return hasActive;
   }
 
-  // Mostrar botón de upgrade a Premium (solo para usuarios con plan trial o monthly)
-  showUpgradeButton() {
-    // Eliminar botón existente si lo hay
-    const existingButton = document.getElementById('upgrade-premium-btn');
-    if (existingButton) {
-      existingButton.remove();
-    }
-
-    const upgradeBtn = document.createElement('button');
-    upgradeBtn.id = 'upgrade-premium-btn';
-    upgradeBtn.innerHTML = '⭐ Upgrade Premium';
-    upgradeBtn.className = 'pill';
-    upgradeBtn.style.cssText = `
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s ease;
-    `;
-
-    upgradeBtn.addEventListener('mouseenter', () => {
-      upgradeBtn.style.transform = 'scale(1.05)';
-    });
-
-    upgradeBtn.addEventListener('mouseleave', () => {
-      upgradeBtn.style.transform = 'scale(1)';
-    });
-
-    upgradeBtn.addEventListener('click', () => {
-      this.showUpgradeModal();
-    });
-
-    // Insertarlo junto al indicador de suscripción
-    const subscriptionStatus = document.getElementById('subscriptionStatus');
-    if (subscriptionStatus) {
-      subscriptionStatus.parentNode.insertBefore(upgradeBtn, subscriptionStatus);
-    }
-  }
+  // ELIMINADO - Esta funcionalidad ya no se usa
+  // El botón de upgrade se maneja desde calculadora.html
 
   // Modal específico para upgrade a Premium
   showUpgradeModal() {
@@ -492,7 +454,7 @@ class SubscriptionService {
               <div class="upgrade-arrow">→</div>
               <div class="plan-item premium">
                 <span class="plan-name">Premium</span>
-                <span class="plan-price">$100 ARS/mes</span>
+                <span class="plan-price">$5.000 ARS/mes</span>
                 <span class="plan-features">+ Funciones avanzadas</span>
               </div>
             </div>
@@ -511,11 +473,11 @@ class SubscriptionService {
           </div>
 
           <div class="upgrade-action">
-            <button class="btn-upgrade-premium" data-plan="premium">
-              ⭐ Upgrade por $100 ARS
+            <button class="btn-upgrade-premium" data-plan="monthly">
+              ⭐ Upgrade por $5.000 ARS/mes
             </button>
             <p class="upgrade-note">
-              💳 Pago seguro con MercadoPago • 🔒 30 días de acceso premium
+              💳 Pago seguro con MercadoPago • 🔒 Acceso mensual premium
             </p>
           </div>
         </div>
