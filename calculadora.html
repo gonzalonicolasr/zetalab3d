@@ -322,13 +322,13 @@
         let statusClass = '';
         
         if (subscription.plan_type === 'trial') {
-          statusText = `✓ Prueba (${daysLeft}d)`;
+          statusText = `✓ Prueba - ${daysLeft} días restantes`;
           statusClass = 'trial';
         } else if (subscription.plan_type === 'monthly') {
-          statusText = `✓ Mensual (${daysLeft}d)`;
+          statusText = `✓ Suscripción Mensual - ${daysLeft} días restantes`;
           statusClass = 'monthly';
         } else if (subscription.plan_type === 'premium') {
-          statusText = `⭐ Premium (${daysLeft}d)`;
+          statusText = `⭐ Premium - ${daysLeft} días restantes`;
           statusClass = 'premium';
         }
         
