@@ -1,4 +1,40 @@
 // mis-piezas.js (ESM)
+// ACCESS CONTROL: Verificar acceso a página completa
+if (typeof window !== 'undefined' && !window.checkFeatureAccess?.('piece-management')) {
+  // Mostrar overlay de acceso premium para toda la página
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.accessControl) {
+      window.accessControl.addPremiumOverlay(document.body, 'piece-management', {
+        title: 'Gestión de Piezas Premium',
+        description: 'Administra todas tus piezas guardadas con historial de versiones y funciones avanzadas',
+        upgradeAction: () => window.accessControl.showUpgradePrompt('piece-management')
+      });
+    } else {
+      // Fallback si no está disponible el sistema
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.9); z-index: 10000; display: flex; 
+        align-items: center; justify-content: center; color: white; text-align: center;
+      `;
+      overlay.innerHTML = `
+        <div>
+          <h2>⭐ Función Premium</h2>
+          <p>La gestión de piezas requiere suscripción Premium</p>
+          <button onclick="window.location.href='calculadora.html'" style="
+            background: #4f9a65; color: white; border: none; padding: 12px 24px; 
+            border-radius: 8px; cursor: pointer; font-weight: 600;
+          ">Volver a Calculadora</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+  });
+  
+  // No continuar cargando el resto del script
+  throw new Error('Access denied - Premium required');
+}
+
 // PERFORMANCE: Evitar redefinición de funciones duplicadas
 const $ = (sel, root=document) => root.querySelector(sel);
 const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));

@@ -19,17 +19,33 @@ class SubscriptionService {
   // Obtener estado actual de suscripción
   async getCurrentSubscription(userId) {
     try {
-      // Usar la API del backend para verificar suscripciones
-      const response = await fetch(`${this.API_BASE}/subscription-status/${userId}`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Error verificando suscripción');
+      if (!window.supa) {
+        console.error('Supabase cliente no disponible');
+        return null;
       }
-      
-      return data.subscription;
+
+      console.log('🔍 Buscando suscripción para usuario:', userId);
+
+      // Consultar directamente a Supabase para la suscripción más reciente
+      const { data: subscription, error } = await window.supa
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', true) // status = TRUE indica suscripción activa
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ Error consultando suscripción:', error);
+        return null;
+      }
+
+      console.log('📊 Suscripción encontrada:', subscription);
+
+      return subscription;
     } catch (error) {
-      console.error('Error obteniendo suscripción:', error);
+      console.error('❌ Error obteniendo suscripción:', error);
       return null;
     }
   }
@@ -37,17 +53,26 @@ class SubscriptionService {
   // Verificar si el usuario tiene suscripción activa
   async hasActiveSubscription(userId) {
     try {
-      // Usar la API del backend para verificar estado
-      const response = await fetch(`${this.API_BASE}/subscription-status/${userId}`);
-      const data = await response.json();
+      const subscription = await this.getCurrentSubscription(userId);
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Error verificando suscripción');
+      if (!subscription) {
+        console.log('❌ No hay suscripción encontrada');
+        return false;
       }
+
+      // Verificar que la suscripción esté activa y no haya expirado
+      const now = new Date();
+      const expiresAt = new Date(subscription.expires_at);
       
-      return data.hasActiveSubscription;
+      console.log('⏰ Verificando tiempos:');
+      console.log('  - Ahora:', now.toISOString());
+      console.log('  - Expira:', expiresAt.toISOString());
+      console.log('  - Status:', subscription.status);
+      console.log('  - ¿Activa?:', subscription.status === true && expiresAt > now);
+      
+      return subscription.status === true && expiresAt > now;
     } catch (error) {
-      console.error('Error verificando suscripción activa:', error);
+      console.error('❌ Error verificando suscripción activa:', error);
       return false;
     }
   }

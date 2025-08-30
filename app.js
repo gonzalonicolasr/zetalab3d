@@ -470,6 +470,16 @@ async function renderPresetList() {
 
 // Guardar nuevo preset
 async function savePreset() {
+  // ACCESS CONTROL: Verificar acceso a función premium para presets avanzados
+  if (!window.checkFeatureAccess('advanced-presets')) {
+    if (window.accessControl) {
+      window.accessControl.showUpgradePrompt('advanced-presets');
+    } else {
+      toast('❌ Presets personalizados requieren suscripción Premium', 'warning');
+    }
+    return;
+  }
+  
   try {
     const formData = readFixedFromForm();
     
@@ -718,6 +728,16 @@ function buildClientHtml(r) {
 }
 
 function downloadClientHtml() {
+  // ACCESS CONTROL: Verificar acceso a función premium
+  if (!window.checkFeatureAccess('export-html')) {
+    if (window.accessControl) {
+      window.accessControl.showUpgradePrompt('export-html');
+    } else {
+      toast('❌ Exportar presupuestos requiere suscripción Premium', 'warning');
+    }
+    return;
+  }
+  
   const r = calcular();
   render(r);
   const html = buildClientHtml(r);
@@ -731,6 +751,7 @@ function downloadClientHtml() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast('✅ Presupuesto exportado exitosamente', 'success');
 }
 $("btnQuote")?.addEventListener("click", downloadClientHtml);
 
@@ -856,6 +877,16 @@ $("imageUrl")?.addEventListener("input", (e) =>
    Autocompletar título + imagen desde URL (Edge Function: og-proxy)
 ============================== */
 async function autoCompleteFromUrl() {
+  // ACCESS CONTROL: Verificar acceso a función premium
+  if (!window.checkFeatureAccess('auto-url-complete')) {
+    if (window.accessControl) {
+      window.accessControl.showUpgradePrompt('auto-url-complete');
+    } else {
+      toast('❌ Autocompletado desde URL requiere suscripción Premium', 'warning');
+    }
+    return;
+  }
+  
   try {
     const url = ($("pieceUrl")?.value || "").trim();
     if (!url) {
@@ -926,6 +957,16 @@ let lastSaveTime = 0;
 const SAVE_COOLDOWN = 2000; // 2 segundos entre guardados
 
 async function savePiece() {
+  // ACCESS CONTROL: Verificar acceso a función premium
+  if (!window.checkFeatureAccess('piece-saving')) {
+    if (window.accessControl) {
+      window.accessControl.showUpgradePrompt('piece-saving');
+    } else {
+      toast('❌ Guardar piezas requiere suscripción Premium', 'warning');
+    }
+    return;
+  }
+  
   // RATE LIMITING: Prevenir spam de guardados
   const now = Date.now();
   if (now - lastSaveTime < SAVE_COOLDOWN) {

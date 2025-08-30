@@ -19,22 +19,32 @@
 </head>
 <body>
 <div class="container">
-  <header class="row" style="align-items:center; justify-content:space-between; gap:8px;">
-    <div class="pill">
-      <img src="logo.png" alt="ZetaLab" onerror="this.style.display='none'">
-      <strong>Calculadora ZetaLab</strong>
+  <header class="enhanced-header">
+    <div class="header-brand">
+      <div class="pill brand-pill">
+        <img src="logo.png" alt="ZetaLab" onerror="this.style.display='none'" class="brand-logo">
+        <strong class="brand-title">Calculadora ZetaLab</strong>
+      </div>
+      <div class="header-subtitle muted">Costeo de piezas 3D • PLA/PETG/ABS/TPU</div>
     </div>
-    <div class="muted">Costeo de piezas 3D • PLA/PETG/ABS/TPU</div>
-    <div class="row" style="gap:8px">
+    
+    <div class="header-actions">
       <!-- Botón Suscripciones MercadoPago -->
-      <button id="subscriptionButton" class="pill subscription-btn" style="background: #009EE3; color: white; border: none;">
-        💳 <span>Suscripciones</span>
+      <button id="subscriptionButton" class="pill subscription-btn enhanced-btn" data-tooltip="Gestionar suscripción">
+        <span class="btn-icon">💳</span>
+        <span class="btn-text">Suscripciones</span>
       </button>
+      
       <!-- Indicador de suscripción -->
-      <div id="subscriptionStatus" class="pill" style="display:none">
+      <div id="subscriptionStatus" class="pill status-indicator" style="display:none">
+        <span class="status-dot"></span>
         <span id="subscriptionText">—</span>
       </div>
-      <a href="mis-piezas.html" class="pill" style="text-decoration:none">Mis piezas guardadas</a>
+      
+      <a href="mis-piezas.html" class="pill nav-link enhanced-btn" data-tooltip="Ver piezas guardadas">
+        <span class="btn-icon">📁</span>
+        <span class="btn-text">Mis piezas guardadas</span>
+      </a>
     </div>
   </header>
 
@@ -73,7 +83,7 @@
       <div class="hr"></div>
       <div class="row">
         <div class="col">
-          <label>Nombre del perfil de Gastos Fijos</label>
+          <label>Nombre del perfil de Gastos Fijos <span class="premium-indicator" title="Presets personalizados requieren Premium">⭐</span></label>
           <input id="presetName" placeholder="Ej: BambuLab A1 - PLA" />
         </div>
         <div class="col" style="min-width:320px">
@@ -86,7 +96,7 @@
         </div>
       </div>
       <div class="row" style="margin-top:8px">
-        <button type="button" id="btnSavePreset" class="primary">Guardar perfil con los valores actuales</button>
+        <button type="button" id="btnSavePreset" class="primary">Guardar perfil con los valores actuales <span class="premium-indicator" title="Función Premium">⭐</span></button>
       </div>
     </section>
 
@@ -96,7 +106,7 @@
 
       <div class="row">
         <div class="col">
-          <label>Nombre de la pieza:</label>
+          <label>Nombre de la pieza: <span class="premium-indicator" title="Guardar piezas requiere Premium">⭐</span></label>
           <input id="pieceName" placeholder="Ej: Caja MTG" />
         </div>
 
@@ -121,7 +131,7 @@
       </div>
 
       <div class="row" style="margin-top:8px">
-        <button id="btnAutoFromUrl">🪄 Autocompletar desde URL</button>
+        <button id="btnAutoFromUrl">🪄 Autocompletar desde URL <span class="premium-indicator" title="Función Premium">⭐</span></button>
         <small style="color: #28a745; font-size: 12px; margin-left: 10px; align-self: center;">
           <strong>💡 Tip:</strong> Pega una URL de MakerWorld y hace clic aquí para obtener nombre e imagen automáticamente
         </small>
@@ -173,18 +183,46 @@
     </section>
 
     <!-- Acciones / KPIs -->
-    <section class="card" style="flex:1 1 100%; min-width:300px">
-      <div class="row" style="justify-content:space-between;">
-        <div class="row" style="gap:8px">
-          <button class="primary" id="btnCalc">Calcular</button>
-          <button id="btnQuote">Generar presupuesto (HTML)</button>
-          <label class="row" style="margin-left:8px; gap:6px; font-size:12px; color:#b9c7bf">
-            <input id="discreetDetail" type="checkbox" checked /> Detalle discreto
-          </label>
-          <button id="btnReset">Borrar datos</button>
-          <button id="btnSavePiece" title="Guarda esta pieza y crea una versión">Guardar pieza</button>
+    <section class="card actions-section" style="flex:1 1 100%; min-width:300px">
+      <div class="actions-header">
+        <h2>Acciones y Resultados</h2>
+        <small class="actions-note">Los campos se guardan en este navegador.</small>
+      </div>
+      
+      <div class="button-groups">
+        <div class="primary-actions">
+          <button class="primary enhanced-btn" id="btnCalc" data-tooltip="Realizar cálculo de costos">
+            <span class="btn-icon">🧮</span>
+            <span class="btn-text">Calcular</span>
+          </button>
+          
+          <button class="secondary enhanced-btn" id="btnQuote" data-tooltip="Generar presupuesto en HTML">
+            <span class="btn-icon">📋</span>
+            <span class="btn-text">Generar presupuesto</span>
+            <span class="premium-indicator" title="Función Premium">⭐</span>
+          </button>
         </div>
-        <small class="small">Los campos se guardan en este navegador.</small>
+        
+        <div class="secondary-actions">
+          <button class="utility enhanced-btn" id="btnSavePiece" data-tooltip="Guardar pieza en tu colección">
+            <span class="btn-icon">💾</span>
+            <span class="btn-text">Guardar pieza</span>
+            <span class="premium-indicator" title="Función Premium">⭐</span>
+          </button>
+          
+          <button class="utility enhanced-btn" id="btnReset" data-tooltip="Limpiar todos los campos">
+            <span class="btn-icon">🗑️</span>
+            <span class="btn-text">Borrar datos</span>
+          </button>
+        </div>
+        
+        <div class="options-group">
+          <label class="enhanced-checkbox" data-tooltip="Ocultar detalles de cálculo en el presupuesto">
+            <input id="discreetDetail" type="checkbox" checked />
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-label">Detalle discreto</span>
+          </label>
+        </div>
       </div>
       <div class="hr"></div>
 
@@ -253,11 +291,18 @@
 <script src="debounce-utils.js"></script>
 <script src="config-profiles-service.js"></script>
 
-<!-- UI Animations Enhancement -->
+<!-- Enhanced UI Animations System -->
+<script src="enhanced-animations.js"></script>
 <script src="ui-animations.js"></script>
 
 <!-- Sistema de suscripciones -->
 <script src="subscription-service.js"></script>
+
+<!-- Sistema de control de acceso -->
+<script src="access-control.js"></script>
+
+<!-- Test de control de acceso (solo para desarrollo) -->
+<script src="test-access-control.js"></script>
 
 <!-- App principal -->
 <script src="app.js"></script>
@@ -293,23 +338,32 @@
     // Inicializar sistema de suscripciones cuando el usuario esté listo
     if (window.currentUser) {
       await initializeSubscriptionSystem();
+      await initializeAccessControl();
     } else {
       // Esperar a que se cargue el usuario
       window.addEventListener('userReady', async () => {
         await initializeSubscriptionSystem();
+        await initializeAccessControl();
       });
     }
   });
 
   // Función para inicializar el sistema de suscripciones
   async function initializeSubscriptionSystem() {
-    if (!window.subscriptionService || !window.currentUser) return;
+    if (!window.subscriptionService || !window.currentUser) {
+      console.log('❌ Servicio de suscripción o usuario no disponible');
+      return;
+    }
 
     try {
+      console.log('🚀 Inicializando sistema de suscripciones para usuario:', window.currentUser.id);
+      
       // Verificar suscripción con double-check para evitar inconsistencias
       const hasActive = await window.subscriptionService.checkSubscriptionStatus(window.currentUser.id);
       const statusEl = document.getElementById('subscriptionStatus');
       const textEl = document.getElementById('subscriptionText');
+      
+      console.log('✅ ¿Tiene suscripción activa?:', hasActive);
       
       if (hasActive) {
         const subscription = await window.subscriptionService.getCurrentSubscription(window.currentUser.id);
@@ -376,13 +430,35 @@
         textEl.textContent = statusText;
         
       } else {
-        statusEl.style.display = 'flex';
-        statusEl.style.background = '#d97706';
-        statusEl.style.color = 'white';
-        textEl.textContent = '⚠️ Sin suscripción activa';
+        // Sin suscripción activa - ocultar el indicador
+        statusEl.style.display = 'none';
+        textEl.textContent = '';
       }
     } catch (error) {
       console.error('Error inicializando suscripciones:', error);
+    }
+  }
+
+  // Función para inicializar el sistema de control de acceso
+  async function initializeAccessControl() {
+    if (!window.accessControl) {
+      console.log('❌ Sistema de control de acceso no disponible');
+      return;
+    }
+
+    try {
+      console.log('🔐 Inicializando sistema de control de acceso...');
+      await window.accessControl.initialize();
+      
+      // Escuchar cambios de suscripción para actualizar controles
+      window.addEventListener('subscriptionChanged', () => {
+        console.log('📡 Suscripción cambió, actualizando controles de acceso...');
+        window.accessControl.refresh();
+      });
+      
+      console.log('✅ Sistema de control de acceso inicializado correctamente');
+    } catch (error) {
+      console.error('❌ Error inicializando control de acceso:', error);
     }
   }
 
