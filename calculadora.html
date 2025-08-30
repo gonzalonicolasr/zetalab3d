@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora ZetaLab</title>
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- MercadoPago SDK -->
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%2313251f'/%3E%3Ctext x='8' y='11' text-anchor='middle' font-size='9' fill='%23c9b28a'%3EZL%3C/text%3E%3C/svg%3E">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+  <header class="row" style="align-items:center; justify-content:space-between; gap:8px;">
+    <div class="pill">
+      <img src="logo.png" alt="ZetaLab" onerror="this.style.display='none'">
+      <strong>Calculadora ZetaLab</strong>
+    </div>
+    <div class="muted">Costeo de piezas 3D • PLA/PETG/ABS/TPU</div>
+    <div class="row" style="gap:8px">
+      <!-- Botón Upgrade Premium (se muestra solo para usuarios trial/monthly) -->
+      <button id="upgradeButton" class="pill upgrade-premium-btn" style="display:none">
+        ⭐ <span>Upgrade Premium</span>
+      </button>
+      <!-- Botón Suscripciones MercadoPago -->
+      <button id="subscriptionButton" class="pill subscription-btn" style="background: #009EE3; color: white; border: none;">
+        💳 <span>Suscripciones</span>
+      </button>
+      <!-- Indicador de suscripción -->
+      <div id="subscriptionStatus" class="pill" style="display:none">
+        <span id="subscriptionText">—</span>
+      </div>
+      <a href="mis-piezas.html" class="pill" style="text-decoration:none">Mis piezas guardadas</a>
+    </div>
+  </header>
+
+  <!-- === CALCULADORA === -->
+  <main class="row" style="margin-top:12px">
+    <!-- Gastos fijos -->
+    <section class="card" style="flex:1 1 100%; min-width:300px">
+      <h2 style="margin-top:0">Gastos Fijos</h2>
+      <div class="row">
+        <div class="col">
+          <label>Precio KG (ARS $):</label>
+          <input id="precioKg" type="number" min="0" step="1" placeholder="17000">
+        </div>
+        <div class="col">
+          <label>Precio kWh (ARS $):</label>
+          <input id="precioKwh" type="number" min="0" step="1" placeholder="598">
+        </div>
+        <div class="col">
+          <label>Consumo real por hora (W):</label>
+          <input id="consumoW" type="number" min="0" step="1" placeholder="120">
+        </div>
+        <div class="col">
+          <label>Desgaste máquina (horas):</label>
+          <input id="horasDesgaste" type="number" min="0" step="1" placeholder="4320">
+        </div>
+        <div class="col">
+          <label>Precio Repuestos (ARS $):</label>
+          <input id="precioRepuestos" type="number" min="0" step="1" placeholder="150000">
+        </div>
+        <div class="col">
+          <label>% Margen de error:</label>
+          <input id="margenError" type="number" min="0" step="1" placeholder="30">
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="row">
+        <div class="col">
+          <label>Nombre del perfil de Gastos Fijos</label>
+          <input id="presetName" placeholder="Ej: BambuLab A1 - PLA" />
+        </div>
+        <div class="col" style="min-width:320px">
+          <label>Perfiles guardados</label>
+          <div class="row">
+            <select id="presetList" style="flex:1; padding:12px; border-radius:10px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-secondary);"></select>
+            <button type="button" id="btnApplyPreset">Aplicar</button>
+            <button type="button" id="btnDeletePreset">Borrar</button>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" id="btnSavePreset" class="primary">Guardar perfil con los valores actuales</button>
+      </div>
+    </section>
+
+    <!-- Pieza -->
+    <section class="card" style="flex:1 1 100%; min-width:300px">
+      <h2>Pieza</h2>
+
+      <div class="row">
+        <div class="col">
+          <label>Nombre de la pieza:</label>
+          <input id="pieceName" placeholder="Ej: Caja MTG" />
+        </div>
+
+        <div class="col">
+          <label>🔗 URL del modelo</label>
+          <input id="pieceUrl" placeholder="https://makerworld.com/es/models/..." />
+          <small style="color: #888; font-size: 12px; display: block; margin-top: 4px;">
+            📋 Pega la URL de MakerWorld, Thingiverse, etc.
+          </small>
+        </div>
+
+        <div class="col">
+          <label>🖼️ Imagen (opcional)</label>
+          <input id="imageUrl" placeholder="https://..." />
+          <small style="color: #888; font-size: 12px; display: block; margin-top: 4px;">
+            ✨ <strong>Se completa automáticamente</strong> al usar "Autocompletar"
+          </small>
+        </div>
+        <div id="pieceImgPreview" style="margin-top:6px">
+          <img id="pieceImgTag" src="" alt="Preview" style="max-width:180px; border-radius:8px; display:none"/>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <button id="btnAutoFromUrl">🪄 Autocompletar desde URL</button>
+        <small style="color: #28a745; font-size: 12px; margin-left: 10px; align-self: center;">
+          <strong>💡 Tip:</strong> Pega una URL de MakerWorld y hace clic aquí para obtener nombre e imagen automáticamente
+        </small>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <div class="col">
+          <label>Horas:</label>
+          <input id="horas" type="number" min="0" step="1" placeholder="2">
+        </div>
+        <div class="col">
+          <label>Minutos:</label>
+          <input id="minutos" type="number" min="0" step="1" placeholder="33">
+        </div>
+        <div class="col">
+          <label>Gramos de filamento:</label>
+          <input id="gramos" type="number" min="0" step="1" placeholder="184">
+        </div>
+        <div class="col">
+          <label>INSUMOS (ARS $):</label>
+          <input id="insumos" type="number" min="0" step="1" placeholder="0">
+        </div>
+      </div>
+    </section>
+
+    <!-- Ganancia -->
+    <section class="card" style="flex:1 1 100%; min-width:300px">
+      <h2>Ganancia</h2>
+      <div class="row">
+        <div class="col">
+          <label>Margen de ganancia (multiplicador):</label>
+          <input id="multiplicador" type="number" min="1" step="0.1" placeholder="4">
+          <div class="row" style="margin-top:8px">
+            <button type="button" data-mult="4">Minorista → 4</button>
+            <button type="button" data-mult="3">Mayorista → 3</button>
+            <button type="button" data-mult="5">Llaveros → 5</button>
+          </div>
+        </div>
+        <div class="col">
+          <label>Comisión MercadoLibre (%):</label>
+          <input id="mlFee" type="number" min="0" step="0.1" placeholder="20">
+          <div class="row" style="margin-top:8px">
+            <button type="button" data-ml="17">Clásico 17%</button>
+            <button type="button" data-ml="20.5">Premium 20.5%</button>
+            <button type="button" data-ml="22">Extra 22%</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Acciones / KPIs -->
+    <section class="card" style="flex:1 1 100%; min-width:300px">
+      <div class="row" style="justify-content:space-between;">
+        <div class="row" style="gap:8px">
+          <button class="primary" id="btnCalc">Calcular</button>
+          <button id="btnQuote">Generar presupuesto (HTML)</button>
+          <label class="row" style="margin-left:8px; gap:6px; font-size:12px; color:#b9c7bf">
+            <input id="discreetDetail" type="checkbox" checked /> Detalle discreto
+          </label>
+          <button id="btnReset">Borrar datos</button>
+          <button id="btnSavePiece" title="Guarda esta pieza y crea una versión">Guardar pieza</button>
+        </div>
+        <small class="small">Los campos se guardan en este navegador.</small>
+      </div>
+      <div class="hr"></div>
+
+      <div class="kpi">
+        <div class="tile">
+          <h3>Precio sugerido (sin imp.)</h3>
+          <p id="precioSugerido">—</p>
+        </div>
+        <div class="tile">
+          <h3>Material</h3>
+          <p id="outMaterial">—</p>
+          <div class="small mono" id="matDetalle"></div>
+        </div>
+        <div class="tile">
+          <h3>Energía</h3>
+          <p id="outEnergia">—</p>
+          <div class="small mono" id="enerDetalle"></div>
+        </div>
+      </div>
+
+      <div class="kpi" style="margin-top:12px">
+        <div class="tile">
+          <h3>Desgaste</h3>
+          <p id="outDesgaste">—</p>
+          <div class="small mono" id="desgDetalle"></div>
+        </div>
+        <div class="tile">
+          <h3>Insumos</h3>
+          <p id="outInsumos">—</p>
+        </div>
+        <div class="tile">
+          <h3>Subtotal + error</h3>
+          <p id="outSubtotal">—</p>
+          <div class="small mono" id="errorDetalle"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Resumen clásico -->
+    <section class="card" style="flex:1 1 100%; min-width:300px">
+      <h2>Resumen estilo clásico</h2>
+      <div class="mono">
+        <p><strong>Precio Material:</strong> <span id="classicMaterial">—</span></p>
+        <p><strong>Precio Luz:</strong> <span id="classicLuz">—</span></p>
+        <p><strong>Desgaste Máquina:</strong> <span id="classicDesgaste">—</span></p>
+        <p><strong>Margen de Error:</strong> <span id="classicError">—</span></p>
+        <p><strong>INSUMOS:</strong> <span id="classicInsumos">—</span></p>
+        <p><strong>Costo Luz y Material:</strong> <span id="classicLyM">—</span></p>
+        <p><strong>Costo Total (incluye insumos):</strong> <span id="classicCostoTotal">—</span></p>
+        <p><strong>TOTAL A COBRAR:</strong> <span id="classicTotalCobrar">—</span></p>
+        <p style="text-decoration: underline;">
+          <strong>PRECIO MERCADOLIBRE:</strong> <span id="classicML">—</span><br>
+          <span class="small" id="mlDetalle"></span>
+        </p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal MercadoPago Suscripción Simplificada -->
+<div id="mercadopagoModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content mercadopago-modal">
+    <div class="modal-header">
+      <h2>⭐ ZETALAB Premium</h2>
+      <button id="closeMercadopagoModal" class="close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="single-plan-display">
+        <div class="plan-hero-section">
+          <div class="plan-badge">Plan Único</div>
+          <h3>🚀 Acceso Premium Mensual</h3>
+          <div class="price-section">
+            <span class="currency">$</span>
+            <span class="amount">5.000</span>
+            <span class="period">ARS/mes</span>
+          </div>
+          <p class="plan-desc">
+            Acceso completo a la calculadora más avanzada de impresión 3D
+          </p>
+        </div>
+
+        <div class="features-section">
+          <h4>✨ Todo incluido:</h4>
+          <ul class="feature-list">
+            <li>✅ Calculadora de costos profesional</li>
+            <li>✅ Guardado ilimitado de piezas</li>
+            <li>✅ Generación de presupuestos HTML</li>
+            <li>✅ Historial de versiones</li>
+            <li>✅ Perfiles de gastos fijos</li>
+            <li>✅ Autocompletado desde URLs</li>
+            <li>✅ Soporte técnico prioritario</li>
+          </ul>
+        </div>
+
+        <div class="cta-section">
+          <button class="subscribe-btn" data-plan="monthly">
+            💳 Suscribirse por $5.000/mes
+          </button>
+          <p class="payment-note">
+            💳 Pago seguro con MercadoPago<br>
+            🔒 Puedes cancelar cuando quieras
+          </p>
+        </div>
+      </div>
+      
+      <!-- Loading state -->
+      <div id="mpLoading" class="mp-loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Procesando pago...</p>
+      </div>
+      
+      <!-- MercadoPago Checkout -->
+      <div id="mpCheckout" style="display: none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Sistemas de mejoras -->
+<script src="error-handler.js"></script>
+<script src="loading-manager.js"></script>
+<script src="validators.js"></script>
+<script src="debounce-utils.js"></script>
+<script src="config-profiles-service.js"></script>
+
+<!-- UI Animations Enhancement -->
+<script src="ui-animations.js"></script>
+
+<!-- Sistema de suscripciones -->
+<script src="subscription-service.js"></script>
+
+<!-- App principal -->
+<script src="app.js"></script>
+
+<!-- Guard de sesión Supabase (expone window.supa y window.currentUser) -->
+<script type="module" src="auth.js"></script>
+
+<!-- Inicializar validación en tiempo real -->
+<script>
+  // Esperar a que el DOM esté listo
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Inicializar validación en tiempo real
+    if (window.validationSystem) {
+      validationSystem.initializeRealTimeValidation();
+    }
+
+    // Agregar atributos data-loading-key a botones importantes
+    const btnCalc = document.getElementById('btnCalc');
+    if (btnCalc) {
+      btnCalc.setAttribute('data-loading-key', 'calculate');
+    }
+
+    const btnSave = document.getElementById('btnGuardarPieza');
+    if (btnSave) {
+      btnSave.setAttribute('data-loading-key', 'save-piece');
+    }
+
+    const btnQuote = document.getElementById('btnPresupuesto');
+    if (btnQuote) {
+      btnQuote.setAttribute('data-loading-key', 'generate-quote');
+    }
+
+    // Inicializar sistema de suscripciones cuando el usuario esté listo
+    if (window.currentUser) {
+      await initializeSubscriptionSystem();
+    } else {
+      // Esperar a que se cargue el usuario
+      window.addEventListener('userReady', async () => {
+        await initializeSubscriptionSystem();
+      });
+    }
+  });
+
+  // Función para inicializar el sistema de suscripciones
+  async function initializeSubscriptionSystem() {
+    if (!window.subscriptionService || !window.currentUser) return;
+
+    try {
+      const hasActive = await window.subscriptionService.checkSubscriptionStatus(window.currentUser.id);
+      const statusEl = document.getElementById('subscriptionStatus');
+      const textEl = document.getElementById('subscriptionText');
+      
+      if (hasActive) {
+        const subscription = await window.subscriptionService.getCurrentSubscription(window.currentUser.id);
+        const expiresAt = new Date(subscription.expires_at);
+        const daysLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
+        
+        statusEl.style.display = 'flex';
+        
+        // Mostrar estado según plan
+        let statusText = '';
+        let statusClass = '';
+        
+        if (subscription.plan_type === 'trial') {
+          statusText = `✓ Prueba (${daysLeft}d)`;
+          statusClass = 'trial';
+        } else if (subscription.plan_type === 'monthly') {
+          statusText = `✓ Mensual (${daysLeft}d)`;
+          statusClass = 'monthly';
+        } else if (subscription.plan_type === 'premium') {
+          statusText = `⭐ Premium (${daysLeft}d)`;
+          statusClass = 'premium';
+        }
+        
+        statusEl.className = `pill ${statusClass}`;
+        textEl.textContent = statusText;
+        
+        // Mostrar botón de upgrade si no es premium
+        if (subscription.plan_type !== 'premium') {
+          setTimeout(() => {
+            showUpgradeButtonInHeader();
+          }, 1500);
+        } else {
+          // Ocultar botón si es premium
+          hideUpgradeButtonInHeader();
+        }
+      } else {
+        statusEl.style.display = 'flex';
+        statusEl.style.background = '#d97706';
+        statusEl.style.color = 'white';
+        textEl.textContent = '⚠ Sin suscripción';
+        
+        // Mostrar modal de suscripción después de 2 segundos
+        setTimeout(() => {
+          window.subscriptionService.showSubscriptionModal();
+        }, 2000);
+        
+        // Mostrar botón de upgrade para usuarios sin suscripción
+        setTimeout(() => {
+          showUpgradeButtonInHeader();
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error inicializando suscripciones:', error);
+    }
+  }
+
+  // Función para mostrar el botón de upgrade premium en el header
+  function showUpgradeButtonInHeader() {
+    const upgradeBtn = document.getElementById('upgradeButton');
+    if (upgradeBtn && window.subscriptionService) {
+      upgradeBtn.style.display = 'flex';
+      
+      // Asegurar que el event listener se agregue solo una vez
+      if (!upgradeBtn.hasAttribute('data-listener-added')) {
+        upgradeBtn.addEventListener('click', () => {
+          window.subscriptionService.showUpgradeModal();
+        });
+        upgradeBtn.setAttribute('data-listener-added', 'true');
+      }
+    }
+  }
+
+  // Función para ocultar el botón de upgrade premium
+  function hideUpgradeButtonInHeader() {
+    const upgradeBtn = document.getElementById('upgradeButton');
+    if (upgradeBtn) {
+      upgradeBtn.style.display = 'none';
+    }
+  }
+
+  // ============================================================================
+  // MERCADOPAGO INTEGRATION
+  // ============================================================================
+
+  // Inicializar MercadoPago con credenciales actualizadas
+  const mp = new MercadoPago('TEST-2d0e69bb-e086-4f06-b370-e7fc1f87ad48');
+
+  // Event listeners para modal
+  document.addEventListener('DOMContentLoaded', function() {
+    const subscriptionButton = document.getElementById('subscriptionButton');
+    const mercadopagoModal = document.getElementById('mercadopagoModal');
+    const closeMercadopagoModal = document.getElementById('closeMercadopagoModal');
+    const subscribeButton = document.querySelector('.subscribe-btn');
+
+    // Abrir modal de suscripciones
+    subscriptionButton.addEventListener('click', function() {
+      mercadopagoModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden'; // Prevenir scroll del body
+    });
+
+    // Cerrar modal
+    function closeModal() {
+      mercadopagoModal.style.display = 'none';
+      document.body.style.overflow = 'auto'; // Restaurar scroll
+      
+      // Limpiar checkout si existe
+      const checkoutContainer = document.getElementById('mpCheckout');
+      if (checkoutContainer) {
+        checkoutContainer.innerHTML = '';
+        checkoutContainer.style.display = 'none';
+      }
+      
+      // Ocultar loading
+      const loadingEl = document.getElementById('mpLoading');
+      if (loadingEl) {
+        loadingEl.style.display = 'none';
+      }
+      
+      // Mostrar plan
+      const planEl = document.querySelector('.single-plan-display');
+      if (planEl) {
+        planEl.style.display = 'block';
+      }
+    }
+
+    // Event listeners para cerrar modal
+    closeMercadopagoModal.addEventListener('click', closeModal);
+    
+    // Cerrar con ESC
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && mercadopagoModal.style.display === 'flex') {
+        closeModal();
+      }
+    });
+
+    // Cerrar al hacer click en el overlay
+    mercadopagoModal.addEventListener('click', function(e) {
+      if (e.target === mercadopagoModal) {
+        closeModal();
+      }
+    });
+
+    // Event listener para botón de suscripción
+    if (subscribeButton) {
+      subscribeButton.addEventListener('click', function() {
+        const plan = this.dataset.plan;
+        
+        if (!window.currentUser) {
+          alert('Debes iniciar sesión para suscribirte');
+          return;
+        }
+
+        createSimplifiedPayment(plan, window.currentUser);
+      });
+    }
+  });
+
+  // Función simplificada para crear pago con backend de Railway
+  async function createSimplifiedPayment(planType, user) {
+    const loadingEl = document.getElementById('mpLoading');
+    const planEl = document.querySelector('.single-plan-display');
+    const subscribeBtn = document.querySelector('.subscribe-btn');
+    
+    // Definir originalText fuera del try/catch para que esté disponible en ambos bloques
+    const originalText = subscribeBtn.textContent;
+
+    try {
+      // Mostrar loading
+      planEl.style.display = 'none';
+      loadingEl.style.display = 'block';
+      
+      // Actualizar botón
+      subscribeBtn.textContent = '⏳ Procesando...';
+      subscribeBtn.disabled = true;
+
+      // Detectar URL del backend - Testing local
+      const backendUrl = 'http://localhost:5000';
+
+      // Llamar al backend simplificado
+      const response = await fetch(`${backendUrl}/create-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userEmail: user.email,
+          userId: user.id
+        })
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Error creando pago');
+      }
+
+      // Ocultar loading
+      loadingEl.style.display = 'none';
+      
+      // Redirigir a MercadoPago
+      window.open(result.initPoint, '_blank');
+      
+      // Cerrar modal
+      document.getElementById('mercadopagoModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+      
+      // Mostrar estado pendiente
+      setTimeout(() => {
+        const statusEl = document.getElementById('subscriptionStatus');
+        const textEl = document.getElementById('subscriptionText');
+        if (statusEl && textEl) {
+          statusEl.style.display = 'flex';
+          statusEl.style.background = '#f59e0b';
+          statusEl.style.color = 'white';
+          textEl.textContent = '⏳ Pago pendiente';
+        }
+      }, 500);
+
+    } catch (error) {
+      console.error('Error creando pago:', error);
+      
+      // Restaurar estado original
+      loadingEl.style.display = 'none';
+      planEl.style.display = 'block';
+      subscribeBtn.textContent = originalText;
+      subscribeBtn.disabled = false;
+      
+      alert('Error al procesar el pago: ' + error.message);
+    }
+  }
+
+  // Simular pago exitoso
+  function simulatePaymentSuccess(planType, user) {
+    const modal = document.getElementById('mercadopagoModal');
+    
+    // Mostrar mensaje de éxito
+    const checkoutContainer = document.getElementById('mpCheckout');
+    checkoutContainer.innerHTML = `
+      <div style="background: linear-gradient(135deg, var(--terminal-green), var(--terminal-emerald)); color: white; padding: var(--space-2xl); border-radius: 16px; text-align: center;">
+        <div style="font-size: 4rem; margin-bottom: var(--space-lg);">🎉</div>
+        <h3 style="margin-bottom: var(--space-lg); color: white;">¡Suscripción Activada!</h3>
+        <p style="margin-bottom: var(--space-lg); opacity: 0.9;">
+          Tu suscripción ${planType === 'monthly' ? 'mensual' : 'anual'} ha sido activada exitosamente.
+        </p>
+        <p style="opacity: 0.8; font-size: var(--text-sm);">
+          En modo demo - En producción esto se guardaría en la base de datos.
+        </p>
+        <button id="closeSuccessModal" style="background: white; color: var(--terminal-green); border: none; padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 600; margin-top: var(--space-lg); cursor: pointer;">
+          Continuar
+        </button>
+      </div>
+    `;
+
+    document.getElementById('closeSuccessModal').addEventListener('click', () => {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      
+      // Actualizar UI para mostrar suscripción activa
+      updateSubscriptionUI(planType);
+    });
+  }
+
+  // Simular pago fallido
+  function simulatePaymentFailure() {
+    const checkoutContainer = document.getElementById('mpCheckout');
+    checkoutContainer.innerHTML = `
+      <div style="background: var(--text-error); color: white; padding: var(--space-2xl); border-radius: 16px; text-align: center;">
+        <div style="font-size: 4rem; margin-bottom: var(--space-lg);">❌</div>
+        <h3 style="margin-bottom: var(--space-lg); color: white;">Error en el Pago</h3>
+        <p style="margin-bottom: var(--space-lg); opacity: 0.9;">
+          Hubo un problema procesando tu pago. Por favor, intenta nuevamente.
+        </p>
+        <button id="retryPayment" style="background: white; color: var(--text-error); border: none; padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 600; cursor: pointer;">
+          Reintentar
+        </button>
+      </div>
+    `;
+
+    document.getElementById('retryPayment').addEventListener('click', () => {
+      // Volver a mostrar los planes
+      checkoutContainer.style.display = 'none';
+      document.querySelector('.subscription-plans').style.display = 'grid';
+    });
+  }
+
+  // Actualizar UI para mostrar suscripción activa
+  function updateSubscriptionUI(planType) {
+    const statusEl = document.getElementById('subscriptionStatus');
+    const textEl = document.getElementById('subscriptionText');
+    const upgradeBtn = document.getElementById('upgradeButton');
+
+    if (statusEl && textEl) {
+      statusEl.style.display = 'flex';
+      statusEl.style.background = 'var(--terminal-green)';
+      statusEl.style.color = 'white';
+      statusEl.className = 'pill premium';
+      
+      textEl.textContent = planType === 'monthly' ? '✓ Premium Mensual' : '⭐ Premium Anual';
+      
+      // Ocultar botón de upgrade
+      if (upgradeBtn) {
+        upgradeBtn.style.display = 'none';
+      }
+    }
+  }
+
+  // Verificar URL parameters al cargar (para manejar redirects de MercadoPago)
+  document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const payment = urlParams.get('payment');
+    const plan = urlParams.get('plan');
+
+    if (payment === 'success' && plan) {
+      // Mostrar mensaje de éxito
+      setTimeout(() => {
+        alert(`¡Suscripción ${plan} activada exitosamente!`);
+        updateSubscriptionUI(plan);
+      }, 1000);
+      
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (payment === 'failure') {
+      // Mostrar mensaje de error
+      setTimeout(() => {
+        alert('Hubo un problema con tu pago. Por favor, intenta nuevamente.');
+      }, 1000);
+      
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (payment === 'pending' && plan) {
+      // Mostrar mensaje de pendiente
+      setTimeout(() => {
+        alert('Tu pago está siendo procesado. Te notificaremos cuando sea confirmado.');
+      }, 1000);
+      
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  });
+</script>
+</body>
+</html>

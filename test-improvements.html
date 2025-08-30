@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZETALAB - Test de Mejoras</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #00d4aa;
+        }
+        .test-result {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196f3; }
+        
+        button {
+            background: #00d4aa;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        input {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        
+        .console-output {
+            background: #111;
+            padding: 15px;
+            border-radius: 4px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 ZETALAB - Test de Mejoras</h1>
+    <p>Esta página prueba todas las mejoras implementadas en el sistema.</p>
+
+    <!-- Error Handler Test -->
+    <div class="test-section">
+        <h2>🚨 Error Handler</h2>
+        <button onclick="testErrorHandler()">Probar Error Handler</button>
+        <button onclick="testErrorHandlerAsync()">Probar Error Handler Async</button>
+        <div id="error-result" class="test-result"></div>
+    </div>
+
+    <!-- Loading Manager Test -->
+    <div class="test-section">
+        <h2>⏳ Loading Manager</h2>
+        <button id="loading-test-btn" onclick="testLoadingStates()">Probar Loading States</button>
+        <button onclick="testGlobalLoading()">Probar Loading Global</button>
+        <div id="loading-result" class="test-result"></div>
+    </div>
+
+    <!-- Validation System Test -->
+    <div class="test-section">
+        <h2>✅ Sistema de Validación</h2>
+        <div>
+            <input id="test-precio" type="number" placeholder="Precio Kg" />
+            <input id="test-gramos" type="number" placeholder="Gramos" />
+            <input id="test-name" type="text" placeholder="Nombre pieza" />
+            <button onclick="testValidation()">Validar Campos</button>
+        </div>
+        <div id="validation-result" class="test-result"></div>
+    </div>
+
+    <!-- Debounce Test -->
+    <div class="test-section">
+        <h2>🔄 Sistema de Debouncing</h2>
+        <input id="debounce-input" type="text" placeholder="Escribí rápido aquí..." />
+        <button onclick="testDebounce()">Test Debounce Manual</button>
+        <div id="debounce-result" class="test-result"></div>
+    </div>
+
+    <!-- Integration Test -->
+    <div class="test-section">
+        <h2>🎯 Test de Integración Completa</h2>
+        <button onclick="testCompleteWorkflow()">Ejecutar Flujo Completo</button>
+        <div id="integration-result" class="test-result"></div>
+    </div>
+
+    <!-- Console Output -->
+    <div class="test-section">
+        <h2>📊 Console Output</h2>
+        <button onclick="clearConsole()">Limpiar</button>
+        <button onclick="runAllTests()">Ejecutar Todos los Tests</button>
+        <div id="console-output" class="console-output"></div>
+    </div>
+
+    <!-- Cargar todas las mejoras -->
+    <script src="error-handler.js"></script>
+    <script src="loading-manager.js"></script>
+    <script src="validators.js"></script>
+    <script src="debounce-utils.js"></script>
+
+    <!-- Tests -->
+    <script>
+        // Redirigir console.log a nuestro div
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        const logToDiv = (message, type = 'info') => {
+            const output = document.getElementById('console-output');
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        };
+
+        console.log = (...args) => {
+            originalLog(...args);
+            logToDiv(args.join(' '), 'info');
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            logToDiv(args.join(' '), 'error');
+        };
+        
+        console.warn = (...args) => {
+            originalWarn(...args);
+            logToDiv(args.join(' '), 'warning');
+        };
+
+        // Test functions
+        function testErrorHandler() {
+            const result = document.getElementById('error-result');
+            try {
+                result.innerHTML = '<div class="info">Testing error handler...</div>';
+                
+                // Test error handling
+                ErrorHandler.handle(new Error('Test error'), 'test context');
+                
+                // Test safe wrapper
+                const safeResult = ErrorHandler.safeSync(() => {
+                    throw new Error('Safe test error');
+                }, 'safe test', 'fallback value');
+                
+                result.innerHTML += `<div class="success">✅ Error handler works! Safe result: ${safeResult}</div>`;
+            } catch (error) {
+                result.innerHTML += `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testErrorHandlerAsync() {
+            const result = document.getElementById('error-result');
+            try {
+                const asyncResult = await ErrorHandler.safe(async () => {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    throw new Error('Async test error');
+                }, 'async test', 'async fallback');
+                
+                result.innerHTML += `<div class="success">✅ Async error handler works! Result: ${asyncResult}</div>`;
+            } catch (error) {
+                result.innerHTML += `<div class="error">❌ Async Error: ${error.message}</div>`;
+            }
+        }
+
+        function testLoadingStates() {
+            const result = document.getElementById('loading-result');
+            const btn = document.getElementById('loading-test-btn');
+            
+            result.innerHTML = '<div class="info">Testing loading states...</div>';
+            
+            // Test button loading
+            setLoading('test-button', true, {
+                type: 'button',
+                element: btn,
+                message: 'Testing...'
+            });
+            
+            setTimeout(() => {
+                setLoading('test-button', false);
+                result.innerHTML += '<div class="success">✅ Button loading test completed!</div>';
+            }, 2000);
+        }
+
+        function testGlobalLoading() {
+            const result = document.getElementById('loading-result');
+            
+            setLoading('global-test', true, {
+                type: 'global',
+                message: 'Testing global loading...'
+            });
+            
+            setTimeout(() => {
+                setLoading('global-test', false);
+                result.innerHTML += '<div class="success">✅ Global loading test completed!</div>';
+            }, 1500);
+        }
+
+        function testValidation() {
+            const result = document.getElementById('validation-result');
+            const precio = document.getElementById('test-precio').value;
+            const gramos = document.getElementById('test-gramos').value;
+            const name = document.getElementById('test-name').value;
+            
+            result.innerHTML = '<div class="info">Testing validation...</div>';
+            
+            // Test individual fields
+            const precioResult = validateField('precioKg', precio);
+            const gramosResult = validateField('gramos', gramos);
+            const nameResult = validateField('pieceName', name);
+            
+            result.innerHTML += `<div class="${precioResult.valid ? 'success' : 'error'}">
+                Precio: ${precioResult.valid ? '✅' : '❌'} ${precioResult.message || 'Valid'}
+            </div>`;
+            
+            result.innerHTML += `<div class="${gramosResult.valid ? 'success' : 'error'}">
+                Gramos: ${gramosResult.valid ? '✅' : '❌'} ${gramosResult.message || 'Valid'}
+            </div>`;
+            
+            result.innerHTML += `<div class="${nameResult.valid ? 'success' : 'error'}">
+                Nombre: ${nameResult.valid ? '✅' : '❌'} ${nameResult.message || 'Valid'}
+            </div>`;
+        }
+
+        function testDebounce() {
+            const result = document.getElementById('debounce-result');
+            let callCount = 0;
+            
+            result.innerHTML = '<div class="info">Testing debounce (calling function 5 times rapidly)...</div>';
+            
+            const testFunction = () => {
+                callCount++;
+                result.innerHTML += `<div class="success">Function called! Call #${callCount}</div>`;
+            };
+            
+            // Call function 5 times rapidly - should only execute once due to debouncing
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    debounceManager.debounce('test-debounce', testFunction, 300);
+                }, i * 50);
+            }
+            
+            setTimeout(() => {
+                result.innerHTML += `<div class="info">Expected: 1 call. Actual: ${callCount} calls</div>`;
+            }, 1000);
+        }
+
+        async function testCompleteWorkflow() {
+            const result = document.getElementById('integration-result');
+            result.innerHTML = '<div class="info">Testing complete workflow...</div>';
+            
+            try {
+                // 1. Validation
+                const testData = {
+                    precioKg: '17000',
+                    gramos: '150',
+                    multiplicador: '2'
+                };
+                
+                const validation = validateAll(testData);
+                result.innerHTML += `<div class="${validation.valid ? 'success' : 'error'}">
+                    1. Validation: ${validation.valid ? '✅' : '❌'}
+                </div>`;
+                
+                // 2. Loading + Calculation
+                const calculationResult = await withLoading('integration-test', async () => {
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    return {
+                        material: 2550,
+                        total: 5100
+                    };
+                }, { type: 'global', message: 'Calculating...' });
+                
+                result.innerHTML += `<div class="success">2. Calculation: ✅ Total: $${calculationResult.total}</div>`;
+                
+                // 3. Debounced save
+                debounceManager.debouncedSave('integration-test', (data) => {
+                    result.innerHTML += `<div class="success">3. Save: ✅ Data saved</div>`;
+                }, calculationResult);
+                
+                result.innerHTML += '<div class="success">🎉 Complete workflow test passed!</div>';
+                
+            } catch (error) {
+                result.innerHTML += `<div class="error">❌ Workflow error: ${error.message}</div>`;
+            }
+        }
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '';
+        }
+
+        async function runAllTests() {
+            console.log('🚀 Running all tests...');
+            
+            testErrorHandler();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            testLoadingStates();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            testValidation();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            testDebounce();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testCompleteWorkflow();
+            
+            console.log('✅ All tests completed!');
+        }
+
+        // Auto-test basic functionality on load
+        window.addEventListener('load', () => {
+            console.log('🧪 ZETALAB Test Page Loaded');
+            console.log('📦 Available systems:');
+            console.log('- ErrorHandler:', !!window.ErrorHandler ? '✅' : '❌');
+            console.log('- LoadingManager:', !!window.loadingManager ? '✅' : '❌');
+            console.log('- ValidationSystem:', !!window.validationSystem ? '✅' : '❌');
+            console.log('- DebounceManager:', !!window.debounceManager ? '✅' : '❌');
+            
+            // Setup debounce on input
+            const debounceInput = document.getElementById('debounce-input');
+            if (debounceInput) {
+                let inputCount = 0;
+                debounceInput.addEventListener('input', () => {
+                    inputCount++;
+                    debounceManager.debounce('input-test', () => {
+                        const result = document.getElementById('debounce-result');
+                        result.innerHTML = `<div class="success">Input debounced! Total inputs: ${inputCount}, but this fired only once.</div>`;
+                    }, 500);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

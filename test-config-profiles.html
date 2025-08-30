@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Config Profiles - ZETALAB</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .error {
+            color: #dc3545;
+            background: #2a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #28a745;
+            background: #1a2a1a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Config Profiles</h1>
+        <p>Esta página prueba la funcionalidad de config_profiles en Supabase</p>
+        
+        <h3>Pasos:</h3>
+        <ol>
+            <li>Ejecutá el SQL en Supabase Dashboard</li>
+            <li>Iniciá sesión con tu usuario</li>
+            <li>Probá las funciones</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <h3>Estado de conexión:</h3>
+        <div id="connection-status">Verificando...</div>
+        
+        <h3>Usuario actual:</h3>
+        <div id="user-status">Verificando...</div>
+    </div>
+
+    <div class="container">
+        <h3>Probar Config Profiles Service:</h3>
+        <button onclick="testCreateProfile()">Crear perfil de prueba</button>
+        <button onclick="testGetProfiles()">Obtener perfiles</button>
+        <button onclick="testUpdateProfile()">Actualizar perfil</button>
+        <button onclick="testDeleteProfile()">Eliminar perfil de prueba</button>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <div class="container">
+        <h3>SQL para ejecutar en Supabase:</h3>
+        <p>Copiá y pegá este SQL en el SQL Editor de Supabase Dashboard:</p>
+        <pre id="sql-script"></pre>
+        <button onclick="copySQLToClipboard()">📋 Copiar SQL</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="error-handler.js"></script>
+    <script src="config-profiles-service.js"></script>
+    <script>
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI2NDI4NDQsImV4cCI6MjA0ODIxODg0NH0.YMqiAhCBJOeVKCTMYZEP-Cz3gWvNuWokkFQBE9Dx0Ak';
+        
+        window.supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let testProfileId = null;
+
+        // Verificar conexión al cargar
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkConnection();
+            await checkUser();
+            loadSQLScript();
+        });
+
+        async function checkConnection() {
+            const statusDiv = document.getElementById('connection-status');
+            try {
+                const { data, error } = await window.supa.from('pieces').select('count').limit(1);
+                if (error && !error.message.includes('relation "public.pieces" does not exist')) {
+                    throw error;
+                }
+                statusDiv.innerHTML = '<span class="success">✅ Conectado a Supabase</span>';
+            } catch (error) {
+                statusDiv.innerHTML = `<span class="error">❌ Error de conexión: ${error.message}</span>`;
+            }
+        }
+
+        async function checkUser() {
+            const userDiv = document.getElementById('user-status');
+            try {
+                const { data: { user }, error } = await window.supa.auth.getUser();
+                if (error) throw error;
+                
+                if (user) {
+                    window.currentUser = user;
+                    userDiv.innerHTML = `<span class="success">✅ Usuario: ${user.email}</span>`;
+                    
+                    // Inicializar ConfigProfilesService
+                    if (window.configProfilesService) {
+                        await window.configProfilesService.initialize();
+                    }
+                } else {
+                    userDiv.innerHTML = '<span class="error">❌ No hay usuario autenticado. <a href="index.html">Iniciar sesión</a></span>';
+                }
+            } catch (error) {
+                userDiv.innerHTML = `<span class="error">❌ Error obteniendo usuario: ${error.message}</span>`;
+            }
+        }
+
+        async function testCreateProfile() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                const testData = {
+                    name: 'Perfil de Prueba - ' + new Date().toLocaleTimeString(),
+                    config_data: {
+                        material_kg: 1.5,
+                        energia_kwh: 0.08,
+                        desgaste: 50,
+                        repuestos: 30,
+                        multiplicador: 2.0,
+                        ml_comision: 12
+                    }
+                };
+
+                const profile = await window.configProfilesService.createProfile(testData);
+                testProfileId = profile.id;
+                
+                resultsDiv.innerHTML = `<div class="success">✅ Perfil creado: ${JSON.stringify(profile, null, 2)}</div>`;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error creando perfil: ${error.message}</div>`;
+            }
+        }
+
+        async function testGetProfiles() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                const profiles = await window.configProfilesService.getProfiles();
+                resultsDiv.innerHTML = `<div class="success">✅ Perfiles obtenidos (${profiles.length}):<pre>${JSON.stringify(profiles, null, 2)}</pre></div>`;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error obteniendo perfiles: ${error.message}</div>`;
+            }
+        }
+
+        async function testUpdateProfile() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            if (!testProfileId) {
+                resultsDiv.innerHTML = '<div class="error">❌ Primero creá un perfil de prueba</div>';
+                return;
+            }
+
+            try {
+                const updates = {
+                    name: 'Perfil Actualizado - ' + new Date().toLocaleTimeString(),
+                    is_default: true
+                };
+
+                const profile = await window.configProfilesService.updateProfile(testProfileId, updates);
+                resultsDiv.innerHTML = `<div class="success">✅ Perfil actualizado:<pre>${JSON.stringify(profile, null, 2)}</pre></div>`;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error actualizando perfil: ${error.message}</div>`;
+            }
+        }
+
+        async function testDeleteProfile() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            if (!testProfileId) {
+                resultsDiv.innerHTML = '<div class="error">❌ Primero creá un perfil de prueba</div>';
+                return;
+            }
+
+            try {
+                await window.configProfilesService.deleteProfile(testProfileId);
+                resultsDiv.innerHTML = `<div class="success">✅ Perfil eliminado correctamente</div>`;
+                testProfileId = null;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error eliminando perfil: ${error.message}</div>`;
+            }
+        }
+
+        async function loadSQLScript() {
+            try {
+                const response = await fetch('create-config-profiles-table.sql');
+                const sqlContent = await response.text();
+                document.getElementById('sql-script').textContent = sqlContent;
+            } catch (error) {
+                document.getElementById('sql-script').textContent = 'Error cargando el script SQL: ' + error.message;
+            }
+        }
+
+        async function copySQLToClipboard() {
+            const sqlContent = document.getElementById('sql-script').textContent;
+            try {
+                await navigator.clipboard.writeText(sqlContent);
+                alert('✅ SQL copiado al clipboard');
+            } catch (error) {
+                alert('❌ Error copiando al clipboard: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

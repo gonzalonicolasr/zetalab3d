@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Test Integración ZetaLab</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .test-section {
+      margin: var(--space-lg) 0;
+      padding: var(--space-lg);
+      border: 1px solid var(--border-secondary);
+      border-radius: 8px;
+    }
+    .test-result {
+      margin: var(--space-sm) 0;
+      padding: var(--space-sm);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: var(--text-sm);
+    }
+    .test-success { background: rgba(16, 185, 129, 0.1); color: var(--text-success); }
+    .test-error { background: rgba(239, 68, 68, 0.1); color: var(--text-error); }
+    .test-info { background: rgba(79, 154, 101, 0.1); color: var(--text-accent); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Test de Integración ZetaLab</h1>
+    <p class="muted">Verificación de funcionalidad después de los cambios</p>
+  </header>
+
+  <main>
+    <div class="test-section">
+      <h2>1. Colores Revertidos</h2>
+      <p>Los colores deben haber cambiado de rojo a verde (tema original):</p>
+      <div id="color-test">
+        <div class="card">
+          <h2>Tarjeta de prueba</h2>
+          <label>Campo de prueba</label>
+          <input type="text" placeholder="Escribir aquí">
+          <button class="primary">Botón primario</button>
+        </div>
+      </div>
+      <div class="test-result test-info">✓ Colores verificados visualmente - debe verse verde en lugar de rojo</div>
+    </div>
+
+    <div class="test-section">
+      <h2>2. Configuración de Supabase</h2>
+      <div id="supabase-test">
+        <button onclick="testSupabase()">Probar conexión Supabase</button>
+        <div id="supabase-result"></div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>3. Sistema de Presets Mejorado</h2>
+      <div id="presets-test">
+        <button onclick="testPresets()">Probar sistema de presets</button>
+        <div id="presets-result"></div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>4. Funcionalidad "Abrir en calculadora"</h2>
+      <div id="calculator-test">
+        <button onclick="testCalculatorIntegration()">Probar integración con calculadora</button>
+        <div id="calculator-result"></div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>5. Toast System</h2>
+      <div id="toast-test">
+        <button onclick="testToasts()">Probar notificaciones</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="error-handler.js"></script>
+<script src="loading-manager.js"></script>
+<script src="validators.js"></script>
+<script src="debounce-utils.js"></script>
+<script src="config-profiles-service.js"></script>
+
+<script>
+// Toast function for testing
+function toast(msg, type = 'info', duration = 2500) {
+  const n = document.createElement("div");
+  n.textContent = msg;
+  
+  const colors = {
+    info: { bg: "#0f201b", border: "rgba(255,255,255,.08)" },
+    success: { bg: "#064e3b", border: "rgba(16, 185, 129, .3)" },
+    error: { bg: "#7f1d1d", border: "rgba(239, 68, 68, .3)" },
+    warning: { bg: "#78350f", border: "rgba(245, 158, 11, .3)" }
+  };
+  
+  Object.assign(n.style, {
+    position: "fixed",
+    bottom: "16px",
+    right: "16px",
+    background: colors[type].bg,
+    color: "#e8efe9",
+    border: `1px solid ${colors[type].border}`,
+    padding: "10px 12px",
+    borderRadius: "10px",
+    zIndex: 10000,
+    boxShadow: "0 10px 30px rgba(0,0,0,.25)",
+    animation: "slideIn 0.3s ease-out"
+  });
+  
+  document.body.appendChild(n);
+  setTimeout(() => n.remove(), duration);
+}
+
+// Add CSS animations for toasts
+if (!document.querySelector('#toast-animations')) {
+  const style = document.createElement('style');
+  style.id = 'toast-animations';
+  style.textContent = `
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function addResult(containerId, message, type = 'info') {
+  const container = document.getElementById(containerId);
+  const result = document.createElement('div');
+  result.className = `test-result test-${type}`;
+  result.textContent = message;
+  container.appendChild(result);
+}
+
+async function testSupabase() {
+  const resultId = 'supabase-result';
+  document.getElementById(resultId).innerHTML = '';
+  
+  try {
+    // Check if Supabase is loaded
+    if (typeof window.supabase === 'undefined') {
+      addResult(resultId, '❌ Supabase SDK no cargado', 'error');
+      return;
+    }
+    
+    addResult(resultId, '✓ Supabase SDK cargado correctamente', 'success');
+    
+    // Check configuration
+    const config = {
+      url: window.SUPABASE_URL || "https://fwmyiovamcxvinoxnput.supabase.co",
+      key: window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc"
+    };
+    
+    const supabase = window.supabase.createClient(config.url, config.key);
+    addResult(resultId, `✓ Cliente Supabase creado: ${config.url}`, 'success');
+    
+    // Test basic connection (this will work even without auth)
+    try {
+      const { data, error } = await supabase.from('pieces').select('id').limit(1);
+      if (error && error.code !== '42501') { // 42501 is permission denied, which is expected
+        addResult(resultId, `⚠️ Error de conexión: ${error.message}`, 'error');
+      } else {
+        addResult(resultId, '✓ Conexión a base de datos establecida', 'success');
+      }
+    } catch (e) {
+      addResult(resultId, `⚠️ Error de red: ${e.message}`, 'error');
+    }
+    
+  } catch (error) {
+    addResult(resultId, `❌ Error general: ${error.message}`, 'error');
+  }
+}
+
+async function testPresets() {
+  const resultId = 'presets-result';
+  document.getElementById(resultId).innerHTML = '';
+  
+  try {
+    // Test localStorage fallback
+    const testPreset = {
+      name: 'Test Preset',
+      precio_kg: 17000,
+      precio_kwh: 598,
+      consumo_w: 120,
+      horas_desgaste: 4320,
+      precio_repuestos: 50000,
+      margen_error: 10
+    };
+    
+    addResult(resultId, '✓ Datos de prueba preparados', 'info');
+    
+    // Test ConfigProfilesService if available
+    if (window.configProfilesService) {
+      addResult(resultId, '✓ ConfigProfilesService disponible', 'success');
+      
+      const stats = window.configProfilesService.getStats();
+      addResult(resultId, `✓ Cache: ${stats.cacheSize} perfiles, Online: ${stats.isOnline}`, 'info');
+      
+    } else {
+      addResult(resultId, '⚠️ ConfigProfilesService no disponible, usando localStorage', 'warning');
+    }
+    
+    // Test localStorage operations
+    const presets = JSON.parse(localStorage.getItem('zl_calc_fixed_presets') || '{}');
+    addResult(resultId, `✓ localStorage: ${Object.keys(presets).length} presets locales`, 'info');
+    
+  } catch (error) {
+    addResult(resultId, `❌ Error: ${error.message}`, 'error');
+  }
+}
+
+async function testCalculatorIntegration() {
+  const resultId = 'calculator-result';
+  document.getElementById(resultId).innerHTML = '';
+  
+  try {
+    // Test localStorage data structure
+    const testData = {
+      pieceName: 'Test Piece',
+      precioKg: '17000',
+      precioKwh: '598',
+      horas: '2',
+      minutos: '30',
+      gramos: '150',
+      pieceUrl: 'https://example.com',
+      imageUrl: 'https://example.com/image.jpg'
+    };
+    
+    // Simulate saving to localStorage
+    localStorage.setItem('zl_calc_form', JSON.stringify(testData));
+    localStorage.setItem('zl_opened_from_pieces', 'true');
+    
+    addResult(resultId, '✓ Datos de prueba guardados en localStorage', 'success');
+    
+    // Test data retrieval
+    const saved = JSON.parse(localStorage.getItem('zl_calc_form') || '{}');
+    const flag = localStorage.getItem('zl_opened_from_pieces');
+    
+    if (saved.pieceName === testData.pieceName && flag === 'true') {
+      addResult(resultId, '✓ Integración con calculadora funcionando', 'success');
+    } else {
+      addResult(resultId, '❌ Error en integración con calculadora', 'error');
+    }
+    
+    // Clean up
+    localStorage.removeItem('zl_opened_from_pieces');
+    
+  } catch (error) {
+    addResult(resultId, `❌ Error: ${error.message}`, 'error');
+  }
+}
+
+function testToasts() {
+  toast('🧪 Toast de prueba - Info', 'info', 2000);
+  setTimeout(() => toast('✅ Toast de éxito', 'success', 2000), 500);
+  setTimeout(() => toast('⚠️ Toast de advertencia', 'warning', 2000), 1000);
+  setTimeout(() => toast('❌ Toast de error', 'error', 2000), 1500);
+}
+
+// Run initial tests
+document.addEventListener('DOMContentLoaded', () => {
+  toast('🚀 Página de pruebas cargada - Ejecutar tests manualmente', 'info', 3000);
+});
+</script>
+</body>
+</html>

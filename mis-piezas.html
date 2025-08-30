@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mis piezas guardadas • ZetaLab</title>
+
+  <link rel="icon" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="container">
+  <header class="row" style="align-items:center; justify-content:space-between; gap:8px;">
+    <h1 style="margin:0; font-size:22px">Mis piezas guardadas</h1>
+    <a href="calculadora.html" class="pill" style="text-decoration:none">Volver a la calculadora</a>
+  </header>
+
+  <main id="list" class="row" style="margin-top:12px; gap:16px; flex-direction:column"></main>
+
+  <div id="empty" class="card" style="display:none">
+    <p class="muted">Aún no guardaste piezas. Calculá un precio y usá el botón <strong>Guardar pieza</strong>.</p>
+  </div>
+</div>
+
+<!-- Sistemas de mejoras -->
+<script src="error-handler.js"></script>
+<script src="loading-manager.js"></script>
+<script src="validators.js"></script>
+<script src="debounce-utils.js"></script>
+
+<!-- UI Animations Enhancement -->
+<script src="ui-animations.js"></script>
+
+<!-- Guard de sesión (inyecta window.supa y window.currentUser) -->
+<script type="module" src="auth.js"></script>
+<!-- Lógica de listado/edición -->
+<script type="module" src="mis-piezas.js"></script>
+</body>
+</html>
