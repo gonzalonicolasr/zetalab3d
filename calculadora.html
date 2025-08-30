@@ -395,15 +395,9 @@
         statusEl.className = `pill ${statusClass}`;
         textEl.textContent = statusText;
         
-        // Mostrar botón de upgrade si no es premium
-        if (subscription.plan_type !== 'premium') {
-          setTimeout(() => {
-            showUpgradeButtonInHeader();
-          }, 1500);
-        } else {
-          // Ocultar botón si es premium
-          hideUpgradeButtonInHeader();
-        }
+        // Ocultar botón de upgrade para usuarios con suscripción activa
+        // Solo se muestra para usuarios sin suscripción
+        hideUpgradeButtonInHeader();
       } else {
         statusEl.style.display = 'flex';
         statusEl.style.background = '#d97706';
