@@ -116,8 +116,12 @@ const ensureSupabase = async () => {
     
     if (subscription && subscription.plan_type && subscription.plan_type !== 'premium') {
       // Si tiene trial o monthly, mostrar botón de upgrade
+      // NOTA: La función showUpgradeButton fue eliminada y ahora se maneja desde calculadora.html
       setTimeout(() => {
-        window.subscriptionService?.showUpgradeButton();
+        // Intentar llamar función de calculadora.html si existe
+        if (typeof window.showUpgradeButtonInHeader === 'function') {
+          window.showUpgradeButtonInHeader();
+        }
       }, 1000);
     }
 
