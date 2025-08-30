@@ -121,13 +121,32 @@ class SubscriptionService {
     }
   }
 
-  // Mostrar modal de suscripción
-  showSubscriptionModal() {
-    const modal = this.createSubscriptionModal();
-    document.body.appendChild(modal);
-    
-    // Animación de entrada
-    setTimeout(() => modal.classList.add('show'), 10);
+  // Mostrar modal de suscripción (verificar estado primero)
+  async showSubscriptionModal() {
+    if (!window.currentUser) {
+      alert('Debes estar autenticado para ver suscripciones');
+      return;
+    }
+
+    try {
+      // Verificar si el usuario tiene suscripción activa
+      const hasActive = await this.hasActiveSubscription(window.currentUser.id);
+      
+      if (hasActive) {
+        // Usuario con suscripción activa - mostrar gestión
+        this.showSubscriptionManagement();
+      } else {
+        // Usuario sin suscripción - mostrar modal de pago
+        const modal = this.createSubscriptionModal();
+        document.body.appendChild(modal);
+        
+        // Animación de entrada
+        setTimeout(() => modal.classList.add('show'), 10);
+      }
+    } catch (error) {
+      console.error('Error verificando suscripción:', error);
+      alert('Error al verificar tu suscripción. Por favor intenta nuevamente.');
+    }
   }
 
   // Crear modal de suscripción - Solo plan mensual
