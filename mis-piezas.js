@@ -1,39 +1,102 @@
 // mis-piezas.js (ESM)
-// ACCESS CONTROL: Verificar acceso a página completa
-if (typeof window !== 'undefined' && !window.checkFeatureAccess?.('piece-management')) {
-  // Mostrar overlay de acceso premium para toda la página
-  document.addEventListener('DOMContentLoaded', () => {
-    if (window.accessControl) {
-      window.accessControl.addPremiumOverlay(document.body, 'piece-management', {
-        title: 'Gestión de Piezas Premium',
-        description: 'Administra todas tus piezas guardadas con historial de versiones y funciones avanzadas',
-        upgradeAction: () => window.accessControl.showUpgradePrompt('piece-management')
-      });
-    } else {
-      // Fallback si no está disponible el sistema
-      const overlay = document.createElement('div');
-      overlay.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(0,0,0,0.9); z-index: 10000; display: flex; 
-        align-items: center; justify-content: center; color: white; text-align: center;
-      `;
-      overlay.innerHTML = `
-        <div>
-          <h2>⭐ Función Premium</h2>
-          <p>La gestión de piezas requiere suscripción Premium</p>
-          <button onclick="window.location.href='calculadora.html'" style="
-            background: #4f9a65; color: white; border: none; padding: 12px 24px; 
-            border-radius: 8px; cursor: pointer; font-weight: 600;
-          ">Volver a Calculadora</button>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-    }
-  });
+// SIMPLE ACCESS CONTROL: Verificar acceso a gestión de piezas
+document.addEventListener('DOMContentLoaded', async () => {
+  // Esperar a que el usuario esté cargado
+  if (!window.currentUser) {
+    setTimeout(() => {
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+    }, 100);
+    return;
+  }
   
-  // No continuar cargando el resto del script
-  throw new Error('Access denied - Premium required');
-}
+  // Verificar suscripción premium de forma simple
+  let hasAccess = false;
+  try {
+    if (window.subscriptionService) {
+      hasAccess = await window.subscriptionService.hasActiveSubscription(window.currentUser.id);
+    }
+  } catch (error) {
+    console.error('Error verificando acceso:', error);
+  }
+  
+  if (!hasAccess) {
+    // Mostrar mensaje simple y claro de premium requerido
+    document.body.innerHTML = `
+      <div class="container" style="max-width: 600px; margin: 50px auto; text-align: center;">
+        <div class="card" style="padding: 40px;">
+          <h1 style="color: #FFD700; margin-bottom: 20px;">⭐ Acceso Premium Requerido</h1>
+          
+          <div style="margin: 30px 0;">
+            <h2 style="color: var(--text-primary); margin-bottom: 15px;">📁 Gestión de Piezas</h2>
+            <p style="color: var(--text-secondary); font-size: 16px; line-height: 1.5;">
+              Para acceder a tus piezas guardadas y gestionar tu historial de versiones, 
+              necesitas una suscripción Premium activa.
+            </p>
+          </div>
+          
+          <div style="background: var(--bg-tertiary); border-radius: 12px; padding: 20px; margin: 30px 0;">
+            <h3 style="color: var(--text-primary); margin-bottom: 15px;">🚀 Con Premium obtienes:</h3>
+            <ul style="list-style: none; padding: 0; text-align: left; max-width: 400px; margin: 0 auto;">
+              <li style="padding: 5px 0; color: var(--text-primary);">✅ Guardado ilimitado de piezas</li>
+              <li style="padding: 5px 0; color: var(--text-primary);">✅ Historial completo de versiones</li>
+              <li style="padding: 5px 0; color: var(--text-primary);">✅ Exportación de presupuestos HTML</li>
+              <li style="padding: 5px 0; color: var(--text-primary);">✅ Perfiles de gastos fijos</li>
+              <li style="padding: 5px 0; color: var(--text-primary);">✅ Autocompletado desde URLs</li>
+            </ul>
+          </div>
+          
+          <div style="margin-top: 30px;">
+            <button onclick="getSubscriptionAccess()" style="
+              background: linear-gradient(135deg, #4f9a65, #5a9d6b); 
+              color: white; 
+              border: none; 
+              padding: 16px 32px; 
+              border-radius: 12px; 
+              font-size: 18px; 
+              font-weight: 600; 
+              cursor: pointer; 
+              margin: 10px;
+              transition: all 0.3s ease;
+              box-shadow: 0 4px 15px rgba(79, 154, 101, 0.3);
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(79, 154, 101, 0.4)'" 
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(79, 154, 101, 0.3)'">
+              💳 Obtener Acceso Premium ($5.000/mes)
+            </button>
+            
+            <br>
+            
+            <button onclick="window.location.href='calculadora.html'" style="
+              background: var(--bg-tertiary); 
+              color: var(--text-primary); 
+              border: 1px solid var(--border-primary); 
+              padding: 12px 24px; 
+              border-radius: 8px; 
+              font-size: 14px; 
+              cursor: pointer; 
+              margin: 10px;
+              transition: all 0.2s ease;
+            " onmouseover="this.style.background='var(--bg-hover)'" 
+               onmouseout="this.style.background='var(--bg-tertiary)'">
+              ← Volver a la Calculadora
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <script>
+        // Función para obtener acceso premium
+        function getSubscriptionAccess() {
+          if (window.subscriptionService) {
+            window.subscriptionService.showSubscriptionModal();
+          } else {
+            alert('Sistema de suscripciones no disponible. Por favor recarga la página.');
+          }
+        }
+      </script>
+    `;
+    return; // No continuar con el resto del script
+  }
+});
 
 // PERFORMANCE: Evitar redefinición de funciones duplicadas
 const $ = (sel, root=document) => root.querySelector(sel);

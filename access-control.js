@@ -68,10 +68,28 @@ class AccessControlService {
   // Actualizar estado de suscripción
   async updateSubscriptionStatus() {
     try {
-      if (!window.subscriptionService || !window.currentUser) return;
+      if (!window.subscriptionService) {
+        console.warn('⚠️ SubscriptionService no disponible');
+        this.subscriptionStatus = { isActive: false, subscription: null, planType: 'free' };
+        return;
+      }
+      
+      if (!window.currentUser) {
+        console.warn('⚠️ Usuario no autenticado');
+        this.subscriptionStatus = { isActive: false, subscription: null, planType: 'free' };
+        return;
+      }
+      
+      console.log('🔍 Verificando suscripción para usuario:', window.currentUser.id);
       
       const hasActive = await window.subscriptionService.hasActiveSubscription(window.currentUser.id);
       const subscription = await window.subscriptionService.getCurrentSubscription(window.currentUser.id);
+      
+      console.log('📊 Resultados de verificación:', {
+        hasActive,
+        subscription,
+        planType: subscription?.plan_type
+      });
       
       this.subscriptionStatus = {
         isActive: hasActive,
@@ -79,7 +97,7 @@ class AccessControlService {
         planType: subscription?.plan_type || 'free'
       };
       
-      console.log('📊 Estado de suscripción actualizado:', this.subscriptionStatus);
+      console.log('✅ Estado de suscripción actualizado:', this.subscriptionStatus);
       
     } catch (error) {
       console.error('❌ Error obteniendo estado de suscripción:', error);
@@ -89,7 +107,14 @@ class AccessControlService {
 
   // Verificar si el usuario tiene suscripción activa
   hasActiveSubscription() {
-    return this.subscriptionStatus?.isActive === true;
+    const isActive = this.subscriptionStatus?.isActive === true;
+    console.log('🔍 Verificando suscripción activa:', {
+      subscriptionStatus: this.subscriptionStatus,
+      isActive: isActive,
+      planType: this.subscriptionStatus?.planType,
+      subscription: this.subscriptionStatus?.subscription
+    });
+    return isActive;
   }
 
   // Verificar si una característica específica está disponible
@@ -303,68 +328,110 @@ class AccessControlService {
     });
   }
 
-  // Mostrar prompt de upgrade específico por característica
+  // Mostrar prompt simple para funciones premium
   showUpgradePrompt(featureId) {
     const featureInfo = this.getFeatureInfo(featureId);
     
+    // Modal simple y directo
     const modal = document.createElement('div');
-    modal.className = 'access-control-modal premium-prompt';
+    modal.className = 'simple-premium-popup';
     modal.innerHTML = `
-      <div class="modal-overlay"></div>
-      <div class="modal-content">
-        <div class="premium-prompt-header">
-          <h2>⭐ Función Premium Requerida</h2>
-          <button class="modal-close">✕</button>
+      <div class="popup-overlay"></div>
+      <div class="popup-content">
+        <div class="popup-header">
+          <h2>⭐ Premium Requerido</h2>
+          <button class="popup-close">✕</button>
         </div>
         
-        <div class="premium-prompt-body">
-          <div class="feature-highlight">
+        <div class="popup-body">
+          <div class="feature-info">
             <div class="feature-icon">${featureInfo.icon}</div>
             <h3>${featureInfo.title}</h3>
             <p>${featureInfo.description}</p>
           </div>
           
-          <div class="premium-benefits">
-            <h4>🚀 Con Premium obtienes:</h4>
-            <ul>
-              <li>✅ ${featureInfo.title}</li>
-              <li>✅ Todas las funciones avanzadas</li>
-              <li>✅ Guardado ilimitado de piezas</li>
-              <li>✅ Exportación de presupuestos</li>
-              <li>✅ Historial de versiones</li>
-              <li>✅ Soporte técnico prioritario</li>
-            </ul>
+          <div class="premium-price">
+            <span class="price">$5.000 ARS/mes</span>
+            <span class="price-note">Acceso completo premium</span>
           </div>
           
-          <div class="pricing-info">
-            <div class="price-tag">
-              <span class="price">$5.000 ARS</span>
-              <span class="period">/mes</span>
-            </div>
-            <p class="price-description">Acceso completo a todas las funciones premium</p>
-          </div>
-          
-          <div class="prompt-actions">
-            <button class="btn-upgrade-now">
-              💳 Suscribirme Ahora
+          <div class="popup-actions">
+            <button class="btn-get-premium">
+              💳 Obtener Premium
             </button>
-            <button class="btn-maybe-later">
-              Quizás después
+            <button class="btn-cancel">
+              Cancelar
             </button>
           </div>
         </div>
       </div>
     `;
     
-    // Event handlers
+    // Estilos simples
+    const style = document.createElement('style');
+    style.textContent = `
+      .simple-premium-popup {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;
+        opacity: 0; transition: opacity 0.2s ease;
+      }
+      .simple-premium-popup.show { opacity: 1; }
+      .popup-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px);
+      }
+      .popup-content {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: var(--bg-secondary); border: 1px solid var(--border-primary);
+        border-radius: 16px; padding: 24px; max-width: 400px; width: 90%;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      }
+      .popup-header {
+        display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+      }
+      .popup-header h2 { margin: 0; color: #FFD700; font-size: 1.4em; }
+      .popup-close {
+        background: none; border: none; font-size: 20px; color: var(--text-secondary);
+        cursor: pointer; padding: 4px; border-radius: 4px;
+      }
+      .popup-close:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+      .popup-body { text-align: center; }
+      .feature-info { margin-bottom: 20px; }
+      .feature-icon { font-size: 2em; margin-bottom: 8px; }
+      .feature-info h3 { margin: 0 0 8px; color: var(--text-primary); }
+      .feature-info p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+      .premium-price { margin: 20px 0; }
+      .premium-price .price {
+        display: block; font-size: 1.8em; font-weight: 700; color: var(--terminal-green);
+        margin-bottom: 4px;
+      }
+      .premium-price .price-note {
+        font-size: 12px; color: var(--text-secondary);
+      }
+      .popup-actions { display: flex; gap: 12px; margin-top: 20px; }
+      .btn-get-premium {
+        flex: 1; padding: 14px; background: linear-gradient(135deg, var(--terminal-green), #5a9d6b);
+        color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-get-premium:hover { transform: scale(1.02); }
+      .btn-cancel {
+        flex: 1; padding: 14px; background: var(--bg-tertiary); color: var(--text-primary);
+        border: 1px solid var(--border-primary); border-radius: 8px; cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-cancel:hover { background: var(--bg-hover); }
+    `;
+    document.head.appendChild(style);
+    
+    // Event handlers - simple y directo
     modal.addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal-overlay') || 
-          e.target.classList.contains('modal-close') ||
-          e.target.classList.contains('btn-maybe-later')) {
+      if (e.target.classList.contains('popup-overlay') || 
+          e.target.classList.contains('popup-close') ||
+          e.target.classList.contains('btn-cancel')) {
         modal.remove();
       }
       
-      if (e.target.classList.contains('btn-upgrade-now')) {
+      if (e.target.classList.contains('btn-get-premium')) {
         modal.remove();
         // Abrir modal de suscripción
         if (window.subscriptionService) {
@@ -421,32 +488,32 @@ class AccessControlService {
 
   // Aplicar indicadores visuales
   applyVisualIndicators() {
-    if (!this.hasActiveSubscription()) {
-      // Añadir indicador de upgrade en header
-      this.addUpgradeIndicator();
-    }
+    // CAMBIO: No mostrar botón "Upgrade a Premium" - solo usar "Suscripciones"
+    console.log('✅ Sistema simplificado - solo botón Suscripciones, sin Upgrade a Premium');
+    
+    // Siempre remover cualquier botón de upgrade que pueda existir
+    this.removeUpgradeIndicator();
     
     // Aplicar estilos CSS
     this.injectAccessControlStyles();
   }
 
-  // Añadir indicador de upgrade
+  // Añadir indicador de upgrade - REMOVIDO
+  // El botón "Upgrade a Premium" ha sido eliminado según solicitud del usuario
+  // Solo queda el botón "Suscripciones" en el header
   addUpgradeIndicator() {
-    const header = document.querySelector('.header-actions');
-    if (!header || header.querySelector('.upgrade-indicator')) return;
-    
-    const indicator = document.createElement('div');
-    indicator.className = 'upgrade-indicator pill';
-    indicator.innerHTML = `
-      <span class="upgrade-icon">⭐</span>
-      <span class="upgrade-text">Upgrade a Premium</span>
-    `;
-    
-    indicator.addEventListener('click', () => {
-      this.showUpgradePrompt('general');
-    });
-    
-    header.insertBefore(indicator, header.firstChild);
+    // Función deshabilitada - no mostrar botón "Upgrade a Premium"
+    console.log('addUpgradeIndicator() deshabilitado - solo usar botón Suscripciones');
+    return;
+  }
+
+  // Remover indicador de upgrade
+  removeUpgradeIndicator() {
+    const upgradeIndicator = document.querySelector('.upgrade-indicator');
+    if (upgradeIndicator) {
+      upgradeIndicator.remove();
+      console.log('🗑️ Botón de upgrade removido');
+    }
   }
 
   // Configurar observer para elementos dinámicos
@@ -816,8 +883,7 @@ class AccessControlService {
     this.overlays.clear();
     
     // Remover indicador de upgrade
-    const upgradeIndicator = document.querySelector('.upgrade-indicator');
-    if (upgradeIndicator) upgradeIndicator.remove();
+    this.removeUpgradeIndicator();
     
     // Desconectar observer
     if (this.domObserver) {
@@ -827,11 +893,15 @@ class AccessControlService {
 
   // Refresh - reaplica controles después de cambios de suscripción
   async refresh() {
+    console.log('🔄 Refrescando Access Control...');
     this.cleanup();
     await this.updateSubscriptionStatus();
     this.applyAccessControls();
     
-    console.log('🔄 Access Control actualizado');
+    // Forzar actualización de indicadores visuales
+    this.applyVisualIndicators();
+    
+    console.log('✅ Access Control actualizado completamente');
   }
 }
 

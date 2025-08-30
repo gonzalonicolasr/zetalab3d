@@ -338,14 +338,71 @@
     // Inicializar sistema de suscripciones cuando el usuario esté listo
     if (window.currentUser) {
       await initializeSubscriptionSystem();
-      await initializeAccessControl();
+      // Agregar un pequeño delay antes de inicializar access control para asegurar que el subscription status esté actualizado
+      setTimeout(async () => {
+        await initializeAccessControl();
+      }, 500);
     } else {
       // Esperar a que se cargue el usuario
       window.addEventListener('userReady', async () => {
         await initializeSubscriptionSystem();
-        await initializeAccessControl();
+        // Agregar delay aquí también
+        setTimeout(async () => {
+          await initializeAccessControl();
+        }, 500);
       });
     }
+    
+    // Función global para forzar actualización de suscripción (debugging)
+    window.forceRefreshSubscription = async () => {
+      console.log('🔄 Forzando actualización de suscripción...');
+      if (window.currentUser) {
+        await initializeSubscriptionSystem();
+        if (window.accessControl) {
+          await window.accessControl.refresh();
+        }
+        console.log('✅ Actualización forzada completada');
+      } else {
+        console.log('❌ Usuario no autenticado');
+      }
+    };
+
+    // Función para debugging completo del estado de suscripción
+    window.debugSubscriptionStatus = async () => {
+      console.log('🔍 === DEBUG: ESTADO DE SUSCRIPCIÓN ===');
+      console.log('👤 Usuario actual:', window.currentUser);
+      
+      if (!window.currentUser) {
+        console.log('❌ No hay usuario autenticado');
+        return;
+      }
+      
+      if (window.subscriptionService) {
+        console.log('📡 Verificando suscripción...');
+        const hasActive = await window.subscriptionService.hasActiveSubscription(window.currentUser.id);
+        const subscription = await window.subscriptionService.getCurrentSubscription(window.currentUser.id);
+        
+        console.log('📊 Resultados:');
+        console.log('  - ¿Tiene activa?:', hasActive);
+        console.log('  - Suscripción:', subscription);
+      } else {
+        console.log('❌ SubscriptionService no disponible');
+      }
+      
+      if (window.accessControl) {
+        console.log('🔐 Estado Access Control:');
+        console.log('  - ¿Inicializado?:', window.accessControl.isInitialized);
+        console.log('  - Status:', window.accessControl.subscriptionStatus);
+        console.log('  - ¿Tiene acceso activo?:', window.accessControl.hasActiveSubscription());
+      } else {
+        console.log('❌ AccessControl no disponible');
+      }
+      
+      const upgradeButton = document.querySelector('.upgrade-indicator');
+      console.log('🔘 Botón de upgrade presente:', !!upgradeButton);
+      
+      console.log('🔍 === FIN DEBUG ===');
+    };
   });
 
   // Función para inicializar el sistema de suscripciones
@@ -448,12 +505,22 @@
 
     try {
       console.log('🔐 Inicializando sistema de control de acceso...');
+      
+      // Asegurar que la suscripción esté verificada antes de inicializar controles
+      if (window.subscriptionService && window.currentUser) {
+        console.log('🔍 Verificando suscripción antes de inicializar controles...');
+        const hasActive = await window.subscriptionService.hasActiveSubscription(window.currentUser.id);
+        console.log('📊 Estado de suscripción verificado:', hasActive);
+      }
+      
       await window.accessControl.initialize();
       
       // Escuchar cambios de suscripción para actualizar controles
       window.addEventListener('subscriptionChanged', () => {
         console.log('📡 Suscripción cambió, actualizando controles de acceso...');
-        window.accessControl.refresh();
+        setTimeout(() => {
+          window.accessControl.refresh();
+        }, 1000); // Pequeño delay para asegurar que los datos estén actualizados
       });
       
       console.log('✅ Sistema de control de acceso inicializado correctamente');

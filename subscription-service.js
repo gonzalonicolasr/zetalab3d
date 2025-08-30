@@ -27,11 +27,11 @@ class SubscriptionService {
       console.log('🔍 Buscando suscripción para usuario:', userId);
 
       // Consultar directamente a Supabase para la suscripción más reciente
-      const { data: subscription, error } = await window.supa
+      // Buscar cualquier suscripción activa (verificaremos status después)
+      let { data: subscription, error } = await window.supa
         .from('subscriptions')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', true) // status = TRUE indica suscripción activa
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -41,7 +41,7 @@ class SubscriptionService {
         return null;
       }
 
-      console.log('📊 Suscripción encontrada:', subscription);
+      console.log('📊 Suscripción más reciente encontrada:', subscription);
 
       return subscription;
     } catch (error) {
@@ -64,13 +64,20 @@ class SubscriptionService {
       const now = new Date();
       const expiresAt = new Date(subscription.expires_at);
       
+      // Verificar tanto 'status' como 'active' por compatibilidad
+      const isStatusActive = subscription.status === true || subscription.active === true;
+      const isNotExpired = expiresAt > now;
+      
       console.log('⏰ Verificando tiempos:');
       console.log('  - Ahora:', now.toISOString());
       console.log('  - Expira:', expiresAt.toISOString());
-      console.log('  - Status:', subscription.status);
-      console.log('  - ¿Activa?:', subscription.status === true && expiresAt > now);
+      console.log('  - Status field:', subscription.status);
+      console.log('  - Active field:', subscription.active);
+      console.log('  - ¿Status activo?:', isStatusActive);
+      console.log('  - ¿No expirado?:', isNotExpired);
+      console.log('  - ¿Activa final?:', isStatusActive && isNotExpired);
       
-      return subscription.status === true && expiresAt > now;
+      return isStatusActive && isNotExpired;
     } catch (error) {
       console.error('❌ Error verificando suscripción activa:', error);
       return false;
