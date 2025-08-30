@@ -134,7 +134,7 @@ class SubscriptionService {
       
       if (hasActive) {
         // Usuario con suscripción activa - mostrar gestión
-        this.showSubscriptionManagement();
+        await this.showSubscriptionManagement();
       } else {
         // Usuario sin suscripción - mostrar modal de pago
         const modal = this.createSubscriptionModal();
