@@ -398,6 +398,11 @@
         // Ocultar botón de upgrade para usuarios con suscripción activa
         // Solo se muestra para usuarios sin suscripción
         hideUpgradeButtonInHeader();
+        
+        // Asegurar que se oculte después de un momento
+        setTimeout(() => {
+          hideUpgradeButtonInHeader();
+        }, 100);
       } else {
         statusEl.style.display = 'flex';
         statusEl.style.background = '#d97706';
@@ -539,7 +544,7 @@
       subscribeBtn.disabled = true;
 
       // Detectar URL del backend - Testing local
-      const backendUrl = 'https://zetalabbackend-production.up.railway.app';
+      const backendUrl = 'http://localhost:5000';
 
       // Llamar al backend simplificado
       const response = await fetch(`${backendUrl}/create-payment`, {
@@ -729,6 +734,16 @@
       // Limpiar URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+  });
+  
+  // Asegurar que el botón de upgrade esté oculto para usuarios suscritos
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+      // Si hay una suscripción activa, ocultar el botón
+      if (document.querySelector('#subscriptionStatus .pill:not([style*="display: none"])')) {
+        hideUpgradeButtonInHeader();
+      }
+    }, 2000);
   });
 </script>
 </body>
