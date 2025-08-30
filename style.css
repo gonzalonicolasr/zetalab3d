@@ -615,70 +615,7 @@ button[data-ml]:hover {
   transform: translateY(-1px) scale(1.05);
 }
 
-/* Upgrade Premium Button - Header specific styles */
-.upgrade-premium-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white !important;
-  border: 1px solid #8b5cf6;
-  cursor: pointer;
-  font-weight: 600;
-  text-decoration: none !important;
-  animation: upgrade-pulse 3s ease-in-out infinite;
-}
-
-.upgrade-premium-btn:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%) !important;
-  border-color: #9333ea;
-  transform: translateY(-2px) scale(1.05) !important;
-  box-shadow: 
-    0 6px 16px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(102, 126, 234, 0.4) !important;
-}
-
-.upgrade-premium-btn:active {
-  transform: translateY(-1px) scale(1.02) !important;
-}
-
-@keyframes upgrade-pulse {
-  0%, 100% {
-    box-shadow: 
-      0 2px 8px rgba(0, 0, 0, 0.2),
-      0 0 15px rgba(102, 126, 234, 0.2);
-  }
-  50% {
-    box-shadow: 
-      0 4px 12px rgba(0, 0, 0, 0.3),
-      0 0 25px rgba(102, 126, 234, 0.4);
-  }
-}
-
-/* Responsive styles for upgrade button */
-@media (max-width: 768px) {
-  .upgrade-premium-btn {
-    font-size: 0.8rem;
-    padding: 6px 10px;
-  }
-  
-  header .row {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  header .pill {
-    white-space: nowrap;
-  }
-}
-
-@media (max-width: 480px) {
-  .upgrade-premium-btn {
-    font-size: 0.75rem;
-    padding: 5px 8px;
-  }
-  
-  .upgrade-premium-btn span {
-    display: none; /* Ocultar texto en móviles muy pequeños, solo mostrar ⭐ */
-  }
-}
+/* Upgrade Premium Button styles removed - button eliminated */
 
 /* Status indicators */
 .status-dot {

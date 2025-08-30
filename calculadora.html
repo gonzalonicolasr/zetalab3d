@@ -26,10 +26,6 @@
     </div>
     <div class="muted">Costeo de piezas 3D • PLA/PETG/ABS/TPU</div>
     <div class="row" style="gap:8px">
-      <!-- Botón Upgrade Premium (se muestra solo para usuarios trial/monthly) -->
-      <button id="upgradeButton" class="pill upgrade-premium-btn" style="display:none">
-        ⭐ <span>Upgrade Premium</span>
-      </button>
       <!-- Botón Suscripciones MercadoPago -->
       <button id="subscriptionButton" class="pill subscription-btn" style="background: #009EE3; color: white; border: none;">
         💳 <span>Suscripciones</span>
@@ -339,45 +335,19 @@
         statusEl.className = `pill ${statusClass}`;
         textEl.textContent = statusText;
         
-        // Ocultar botón de upgrade para usuarios con suscripción activa
-        hideUpgradeButtonInHeader();
+        // Usuario con suscripción activa - no necesita botón de upgrade
       } else {
         statusEl.style.display = 'flex';
         statusEl.style.background = '#d97706';
         statusEl.style.color = 'white';
         textEl.textContent = '⚠ Sin suscripción';
-        
-        // Mostrar botón de upgrade para usuarios sin suscripción
-        showUpgradeButtonInHeader();
       }
     } catch (error) {
       console.error('Error inicializando suscripciones:', error);
     }
   }
 
-  // Función para mostrar el botón de upgrade premium en el header
-  function showUpgradeButtonInHeader() {
-    const upgradeBtn = document.getElementById('upgradeButton');
-    if (upgradeBtn && window.subscriptionService) {
-      upgradeBtn.style.display = 'flex';
-      
-      // Asegurar que el event listener se agregue solo una vez
-      if (!upgradeBtn.hasAttribute('data-listener-added')) {
-        upgradeBtn.addEventListener('click', () => {
-          window.subscriptionService.showUpgradeModal();
-        });
-        upgradeBtn.setAttribute('data-listener-added', 'true');
-      }
-    }
-  }
-
-  // Función para ocultar el botón de upgrade premium
-  function hideUpgradeButtonInHeader() {
-    const upgradeBtn = document.getElementById('upgradeButton');
-    if (upgradeBtn) {
-      upgradeBtn.style.display = 'none';
-    }
-  }
+  // Funciones de upgrade premium removidas - botón eliminado
 
   // ============================================================================
   // SUSCRIPCIONES - SIMPLIFICADO
