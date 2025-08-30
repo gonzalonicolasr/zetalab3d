@@ -317,18 +317,18 @@
         
         statusEl.style.display = 'flex';
         
-        // Mostrar estado según plan
+        // Mostrar estado según plan con texto más descriptivo
         let statusText = '';
         let statusClass = '';
         
         if (subscription.plan_type === 'trial') {
-          statusText = `✓ Prueba - ${daysLeft} días restantes`;
+          statusText = `🆓 Prueba Gratis Activa • ${daysLeft} días restantes`;
           statusClass = 'trial';
         } else if (subscription.plan_type === 'monthly') {
-          statusText = `✓ Suscripción Mensual - ${daysLeft} días restantes`;
+          statusText = `✅ Suscripción Activa • ${daysLeft} días restantes`;
           statusClass = 'monthly';
         } else if (subscription.plan_type === 'premium') {
-          statusText = `⭐ Premium - ${daysLeft} días restantes`;
+          statusText = `⭐ Plan Premium Activo • ${daysLeft} días restantes`;
           statusClass = 'premium';
         }
         
@@ -340,7 +340,7 @@
         statusEl.style.display = 'flex';
         statusEl.style.background = '#d97706';
         statusEl.style.color = 'white';
-        textEl.textContent = '⚠ Sin suscripción';
+        textEl.textContent = '⚠️ Sin suscripción activa';
       }
     } catch (error) {
       console.error('Error inicializando suscripciones:', error);
