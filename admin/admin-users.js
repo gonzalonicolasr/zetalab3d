@@ -172,21 +172,19 @@ class AdminUsers {
     try {
       AdminUtils.showLoading();
 
-      // Get users from auth.users (if accessible) or from pieces table
-      let userData = await this.loadUsersFromAuth();
-      
-      if (!userData || userData.length === 0) {
-        // Fallback: load from pieces table
-        userData = await this.loadUsersFromPieces();
-      }
-
-      // Enhance user data with additional information
-      this.users = await this.enhanceUserData(userData);
+      // Use the new admin user view for comprehensive data
+      await this.loadUsersFromView();
       
       // Apply current filters
       this.applyFilters();
       
       AdminUtils.showToast('Usuarios cargados correctamente', 'success');
+
+      // Log admin activity
+      await AdminUtils.logAdminActivity('view_users', 'users', null, {
+        user_count: this.users.length,
+        filters: this.filters
+      });
 
     } catch (error) {
       AdminErrorHandler.handle(error, 'loading users');
@@ -195,38 +193,207 @@ class AdminUsers {
     }
   }
 
-  async loadUsersFromAuth() {
+  async loadUsersFromView() {
     try {
-      // Try to access auth.users table directly
-      const { data, error } = await supabaseAdmin
-        .from('auth.users')
-        .select(`
-          id,
-          email,
-          created_at,
-          updated_at,
-          last_sign_in_at,
-          user_metadata,
-          app_metadata,
-          email_confirmed_at
-        `)
+      // Try to use the comprehensive view first
+      const { data: viewData, error: viewError } = await supabaseAdmin
+        .from('admin_users_view')
+        .select('*')
+        .order('admin_role', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.log('Cannot access auth.users directly:', error);
-        return null;
+      if (!viewError && viewData) {
+        console.log('✅ Using admin_users_view with comprehensive data');
+        this.users = this.transformViewData(viewData);
+        return this.users;
       }
 
-      return data || [];
+      console.log('⚠️ Admin view not available, creating comprehensive user data...');
+      
+      // Fallback: Get all users from auth.users via REST API proxy
+      const allUsers = await this.getAllUsersComprehensive();
+      this.users = allUsers;
+      return this.users;
+
     } catch (error) {
-      console.log('Error accessing auth.users:', error);
-      return null;
+      console.error('Error loading users:', error);
+      // Ultimate fallback - get basic user data from pieces table
+      return await this.loadUsersLegacy();
     }
   }
 
-  async loadUsersFromPieces() {
+  transformViewData(viewData) {
+    return (viewData || []).map(user => ({
+      id: user.id || user.user_id,
+      email: user.email,
+      created_at: user.created_at || user.registration_date,
+      updated_at: user.updated_at,
+      last_sign_in_at: user.last_sign_in_at,
+      email_confirmed_at: user.email_confirmed_at,
+      auth_method: user.auth_method || 'email',
+      user_metadata: user.user_metadata,
+      app_metadata: user.app_metadata,
+      // Subscription data
+      subscription: user.subscription_status ? {
+        id: user.subscription_id,
+        type: user.subscription_type,
+        status: user.subscription_status,
+        expires_at: user.subscription_expires_at,
+        created_at: user.subscription_created_at
+      } : null,
+      subscription_type: user.subscription_type || 'free',
+      subscription_status: user.subscription_status || 'none',
+      subscription_expires_at: user.subscription_expires_at,
+      // Usage statistics
+      piece_count: user.piece_count || 0,
+      version_count: user.version_count || 0,
+      last_piece_created: user.last_piece_created,
+      // Admin information
+      is_admin: user.admin_role ? true : false,
+      admin_role: user.admin_role,
+      admin_permissions: user.admin_permissions,
+      // Calculated fields
+      status: user.status || 'active',
+      last_activity: user.last_piece_created || user.last_sign_in_at || user.created_at,
+      activity_score: this.calculateActivityScore(user)
+    }));
+  }
+
+  async getAllUsersComprehensive() {
     try {
-      // Get unique user IDs from pieces table
+      console.log('📊 Loading comprehensive user data...');
+      
+      // Get all users who have created pieces (active users)
+      const { data: pieceUsers, error: pieceError } = await supabaseAdmin
+        .from('pieces')
+        .select('user_id, created_at, title, est_price_ars')
+        .not('user_id', 'is', null);
+
+      if (pieceError) throw pieceError;
+
+      // Get subscription data
+      const { data: subscriptions, error: subError } = await supabaseAdmin
+        .from('subscriptions')
+        .select('*');
+
+      // Get admin users
+      const { data: adminUsers, error: adminError } = await supabaseAdmin
+        .from('admin_users')
+        .select('*');
+
+      // Create comprehensive user objects
+      const userMap = new Map();
+
+      // Process piece users
+      (pieceUsers || []).forEach(piece => {
+        const userId = piece.user_id;
+        if (!userMap.has(userId)) {
+          userMap.set(userId, {
+            id: userId,
+            email: `user-${userId.substring(0, 8)}@zetalab.local`, // Placeholder
+            created_at: piece.created_at,
+            last_sign_in_at: null,
+            email_confirmed_at: null,
+            auth_method: 'unknown',
+            pieces: [],
+            piece_count: 0,
+            version_count: 0,
+            last_piece_created: piece.created_at,
+            total_revenue: 0,
+            subscription: null,
+            subscription_type: 'free',
+            subscription_status: 'none',
+            is_admin: false,
+            admin_role: null,
+            status: 'active'
+          });
+        }
+        
+        const user = userMap.get(userId);
+        user.pieces.push(piece);
+        user.piece_count++;
+        user.total_revenue += parseFloat(piece.est_price_ars || 0);
+        
+        if (new Date(piece.created_at) > new Date(user.last_piece_created || 0)) {
+          user.last_piece_created = piece.created_at;
+        }
+      });
+
+      // Add subscription information
+      (subscriptions || []).forEach(sub => {
+        if (userMap.has(sub.user_id)) {
+          const user = userMap.get(sub.user_id);
+          user.subscription = sub;
+          user.subscription_type = sub.plan || 'free';
+          user.subscription_status = sub.status || 'none';
+          user.subscription_expires_at = sub.expires_at;
+        }
+      });
+
+      // Add admin information
+      (adminUsers || []).forEach(admin => {
+        if (userMap.has(admin.user_id)) {
+          const user = userMap.get(admin.user_id);
+          user.is_admin = true;
+          user.admin_role = admin.role;
+          user.admin_permissions = admin.permissions;
+          user.email = admin.email; // Get real email for admins
+        }
+      });
+
+      // Get piece versions counts
+      for (const [userId, user] of userMap) {
+        const { count: versionCount } = await supabaseAdmin
+          .from('piece_versions')
+          .select('*', { count: 'exact', head: true })
+          .in('piece_id', user.pieces.map(p => p.id) || []);
+        
+        user.version_count = versionCount || 0;
+        user.activity_score = this.calculateActivityScore(user);
+      }
+
+      console.log(`📈 Loaded ${userMap.size} comprehensive user records`);
+      return Array.from(userMap.values()).sort((a, b) => {
+        // Sort: admins first, then by activity, then by registration
+        if (a.is_admin && !b.is_admin) return -1;
+        if (!a.is_admin && b.is_admin) return 1;
+        if (a.activity_score !== b.activity_score) return b.activity_score - a.activity_score;
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+
+    } catch (error) {
+      console.error('Error loading comprehensive user data:', error);
+      throw error;
+    }
+  }
+
+  calculateActivityScore(user) {
+    let score = 0;
+    
+    // Points for pieces created
+    score += Math.min(user.piece_count * 0.5, 2);
+    
+    // Points for versions created
+    score += Math.min(user.version_count * 0.2, 1);
+    
+    // Points for recent activity
+    const daysSinceLastActivity = user.last_piece_created ? 
+      (Date.now() - new Date(user.last_piece_created).getTime()) / (1000 * 60 * 60 * 24) : 999;
+    
+    if (daysSinceLastActivity < 7) score += 1;
+    else if (daysSinceLastActivity < 30) score += 0.5;
+    
+    // Points for subscription
+    if (user.subscription_type !== 'free' && user.subscription_status === 'active') {
+      score += 1;
+    }
+    
+    return Math.min(Math.round(score), 5);
+  }
+
+  async loadUsersLegacy() {
+    try {
+      // Fallback method: Get unique user IDs from pieces table
       const { data: pieceUsers, error } = await supabaseAdmin
         .from('pieces')
         .select('user_id, created_at')
@@ -237,94 +404,52 @@ class AdminUsers {
         throw error;
       }
 
-      // Get unique users
+      // Get unique users and enhance with basic data
       const userMap = new Map();
       pieceUsers.forEach(piece => {
         if (!userMap.has(piece.user_id)) {
           userMap.set(piece.user_id, {
             id: piece.user_id,
+            email: 'N/A', // Limited data available
             created_at: piece.created_at,
-            email: 'N/A', // Will try to fetch from user profiles if available
-            last_sign_in_at: null
+            last_sign_in_at: null,
+            piece_count: 0,
+            version_count: 0,
+            subscription_type: 'none',
+            status: 'active',
+            is_admin: false,
+            auth_method: 'unknown'
           });
         }
       });
 
-      return Array.from(userMap.values());
-    } catch (error) {
-      console.error('Error loading users from pieces:', error);
-      return [];
-    }
-  }
-
-  async enhanceUserData(users) {
-    const enhancedUsers = [];
-
-    for (const user of users) {
-      try {
-        // Get user pieces count
-        const { count: pieceCount, error: pieceError } = await supabaseAdmin
+      // Enhance with counts
+      for (const [userId, user] of userMap) {
+        // Get piece count
+        const { count: pieceCount } = await supabaseAdmin
           .from('pieces')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
+        
+        user.piece_count = pieceCount || 0;
 
-        // Get user piece versions count
-        const { count: versionCount, error: versionError } = await supabaseAdmin
+        // Get version count
+        const { count: versionCount } = await supabaseAdmin
           .from('piece_versions')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
-        // Try to get subscription info (if subscriptions table exists)
-        let subscriptionInfo = null;
-        try {
-          const { data: subscription, error: subError } = await supabaseAdmin
-            .from('subscriptions')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
-
-          if (!subError) {
-            subscriptionInfo = subscription;
-          }
-        } catch (subError) {
-          // Subscriptions table might not exist yet
-        }
-
-        // Get latest piece creation (last activity)
-        const { data: latestPiece, error: latestError } = await supabaseAdmin
-          .from('pieces')
-          .select('created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        enhancedUsers.push({
-          ...user,
-          piece_count: pieceCount || 0,
-          version_count: versionCount || 0,
-          subscription: subscriptionInfo,
-          last_activity: latestPiece?.created_at || user.created_at,
-          status: this.determineUserStatus(user, subscriptionInfo),
-          subscription_type: subscriptionInfo?.type || 'none'
-        });
-
-      } catch (error) {
-        console.error(`Error enhancing user ${user.id}:`, error);
-        // Add user with basic data
-        enhancedUsers.push({
-          ...user,
-          piece_count: 0,
-          version_count: 0,
-          subscription: null,
-          last_activity: user.created_at,
-          status: 'active',
-          subscription_type: 'none'
-        });
+          .eq('user_id', userId);
+        
+        user.version_count = versionCount || 0;
       }
-    }
 
-    return enhancedUsers;
+      this.users = Array.from(userMap.values());
+      return this.users;
+
+    } catch (error) {
+      console.error('Error in legacy user loading:', error);
+      this.users = [];
+      return [];
+    }
   }
 
   determineUserStatus(user, subscription) {
@@ -424,52 +549,140 @@ class AdminUsers {
 
   renderUserRow(user) {
     const statusClass = user.status || 'active';
-    const statusText = ADMIN_CONFIG.USER_STATUSES[statusClass] || 'Activo';
-    const subscriptionText = ADMIN_CONFIG.SUBSCRIPTION_TYPES[user.subscription_type] || 'N/A';
+    const statusText = this.getStatusText(statusClass);
+    const subscriptionText = this.getSubscriptionText(user.subscription_type);
+    
+    // Authentication method display with enhanced logic
+    const authMethodIcon = {
+      'google': '🔍',
+      'facebook': '📘', 
+      'email': '📧',
+      'unknown': '❓'
+    }[user.auth_method] || '❓';
+    
+    const authMethodText = {
+      'google': 'Google',
+      'facebook': 'Facebook',
+      'email': 'Email/Contraseña',
+      'unknown': 'Desconocido'
+    }[user.auth_method] || 'Desconocido';
+
+    // Enhanced admin badge with more info
+    const adminBadge = user.is_admin ? 
+      `<span class="admin-badge" title="Usuario Administrador: ${user.admin_role}">
+         👑 ${user.admin_role?.toUpperCase() || 'ADMIN'}
+       </span>` : '';
+
+    // Enhanced activity indicators
+    const activityIndicator = this.getActivityIndicator(user);
+    const subscriptionBadge = this.getSubscriptionBadge(user);
+    const emailStatus = this.getEmailStatus(user);
 
     return `
-      <tr class="fade-in">
+      <tr class="fade-in ${user.is_admin ? 'admin-user-row' : ''} ${this.getActivityRowClass(user)}">
         <td>
           <input type="checkbox" class="user-checkbox" value="${user.id}" 
-                 ${this.selectedUsers.has(user.id) ? 'checked' : ''}>
+                 ${this.selectedUsers.has(user.id) ? 'checked' : ''}
+                 ${user.is_admin ? 'data-admin="true"' : ''}>
         </td>
         <td>
           <div class="user-info">
-            <div class="user-id">${user.id.substring(0, 8)}...</div>
+            <div class="user-id-section">
+              <div class="user-id" title="${user.id}">
+                ${user.id.substring(0, 8)}...
+                ${adminBadge}
+              </div>
+              <div class="user-stats-mini" title="Piezas: ${user.piece_count} | Versiones: ${user.version_count} | Ingresos: $${user.total_revenue?.toFixed(0) || 0}">
+                📊 ${user.piece_count}p/${user.version_count}v
+              </div>
+            </div>
+            <div class="user-auth-method" title="Método de autenticación: ${authMethodText}">
+              ${authMethodIcon} ${authMethodText}
+            </div>
           </div>
         </td>
         <td>
-          <div class="user-email">
-            ${user.email || 'N/A'}
+          <div class="user-email-section">
+            <div class="user-email">
+              ${this.displayEmail(user)}
+              ${emailStatus}
+            </div>
+            ${user.total_revenue ? `<div class="revenue-info" title="Ingresos estimados generados">
+              💰 $${user.total_revenue.toFixed(0)} ARS
+            </div>` : ''}
           </div>
         </td>
         <td>
-          <span class="subscription-badge ${user.subscription_type}">
-            ${subscriptionText}
-          </span>
+          <div class="subscription-info-enhanced">
+            ${subscriptionBadge}
+            ${this.getSubscriptionDetails(user)}
+          </div>
         </td>
         <td>
-          <span class="status-badge ${statusClass}">
-            ${statusText}
-          </span>
+          <div class="status-section">
+            <span class="status-badge ${statusClass}">
+              ${statusText}
+            </span>
+            ${activityIndicator}
+          </div>
         </td>
-        <td>${AdminUtils.formatDate(user.created_at)}</td>
-        <td>${AdminUtils.getRelativeTime(user.last_sign_in_at || user.last_activity)}</td>
-        <td class="text-center">${user.piece_count}</td>
         <td>
-          <div class="action-buttons">
-            <button class="action-btn" onclick="adminUsers.viewUserDetail('${user.id}')" 
-                    title="Ver detalles">
-              👁️
+          <div class="registration-info">
+            <div class="date-main">${this.formatDateShort(user.created_at)}</div>
+            <div class="date-relative" title="${this.formatDateLong(user.created_at)}">
+              ${this.getRelativeTime(user.created_at)}
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="last-access-info">
+            <div class="access-main">
+              ${this.getLastActivityText(user)}
+            </div>
+            <div class="access-indicator">
+              ${this.getActivityScore(user)}
+            </div>
+          </div>
+        </td>
+        <td class="text-center">
+          <div class="usage-stats-detailed">
+            <div class="usage-primary">
+              <span class="piece-count" title="Piezas creadas">📄 ${user.piece_count}</span>
+              <span class="version-count" title="Versiones totales">🔄 ${user.version_count}</span>
+            </div>
+            ${user.last_piece_created ? `<div class="last-creation" title="Última pieza creada">
+              ⏰ ${this.getRelativeTime(user.last_piece_created)}
+            </div>` : '<div class="no-activity">Sin actividad</div>'}
+          </div>
+        </td>
+        <td>
+          <div class="action-buttons-enhanced">
+            <button class="action-btn primary" onclick="adminUsers.viewUserDetail('${user.id}')" 
+                    title="Ver perfil completo del usuario">
+              👁️ Ver
             </button>
-            <button class="action-btn" onclick="adminUsers.editUser('${user.id}')" 
-                    title="Editar">
-              ✏️
+            ${!user.is_admin ? `
+            <button class="action-btn warning" onclick="adminUsers.manageUserSubscription('${user.id}')" 
+                    title="Gestionar suscripción">
+              💳 Sub
             </button>
-            <button class="action-btn danger" onclick="adminUsers.toggleUserStatus('${user.id}')" 
-                    title="${statusClass === 'disabled' ? 'Habilitar' : 'Deshabilitar'}">
-              ${statusClass === 'disabled' ? '✅' : '🚫'}
-            </button>
+            <button class="action-btn ${statusClass === 'disabled' ? 'success' : 'danger'}" 
+                    onclick="adminUsers.toggleUserStatus('${user.id}')" 
+                    title="${statusClass === 'disabled' ? 'Activar usuario' : 'Desactivar usuario'}">
+              ${statusClass === 'disabled' ? '✅ On' : '🚫 Off'}
+            </button>` : `
+            <button class="action-btn info disabled" title="Cuenta de administrador protegida">
+              🔒 Admin
+            </button>`}
+            <div class="action-dropdown">
+              <button class="action-btn info dropdown-toggle">⋯</button>
+              <div class="dropdown-menu">
+                <button onclick="adminUsers.resetUserPassword('${user.email || user.id}')">🔄 Reset Password</button>
+                <button onclick="adminUsers.viewUserPieces('${user.id}')">📄 Ver Piezas</button>
+                <button onclick="adminUsers.exportUserData(adminUsers.users.find(u => u.id === '${user.id}'))">📋 Exportar Datos</button>
+                ${!user.is_admin ? `<button class="text-danger" onclick="adminUsers.deleteUser('${user.id}')">🗑️ Eliminar</button>` : ''}
+              </div>
+            </div>
           </div>
         </td>
       </tr>
@@ -588,9 +801,18 @@ class AdminUsers {
     const modal = document.getElementById('userDetailModal');
     if (!modal) return;
 
-    // Update modal content
-    document.getElementById('userDetailName').textContent = user.email || 'Usuario';
-    document.getElementById('detailEmail').textContent = user.email || 'N/A';
+    // Update modal content with comprehensive information
+    document.getElementById('userDetailName').innerHTML = `
+      ${user.email || 'Usuario Sin Email'}
+      ${user.is_admin ? '<span class="admin-badge-modal">👑 ADMINISTRADOR</span>' : ''}
+    `;
+    
+    // Personal Information
+    document.getElementById('detailEmail').innerHTML = `
+      ${user.email || 'N/A'}
+      ${user.email_confirmed_at ? '<span class="verified-badge">✓ Verificado</span>' : '<span class="unverified-badge">⚠️ No verificado</span>'}
+    `;
+    
     document.getElementById('detailCreatedAt').textContent = AdminUtils.formatDateTime(user.created_at);
     document.getElementById('detailLastLogin').textContent = AdminUtils.formatDateTime(user.last_sign_in_at);
     
@@ -598,17 +820,76 @@ class AdminUsers {
     statusEl.textContent = ADMIN_CONFIG.USER_STATUSES[user.status] || 'Activo';
     statusEl.className = `status-badge ${user.status}`;
 
+    // Add authentication method info
+    const authMethodText = {
+      'google': '🔍 Google',
+      'facebook': '📘 Facebook',
+      'email': '📧 Email/Contraseña',
+      'unknown': '❓ Desconocido'
+    }[user.auth_method] || '❓ Desconocido';
+    
+    // Create or update auth method display
+    let authMethodEl = document.getElementById('detailAuthMethod');
+    if (!authMethodEl) {
+      // Add after last login if it doesn't exist
+      const lastLoginEl = document.getElementById('detailLastLogin').parentElement;
+      authMethodEl = document.createElement('div');
+      authMethodEl.className = 'info-item';
+      authMethodEl.innerHTML = '<label>Método de registro:</label><span id="detailAuthMethod"></span>';
+      lastLoginEl.parentElement.insertBefore(authMethodEl, lastLoginEl.nextSibling);
+      authMethodEl = authMethodEl.querySelector('#detailAuthMethod');
+    }
+    authMethodEl.textContent = authMethodText;
+
+    // Subscription Information
     document.getElementById('detailSubscriptionType').textContent = 
       ADMIN_CONFIG.SUBSCRIPTION_TYPES[user.subscription_type] || 'Sin suscripción';
     document.getElementById('detailSubscriptionStatus').textContent = 
       user.subscription?.status || 'N/A';
-    document.getElementById('detailExpiresAt').textContent = 
-      user.subscription?.expires_at ? AdminUtils.formatDateTime(user.subscription.expires_at) : 'N/A';
+    document.getElementById('detailExpiresAt').innerHTML = 
+      user.subscription?.expires_at ? `
+        ${AdminUtils.formatDateTime(user.subscription.expires_at)}
+        ${new Date(user.subscription.expires_at) < new Date() ? '<span class="expired-badge">⚠️ EXPIRADA</span>' : '<span class="active-badge">✓ Activa</span>'}
+      ` : 'N/A';
 
+    // Usage Statistics  
     document.getElementById('detailPieceCount').textContent = user.piece_count;
     document.getElementById('detailVersionCount').textContent = user.version_count;
-    document.getElementById('detailLastUsage').textContent = 
-      details.lastVersion ? AdminUtils.getRelativeTime(details.lastVersion) : 'Nunca';
+    document.getElementById('detailLastUsage').innerHTML = `
+      ${user.last_piece_created ? AdminUtils.getRelativeTime(user.last_piece_created) : 'Nunca'}
+      <div class="activity-score">
+        Nivel de actividad: ${'🟢'.repeat(user.activity_score)}${'⚪'.repeat(3 - user.activity_score)}
+      </div>
+    `;
+
+    // Add admin information section if user is admin
+    let adminInfoEl = document.getElementById('adminInfoSection');
+    if (user.is_admin && !adminInfoEl) {
+      const modalBody = modal.querySelector('.modal-body');
+      const adminSection = document.createElement('div');
+      adminSection.id = 'adminInfoSection';
+      adminSection.className = 'info-section admin-info';
+      adminSection.innerHTML = `
+        <h4>👑 Información de Administrador</h4>
+        <div class="info-item">
+          <label>Rol:</label>
+          <span id="detailAdminRole"></span>
+        </div>
+        <div class="info-item">
+          <label>Permisos:</label>
+          <span id="detailAdminPermissions"></span>
+        </div>
+      `;
+      modalBody.insertBefore(adminSection, modalBody.querySelector('.user-stats'));
+    } else if (!user.is_admin && adminInfoEl) {
+      adminInfoEl.remove();
+    }
+
+    if (user.is_admin) {
+      document.getElementById('detailAdminRole').textContent = user.admin_role?.toUpperCase() || 'ADMIN';
+      document.getElementById('detailAdminPermissions').textContent = 
+        user.admin_permissions ? Object.keys(user.admin_permissions).join(', ') : 'Todos los permisos';
+    }
 
     // Show modal
     modal.classList.add('active');

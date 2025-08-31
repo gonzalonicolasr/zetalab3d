@@ -1,0 +1,67 @@
+🔑 INSTRUCCIONES PARA CREAR ADMINISTRADOR DE ZETALAB
+===========================================================
+
+PROBLEMA ACTUAL:
+- El usuario gonn.nicolas@gmail.com no existe en Supabase auth.users
+- Por eso el login devuelve "Invalid login credentials"
+- Necesitamos crear primero el usuario, luego darle permisos admin
+
+SOLUCIÓN COMPLETA:
+
+OPCIÓN 1 - PROCESO AUTOMATIZADO (RECOMENDADO)
+============================================
+1. Abrir en el navegador: create-admin.html
+2. Los campos ya están pre-llenados con:
+   - Email: gonn.nicolas@gmail.com
+   - Password: cocacola
+3. Hacer clic en "1️⃣ Crear Usuario en Supabase Auth"
+4. Esperar confirmación de usuario creado
+5. Hacer clic en "2️⃣ Conceder Privilegios de Administrador"
+6. ¡Listo! Ya puedes usar admin.html con esas credenciales
+
+OPCIÓN 2 - PROCESO MANUAL
+=========================
+Si la opción automática falla:
+
+1. REGISTRAR EL USUARIO PRIMERO:
+   - Ir a index.html
+   - Cambiar a pestaña "Crear cuenta"
+   - Usar email: gonn.nicolas@gmail.com
+   - Usar password: cocacola
+   - Completar el registro
+
+2. EJECUTAR SQL EN SUPABASE:
+   - Ir al dashboard de Supabase
+   - Abrir SQL Editor
+   - Ejecutar el contenido de admin-setup.sql
+
+VERIFICACIÓN:
+=============
+1. Ir a admin.html
+2. Intentar login con:
+   - Email: gonn.nicolas@gmail.com
+   - Password: cocacola
+3. Debería funcionar correctamente
+
+ARCHIVOS CREADOS:
+================
+- create-admin.html     → Página automática para crear admin
+- admin-setup.sql       → SQL manual si falla el automático
+- ADMIN-SETUP-INSTRUCTIONS.txt → Este archivo
+
+NOTAS IMPORTANTES:
+=================
+- Una vez creado el admin, NO borres create-admin.html por si necesitas más admins
+- El usuario debe existir en auth.users ANTES de poder darse permisos admin
+- Si el email necesita confirmación, puede tardar unos minutos
+- Los privilegios admin se almacenan en la tabla admin_users
+
+¿PROBLEMAS?
+==========
+Si sigue sin funcionar:
+1. Verificar que las tablas admin_* existen en Supabase
+2. Verificar que el usuario aparece en auth.users
+3. Verificar que aparece en admin_users con is_active=true
+4. Verificar los logs del navegador para más detalles
+
+Estado actual: El admin system está configurado, solo falta crear el usuario inicial.

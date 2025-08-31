@@ -104,7 +104,9 @@ class AdminAuth {
         if (error.message.includes('Invalid login credentials')) {
           this.showError('Credenciales inválidas');
         } else if (error.message.includes('Email not confirmed')) {
-          this.showError('Email no confirmado. Revisa tu bandeja de entrada.');
+          // For admin users, offer to resend confirmation
+          this.showError('Email no confirmado. ¿Reenviar confirmación?');
+          this.offerResendConfirmation(email);
         } else {
           this.showError('Error de autenticación: ' + error.message);
         }
@@ -293,6 +295,32 @@ class AdminAuth {
     // Clear any cached admin data
     // This would be implemented based on your data caching strategy
     console.log('Clearing admin data cache');
+  }
+
+  // Offer to resend confirmation email for unconfirmed admin accounts
+  async offerResendConfirmation(email) {
+    const resendBtn = document.createElement('button');
+    resendBtn.textContent = 'Reenviar email de confirmación';
+    resendBtn.className = 'btn-secondary btn-small mt-2';
+    resendBtn.onclick = async () => {
+      try {
+        const { error } = await supabaseAdmin.auth.resend({
+          type: 'signup',
+          email: email
+        });
+        
+        if (error) {
+          this.showError('Error al reenviar: ' + error.message);
+        } else {
+          this.showError('Email de confirmación enviado. Revisa tu bandeja.');
+          resendBtn.remove();
+        }
+      } catch (err) {
+        this.showError('Error al reenviar confirmación');
+      }
+    };
+    
+    this.loginError.appendChild(resendBtn);
   }
 
   // Utility methods for other modules

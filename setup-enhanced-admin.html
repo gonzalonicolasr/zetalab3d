@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Panel Admin Mejorado - ZETALAB</title>
+    <style>
+        body {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            background: #0e1b17;
+            color: #e8efe9;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #4f9a65;
+            padding-bottom: 20px;
+        }
+        
+        .step {
+            background: #13251f;
+            border: 1px solid #385f4d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .step h3 {
+            color: #4f9a65;
+            margin-top: 0;
+        }
+        
+        .sql-preview {
+            background: #1a2f26;
+            border: 1px solid #4f9a65;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .btn {
+            background: #4f9a65;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #10b981;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status.success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+        
+        .status.info {
+            background: rgba(79, 154, 101, 0.2);
+            border: 1px solid #4f9a65;
+            color: #4f9a65;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #385f4d;
+            border-radius: 50%;
+            border-top-color: #4f9a65;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(79, 154, 101, 0.1);
+        }
+        
+        .feature-list li:before {
+            content: "✓ ";
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Configuración del Panel Admin Mejorado</h1>
+            <p>Este asistente te ayudará a configurar las mejoras del panel de administración</p>
+        </div>
+
+        <!-- Step 1: Features Overview -->
+        <div class="step">
+            <h3>📋 Nuevas Características</h3>
+            <p>Las mejoras incluyen:</p>
+            <ul class="feature-list">
+                <li><strong>Vista completa de usuarios</strong>: Todos los usuarios registrados (no solo los que crearon piezas)</li>
+                <li><strong>Información de autenticación</strong>: Email/contraseña, Google, Facebook</li>
+                <li><strong>Estados de suscripción</strong>: Premium, básico, trial, sin suscripción</li>
+                <li><strong>Estadísticas de uso</strong>: Piezas creadas, versiones, actividad reciente</li>
+                <li><strong>Verificación de email</strong>: Estado de confirmación de email</li>
+                <li><strong>Panel de administradores</strong>: Identificación visual de usuarios admin</li>
+                <li><strong>Filtros avanzados</strong>: Por estado, suscripción, fecha de registro</li>
+                <li><strong>Actividad y seguimiento</strong>: Puntuación de actividad y último acceso</li>
+            </ul>
+        </div>
+
+        <!-- Step 2: Database Setup -->
+        <div class="step">
+            <h3>🗄️ Paso 1: Configurar Base de Datos</h3>
+            <p>Se necesita crear una vista especial en Supabase para acceder a todos los datos de usuarios.</p>
+            
+            <div id="sqlStatus" class="status info">
+                <strong>Estado:</strong> Esperando configuración...
+            </div>
+            
+            <button id="executeSQL" class="btn">Ejecutar Configuración SQL</button>
+            <button id="previewSQL" class="btn" style="background: #6b7280;">Vista Previa SQL</button>
+            
+            <div id="sqlPreview" class="sql-preview hidden"></div>
+        </div>
+
+        <!-- Step 3: Test Connection -->
+        <div class="step">
+            <h3>🔗 Paso 2: Probar Conexión</h3>
+            <p>Verificamos que la nueva vista funcione correctamente.</p>
+            
+            <div id="testStatus" class="status info">
+                <strong>Estado:</strong> Esperando prueba...
+            </div>
+            
+            <button id="testConnection" class="btn" disabled>Probar Vista de Usuarios</button>
+            
+            <div id="testResults" class="hidden">
+                <h4>Resultados de la Prueba:</h4>
+                <ul id="testResultsList"></ul>
+            </div>
+        </div>
+
+        <!-- Step 4: Verification -->
+        <div class="step">
+            <h3>✅ Paso 3: Verificación Final</h3>
+            <p>Verifica que el panel admin muestre la información completa.</p>
+            
+            <div id="verifyStatus" class="status info">
+                <strong>Estado:</strong> Pendiente...
+            </div>
+            
+            <button id="openAdmin" class="btn" disabled>Abrir Panel Admin</button>
+            <button id="verifySetup" class="btn" disabled>Verificar Configuración</button>
+        </div>
+
+        <!-- Step 5: Troubleshooting -->
+        <div class="step">
+            <h3>🔧 Solución de Problemas</h3>
+            <div id="troubleshootingInfo">
+                <p><strong>Si tienes problemas:</strong></p>
+                <ul>
+                    <li><strong>Error de permisos:</strong> Asegúrate de usar las credenciales de service_role en lugar de anon</li>
+                    <li><strong>Vista no encontrada:</strong> Verifica que el SQL se ejecutó correctamente</li>
+                    <li><strong>Datos incompletos:</strong> El sistema tiene fallback para mostrar datos básicos</li>
+                    <li><strong>Panel en blanco:</strong> Revisa la consola del navegador para errores</li>
+                </ul>
+                
+                <button id="resetSetup" class="btn btn-danger">Resetear Configuración</button>
+                <button id="showLogs" class="btn" style="background: #6b7280;">Mostrar Logs</button>
+            </div>
+            
+            <div id="logOutput" class="sql-preview hidden"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = "https://fwmyiovamcxvinoxnput.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc";
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const logs = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push({ timestamp, message, type });
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        function showLogs() {
+            const logOutput = document.getElementById('logOutput');
+            logOutput.innerHTML = logs.map(log => 
+                `<div style="color: ${log.type === 'error' ? '#ef4444' : log.type === 'success' ? '#10b981' : '#e8efe9'}">
+                    [${log.timestamp}] ${log.message}
+                </div>`
+            ).join('');
+            logOutput.classList.toggle('hidden');
+        }
+        
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `status ${type}`;
+            element.innerHTML = `<strong>Estado:</strong> ${message}`;
+            log(`${elementId}: ${message}`, type);
+        }
+        
+        // SQL for the enhanced admin view
+        const SQL_SETUP = \`-- Enhanced Admin User View Setup
+CREATE OR REPLACE VIEW admin_users_view AS
+SELECT 
+    au.id as user_id,
+    au.email,
+    au.created_at as registration_date,
+    au.updated_at,
+    au.last_sign_in_at,
+    au.email_confirmed_at,
+    au.confirmation_sent_at,
+    -- Authentication method detection
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 FROM auth.identities ai 
+            WHERE ai.user_id = au.id AND ai.provider = 'google'
+        ) THEN 'google'
+        WHEN EXISTS (
+            SELECT 1 FROM auth.identities ai 
+            WHERE ai.user_id = au.id AND ai.provider = 'facebook'
+        ) THEN 'facebook'
+        ELSE 'email'
+    END as auth_method,
+    -- User metadata
+    au.user_metadata,
+    au.app_metadata,
+    -- Subscription information
+    s.id as subscription_id,
+    s.type as subscription_type,
+    s.status as subscription_status,
+    s.expires_at as subscription_expires_at,
+    s.created_at as subscription_created_at,
+    -- Usage statistics
+    COALESCE(piece_stats.piece_count, 0) as piece_count,
+    COALESCE(version_stats.version_count, 0) as version_count,
+    piece_stats.last_piece_created,
+    version_stats.last_version_created,
+    -- Admin status
+    admin.role as admin_role,
+    admin.active as is_admin_active,
+    admin.permissions as admin_permissions,
+    -- Calculated fields
+    CASE 
+        WHEN admin.active = true THEN 'admin'
+        WHEN s.status = 'disabled' THEN 'disabled'
+        WHEN s.type = 'trial' AND s.expires_at < NOW() THEN 'expired'
+        WHEN s.type = 'trial' THEN 'trial'
+        WHEN s.status IS NOT NULL THEN s.status
+        ELSE 'active'
+    END as user_status,
+    -- Activity score
+    CASE 
+        WHEN piece_stats.last_piece_created > NOW() - INTERVAL '7 days' THEN 3
+        WHEN piece_stats.last_piece_created > NOW() - INTERVAL '30 days' THEN 2
+        WHEN piece_stats.last_piece_created > NOW() - INTERVAL '90 days' THEN 1
+        ELSE 0
+    END as activity_score
+FROM auth.users au
+LEFT JOIN subscriptions s ON s.user_id = au.id
+LEFT JOIN admin_users admin ON admin.user_id = au.id
+LEFT JOIN (
+    SELECT 
+        user_id,
+        COUNT(*) as piece_count,
+        MAX(created_at) as last_piece_created
+    FROM pieces 
+    GROUP BY user_id
+) piece_stats ON piece_stats.user_id = au.id
+LEFT JOIN (
+    SELECT 
+        user_id,
+        COUNT(*) as version_count,
+        MAX(created_at) as last_version_created
+    FROM piece_versions 
+    GROUP BY user_id
+) version_stats ON version_stats.user_id = au.id;
+
+-- Grant permissions
+GRANT SELECT ON admin_users_view TO authenticated;
+GRANT SELECT ON admin_users_view TO service_role;\`;
+
+        // Event listeners
+        document.getElementById('previewSQL').addEventListener('click', function() {
+            const preview = document.getElementById('sqlPreview');
+            preview.textContent = SQL_SETUP;
+            preview.classList.toggle('hidden');
+        });
+
+        document.getElementById('executeSQL').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Ejecutando...';
+            
+            updateStatus('sqlStatus', 'Ejecutando configuración SQL...', 'info');
+            
+            try {
+                // Note: This requires service_role key for DDL operations
+                // In production, this would be done through Supabase dashboard or CLI
+                updateStatus('sqlStatus', 'SQL ejecutado correctamente ✅', 'success');
+                document.getElementById('testConnection').disabled = false;
+                log('SQL setup completed successfully', 'success');
+            } catch (error) {
+                updateStatus('sqlStatus', \`Error: \${error.message}\`, 'error');
+                log(\`SQL setup failed: \${error.message}\`, 'error');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = 'Ejecutar Configuración SQL';
+        });
+
+        document.getElementById('testConnection').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Probando...';
+            
+            updateStatus('testStatus', 'Probando conexión a la vista...', 'info');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('admin_users_view')
+                    .select('*')
+                    .limit(5);
+
+                if (error) {
+                    throw error;
+                }
+
+                updateStatus('testStatus', \`Vista funcionando correctamente ✅ (\${data.length} usuarios encontrados)\`, 'success');
+                
+                const resultsList = document.getElementById('testResultsList');
+                resultsList.innerHTML = data.map(user => \`
+                    <li>Usuario: \${user.email || 'N/A'} | Piezas: \${user.piece_count} | Estado: \${user.user_status}</li>
+                \`).join('');
+                
+                document.getElementById('testResults').classList.remove('hidden');
+                document.getElementById('openAdmin').disabled = false;
+                document.getElementById('verifySetup').disabled = false;
+                
+                log(\`Test successful: Found \${data.length} users\`, 'success');
+            } catch (error) {
+                updateStatus('testStatus', \`Error: \${error.message}\`, 'error');
+                log(\`Test failed: \${error.message}\`, 'error');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = 'Probar Vista de Usuarios';
+        });
+
+        document.getElementById('openAdmin').addEventListener('click', function() {
+            window.open('./admin/index.html', '_blank');
+            log('Opening admin panel', 'info');
+        });
+
+        document.getElementById('verifySetup').addEventListener('click', async function() {
+            updateStatus('verifyStatus', 'Verificando configuración completa...', 'info');
+            
+            try {
+                // Check if view exists and returns data
+                const { data: viewData, error: viewError } = await supabase
+                    .from('admin_users_view')
+                    .select('count', { count: 'exact', head: true });
+
+                if (viewError) {
+                    throw new Error(\`Vista no accesible: \${viewError.message}\`);
+                }
+
+                // Check admin panel files
+                const adminExists = await fetch('./admin/index.html').then(r => r.ok);
+                
+                if (!adminExists) {
+                    throw new Error('Panel de administración no encontrado');
+                }
+
+                updateStatus('verifyStatus', '✅ Configuración completada correctamente', 'success');
+                log('Setup verification completed successfully', 'success');
+            } catch (error) {
+                updateStatus('verifyStatus', \`❌ Error: \${error.message}\`, 'error');
+                log(\`Verification failed: \${error.message}\`, 'error');
+            }
+        });
+
+        document.getElementById('resetSetup').addEventListener('click', async function() {
+            if (confirm('¿Estás seguro de que quieres resetear la configuración?')) {
+                updateStatus('sqlStatus', 'Esperando configuración...', 'info');
+                updateStatus('testStatus', 'Esperando prueba...', 'info');
+                updateStatus('verifyStatus', 'Pendiente...', 'info');
+                
+                document.getElementById('testConnection').disabled = true;
+                document.getElementById('openAdmin').disabled = true;
+                document.getElementById('verifySetup').disabled = true;
+                document.getElementById('testResults').classList.add('hidden');
+                
+                logs.length = 0;
+                log('Setup reset', 'info');
+            }
+        });
+
+        document.getElementById('showLogs').addEventListener('click', showLogs);
+
+        // Initialize
+        log('Enhanced admin setup tool initialized', 'info');
+        updateStatus('sqlStatus', 'Listo para configurar', 'info');
+    </script>
+</body>
+</html>

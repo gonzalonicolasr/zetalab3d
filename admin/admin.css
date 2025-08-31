@@ -1129,3 +1129,277 @@ body {
     transform: translateX(0);
   }
 }
+
+/* ============================================================================
+   Enhanced User Management Styles
+   ============================================================================ */
+
+/* Admin user row highlighting */
+.admin-user-row {
+  background: rgba(220, 38, 38, 0.05) !important;
+  border-left: 3px solid var(--admin-accent);
+}
+
+.admin-user-row:hover {
+  background: rgba(220, 38, 38, 0.1) !important;
+}
+
+/* User info enhancements */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-id {
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-auth-method {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Email verification badges */
+.user-email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.verified-badge {
+  color: var(--text-success);
+  font-size: 0.8rem;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.unverified-badge {
+  color: var(--text-warning);
+  font-size: 0.8rem;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Admin badges */
+.admin-badge {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+
+.admin-badge-modal {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-left: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Subscription information */
+.subscription-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subscription-expiry {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.subscription-badge.premium {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--text-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.subscription-badge.basic {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--text-warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.subscription-badge.trial {
+  background: rgba(79, 154, 101, 0.2);
+  color: var(--text-accent);
+  border: 1px solid rgba(79, 154, 101, 0.3);
+}
+
+.subscription-badge.none {
+  background: rgba(107, 114, 128, 0.2);
+  color: var(--text-secondary);
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* Registration and activity info */
+.registration-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.registration-time {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.last-access-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.activity-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.activity-indicator.high-activity {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--text-success);
+}
+
+.activity-indicator.medium-activity {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--text-warning);
+}
+
+.activity-indicator.low-activity {
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+}
+
+.activity-indicator.no-activity {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--text-secondary);
+}
+
+/* Usage statistics */
+.usage-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.piece-count {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text-accent);
+}
+
+.version-count {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: rgba(79, 154, 101, 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+/* Enhanced action buttons */
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+  font-size: 0.9rem;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-accent);
+  transform: translateY(-1px);
+}
+
+.action-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--text-error);
+}
+
+.action-btn.enable:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: var(--text-success);
+}
+
+.action-btn.info:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+/* Modal enhancements */
+.admin-info {
+  background: rgba(220, 38, 38, 0.05);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.admin-info h4 {
+  color: var(--admin-accent);
+  margin-bottom: 12px;
+}
+
+.expired-badge {
+  color: var(--text-error);
+  background: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-left: 8px;
+}
+
+.active-badge {
+  color: var(--text-success);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-left: 8px;
+}
+
+.activity-score {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
