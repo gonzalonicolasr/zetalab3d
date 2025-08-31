@@ -5,7 +5,10 @@
       "Bash(git commit:*)",
       "Bash(rg:*)",
       "Bash(git restore:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(where python)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
