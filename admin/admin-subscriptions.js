@@ -336,17 +336,29 @@ class AdminSubscriptions {
     
     const stats = {
       total: this.subscriptions.length,
+      withSubscriptions: this.subscriptions.filter(s => s.hasSubscription).length,
+      withoutSubscriptions: this.subscriptions.filter(s => !s.hasSubscription).length,
       active: this.subscriptions.filter(s => s.status === 'active').length,
       expired: this.subscriptions.filter(s => s.status === 'expired').length,
-      trial: this.subscriptions.filter(s => s.status === 'trial').length,
+      trial: this.subscriptions.filter(s => s.status === 'trial' || s.status === 'trialing').length,
       monthlyRevenue: this.calculateMonthlyRevenue()
     };
 
-    // Update UI
+    // Update UI - showing total users instead of just subscriptions
     document.getElementById('totalSubsCount').textContent = AdminUtils.formatNumber(stats.total);
     document.getElementById('activeSubsCount').textContent = AdminUtils.formatNumber(stats.active);
     document.getElementById('expiredSubsCount').textContent = AdminUtils.formatNumber(stats.expired);
     document.getElementById('subRevenue').textContent = AdminUtils.formatCurrency(stats.monthlyRevenue);
+
+    console.log('📊 Subscription Stats Updated:', {
+      total_users: stats.total,
+      users_with_subscriptions: stats.withSubscriptions,
+      users_without_subscriptions: stats.withoutSubscriptions,
+      active_subscriptions: stats.active,
+      trial_subscriptions: stats.trial,
+      expired_subscriptions: stats.expired,
+      monthly_revenue: stats.monthlyRevenue
+    });
   }
 
   calculateMonthlyRevenue() {

@@ -2063,3 +2063,262 @@ body {
     padding: 0.5rem;
   }
 }
+
+/* ==============================
+   Enhanced Subscription Styles
+   ============================== */
+
+/* Subscription table row styling */
+.has-subscription {
+  background: rgba(16, 185, 129, 0.05);
+  border-left: 3px solid var(--status-active);
+}
+
+.no-subscription {
+  background: rgba(107, 114, 128, 0.05);
+  border-left: 3px solid var(--status-disabled);
+}
+
+/* User registration date in subscription table */
+.user-reg-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Plan pricing display */
+.plan-price {
+  font-size: 0.8rem;
+  color: var(--text-accent);
+  margin-top: 2px;
+}
+
+/* Trial information */
+.trial-info {
+  font-size: 0.8rem;
+  color: var(--text-warning);
+  margin-top: 2px;
+}
+
+/* No payments/subscription indicators */
+.no-payments,
+.no-subscription,
+.no-expiry,
+.no-payment-method {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* Subscription management modal */
+.subscription-management-modal .modal-content {
+  max-width: 600px;
+  width: 90%;
+}
+
+.status-display {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.action-grid .action-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-grid .action-btn.success {
+  background: var(--status-active);
+  color: white;
+}
+
+.action-grid .action-btn.primary {
+  background: var(--text-accent);
+  color: white;
+}
+
+.action-grid .action-btn.warning {
+  background: var(--text-warning);
+  color: white;
+}
+
+.action-grid .action-btn.danger {
+  background: var(--text-error);
+  color: white;
+}
+
+.action-grid .action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Payment history in modals */
+.payments-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.payment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--border-secondary);
+  transition: background 0.2s ease;
+}
+
+.payment-item:hover {
+  background: var(--bg-hover);
+}
+
+.payment-item:last-child {
+  border-bottom: none;
+}
+
+.payment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-amount {
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.payment-method {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.payment-status-date {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.payment-status.approved {
+  background: var(--status-active);
+  color: white;
+}
+
+.payment-status.pending {
+  background: var(--text-warning);
+  color: white;
+}
+
+.payment-status.rejected {
+  background: var(--text-error);
+  color: white;
+}
+
+.payment-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Enhanced plan badges */
+.plan-badge.free {
+  background: var(--status-disabled);
+  color: white;
+}
+
+.plan-badge.trial {
+  background: var(--text-warning);
+  color: white;
+}
+
+.plan-badge.premium,
+.plan-badge.monthly,
+.plan-badge.yearly {
+  background: var(--text-accent);
+  color: white;
+}
+
+/* Enhanced status badges for subscriptions */
+.status-badge.none {
+  background: var(--status-disabled);
+  color: white;
+}
+
+.status-badge.active {
+  background: var(--status-active);
+  color: white;
+}
+
+.status-badge.expired {
+  background: var(--status-expired);
+  color: white;
+}
+
+.status-badge.trial,
+.status-badge.trialing {
+  background: var(--status-trial);
+  color: white;
+}
+
+.status-badge.canceled,
+.status-badge.inactive {
+  background: var(--text-error);
+  color: white;
+}
+
+/* Expiry display enhancements */
+.expiry-display {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border-left: 4px solid var(--text-accent);
+}
+
+/* Current status section */
+.current-status {
+  background: var(--bg-tertiary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.current-status h4 {
+  margin-bottom: 1rem;
+  color: var(--text-accent);
+}
+
+/* No payments section */
+.no-payments {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.no-payments h4 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
