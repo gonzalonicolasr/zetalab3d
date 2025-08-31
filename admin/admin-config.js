@@ -13,7 +13,7 @@ const supabaseAdmin = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Admin configuration
 const ADMIN_CONFIG = {
   // Admin email domains (for basic admin verification)
-  ADMIN_DOMAINS: ['admin@zetalab.com', 'gonzalo@zetalab.com'],
+  ADMIN_DOMAINS: ['gonn.nicolas@gmail.com', 'gonzalo@zetalab.com'],
   
   // Admin user IDs (can be set after first admin user is created)
   ADMIN_USER_IDS: [

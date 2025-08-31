@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cuenta Admin - ZETALAB</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3a2e 0%, #2d5a45 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .admin-creator {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .logo {
+            width: 80px;
+            height: auto;
+            margin: 0 auto 20px;
+            display: block;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e3a2e;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #4f9a65;
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #4f9a65;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #3d7a51;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .admin-info {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .admin-info strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-creator">
+        <img src="../logo.png" alt="ZETALAB" class="logo">
+        <h1>Crear Admin</h1>
+        <p class="subtitle">Configuración de cuenta de administrador</p>
+
+        <div class="admin-info">
+            <strong>📧 Email Admin:</strong> gonn.nicolas@gmail.com<br>
+            <strong>🔑 Password:</strong> cocacola<br>
+            <strong>ℹ️ Nota:</strong> Esta página es solo para configuración inicial.
+        </div>
+
+        <div id="message"></div>
+
+        <form id="adminCreateForm">
+            <div class="form-group">
+                <label for="email">Email de Administrador</label>
+                <input type="email" id="email" value="gonn.nicolas@gmail.com" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" value="cocacola" required>
+            </div>
+
+            <button type="submit" class="btn">Crear Cuenta Admin</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="index.html" style="color: #4f9a65; text-decoration: none;">← Volver al Admin Panel</a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = "https://fwmyiovamcxvinoxnput.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc";
+        
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const form = document.getElementById('adminCreateForm');
+        const messageDiv = document.getElementById('message');
+
+        function showMessage(message, type) {
+            messageDiv.innerHTML = `<div class="message ${type}">${message}</div>`;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = form.querySelector('.btn');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creando cuenta...';
+
+            try {
+                // Check if user already exists by trying to sign in
+                const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (existingUser?.user) {
+                    showMessage('✅ La cuenta admin ya existe y funciona correctamente!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                    return;
+                }
+
+                // If sign in failed, try to create the account
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    console.error('Signup error:', error);
+                    
+                    if (error.message.includes('User already registered')) {
+                        showMessage('⚠️ La cuenta ya existe. Intenta iniciar sesión en el panel admin.', 'warning');
+                    } else if (error.message.includes('Password should be at least 6 characters')) {
+                        showMessage('❌ La contraseña debe tener al menos 6 caracteres.', 'error');
+                    } else {
+                        showMessage(`❌ Error: ${error.message}`, 'error');
+                    }
+                    return;
+                }
+
+                if (data?.user) {
+                    if (data.user.email_confirmed_at) {
+                        showMessage('✅ Cuenta admin creada exitosamente! Redirigiendo al panel...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 2000);
+                    } else {
+                        showMessage('📧 Cuenta creada. Revisa tu email para confirmar la cuenta antes de usar el panel admin.', 'warning');
+                    }
+                }
+
+            } catch (error) {
+                console.error('Unexpected error:', error);
+                showMessage('❌ Error inesperado. Revisa la consola para más detalles.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Crear Cuenta Admin';
+            }
+        });
+
+        // Check current auth status
+        window.addEventListener('load', async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user?.email === 'gonn.nicolas@gmail.com') {
+                    showMessage('ℹ️ Ya hay una sesión activa con esta cuenta admin.', 'warning');
+                }
+            } catch (error) {
+                console.log('No active session');
+            }
+        });
+    </script>
+</body>
+</html>
