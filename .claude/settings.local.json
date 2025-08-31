@@ -3,7 +3,8 @@
     "allow": [
       "Bash(grep:*)",
       "Bash(git commit:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
