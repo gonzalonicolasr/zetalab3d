@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(grep:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(rg:*)"
     ],
     "deny": [],
     "ask": []

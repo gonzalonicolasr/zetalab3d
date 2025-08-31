@@ -155,19 +155,30 @@ class SubscriptionService {
 
   // Mostrar modal de suscripción (verificar estado primero)
   async showSubscriptionModal() {
+    console.log('🎯 showSubscriptionModal() llamado');
+    
     if (!window.currentUser) {
+      console.error('❌ Usuario no autenticado');
       alert('Debes estar autenticado para ver suscripciones');
       return;
     }
 
+    console.log('👤 Usuario autenticado:', window.currentUser.id);
+
     try {
+      console.log('🔍 Verificando si el usuario tiene suscripción activa...');
+      
       // Verificar si el usuario tiene suscripción activa
       const hasActive = await this.hasActiveSubscription(window.currentUser.id);
       
+      console.log('📊 Resultado de verificación de suscripción:', hasActive);
+      
       if (hasActive) {
+        console.log('✅ Usuario con suscripción activa - mostrando gestión');
         // Usuario con suscripción activa - mostrar gestión
         await this.showSubscriptionManagement();
       } else {
+        console.log('❌ Usuario sin suscripción activa - mostrando modal de pago');
         // Usuario sin suscripción - mostrar modal de pago
         const modal = this.createSubscriptionModal();
         document.body.appendChild(modal);
@@ -176,7 +187,7 @@ class SubscriptionService {
         setTimeout(() => modal.classList.add('show'), 10);
       }
     } catch (error) {
-      console.error('Error verificando suscripción:', error);
+      console.error('❌ Error verificando suscripción:', error);
       alert('Error al verificar tu suscripción. Por favor intenta nuevamente.');
     }
   }
@@ -474,15 +485,31 @@ class SubscriptionService {
 
   // Mostrar modal de gestión para usuarios con suscripción activa
   async showSubscriptionManagement() {
+    console.log('🎛️ showSubscriptionManagement() llamado');
+    
     try {
+      console.log('📡 Obteniendo datos de suscripción actual...');
       const subscription = await this.getCurrentSubscription(window.currentUser.id);
+      
+      if (!subscription) {
+        console.error('❌ No se pudo obtener la suscripción');
+        alert('Error: No se pudo cargar la información de tu suscripción');
+        return;
+      }
+      
+      console.log('✅ Suscripción obtenida, creando modal de gestión:', subscription);
       const modal = this.createSubscriptionManagementModal(subscription);
       document.body.appendChild(modal);
       
+      console.log('🎨 Modal añadido al DOM, aplicando animación...');
       // Animación de entrada
-      setTimeout(() => modal.classList.add('show'), 10);
+      setTimeout(() => {
+        modal.classList.add('show');
+        console.log('✅ Modal de gestión mostrado correctamente');
+      }, 10);
+      
     } catch (error) {
-      console.error('Error obteniendo suscripción:', error);
+      console.error('❌ Error en showSubscriptionManagement:', error);
       alert('Error al cargar información de tu suscripción');
     }
   }

@@ -499,6 +499,12 @@
         statusEl.style.display = 'none';
         textEl.textContent = '';
       }
+      
+      // Asegurar que el botón de suscripciones esté inicializado después de verificar el estado
+      setTimeout(() => {
+        initializeSubscriptionButton();
+      }, 100);
+      
     } catch (error) {
       console.error('Error inicializando suscripciones:', error);
     }
@@ -623,23 +629,68 @@
   // SUBSCRIPTION SYSTEM
   // ============================================================================
   
-  // Conectar botón de suscripciones al SubscriptionService
-  document.addEventListener('DOMContentLoaded', function() {
-    const subscriptionButton = document.getElementById('subscriptionButton');
+  // Variable para asegurar que el botón solo se inicialice una vez
+  let subscriptionButtonInitialized = false;
+  
+  // Función para inicializar el botón de suscripciones
+  function initializeSubscriptionButton() {
+    if (subscriptionButtonInitialized) return;
     
-    // Usar el modal dinámico del SubscriptionService (ahora async)
-    if (subscriptionButton) {
-      subscriptionButton.addEventListener('click', async function() {
-        if (window.subscriptionService) {
-          try {
-            await window.subscriptionService.showSubscriptionModal();
-          } catch (error) {
-            console.error('Error mostrando modal de suscripciones:', error);
-            alert('Error al cargar las suscripciones. Por favor intenta nuevamente.');
-          }
-        } else {
-          alert('Servicio de suscripciones no disponible');
-        }
+    const subscriptionButton = document.getElementById('subscriptionButton');
+    if (!subscriptionButton) return;
+    
+    console.log('🔧 Inicializando botón de suscripciones...');
+    
+    // Asegurar que el botón sea visible para todos los usuarios autenticados
+    subscriptionButton.style.display = '';
+    subscriptionButton.disabled = false;
+    
+    // Limpiar event listeners previos (por si acaso)
+    subscriptionButton.replaceWith(subscriptionButton.cloneNode(true));
+    const newButton = document.getElementById('subscriptionButton');
+    
+    // Añadir el event listener con mejor manejo de errores
+    newButton.addEventListener('click', async function() {
+      console.log('🖱️ Click en botón de suscripciones');
+      
+      // Verificar que el usuario esté autenticado
+      if (!window.currentUser) {
+        alert('Debes estar autenticado para acceder a las suscripciones');
+        return;
+      }
+      
+      // Verificar que el servicio esté disponible
+      if (!window.subscriptionService) {
+        console.error('❌ SubscriptionService no disponible');
+        alert('Servicio de suscripciones no disponible. Por favor recarga la página.');
+        return;
+      }
+      
+      try {
+        console.log('📡 Llamando a showSubscriptionModal...');
+        await window.subscriptionService.showSubscriptionModal();
+        console.log('✅ Modal de suscripción mostrado correctamente');
+      } catch (error) {
+        console.error('❌ Error mostrando modal de suscripciones:', error);
+        alert('Error al cargar las suscripciones. Por favor intenta nuevamente.');
+      }
+    });
+    
+    subscriptionButtonInitialized = true;
+    console.log('✅ Botón de suscripciones inicializado correctamente');
+  }
+  
+  // Inicializar botón cuando el DOM esté listo
+  document.addEventListener('DOMContentLoaded', function() {
+    // Intentar inicializar inmediatamente
+    initializeSubscriptionButton();
+    
+    // También intentar cuando el usuario esté listo (por si el DOM se cargó antes que el usuario)
+    if (window.currentUser) {
+      setTimeout(() => initializeSubscriptionButton(), 100);
+    } else {
+      window.addEventListener('userReady', () => {
+        setTimeout(() => initializeSubscriptionButton(), 100);
       });
     }
   });
