@@ -486,8 +486,14 @@
           
           // Advertencia si quedan pocos días
           if (daysLeft <= 3 && daysLeft > 0) {
-            statusText = statusText.replace('días restantes', 'días restantes ⚠️');
-            statusEl.style.background = '#d97706';
+            if (subscription.plan_type === 'trial') {
+              statusText = `🚨 Prueba expira en ${daysLeft} días - ¡Suscríbete ahora!`;
+              statusEl.style.background = '#dc2626';
+              statusEl.style.animation = 'pulse 2s infinite';
+            } else {
+              statusText = statusText.replace('días restantes', 'días restantes ⚠️');
+              statusEl.style.background = '#d97706';
+            }
           }
         }
         

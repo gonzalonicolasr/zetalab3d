@@ -114,7 +114,13 @@ class SubscriptionService {
   // Activar suscripción (trial gratuito o después de pago)
   async activateSubscription(userId, planType, paymentId = null) {
     try {
-      const plan = this.plans[planType];
+      let plan = this.plans[planType];
+      
+      // Si no existe el plan y es trial, crear plan de prueba dinámicamente
+      if (!plan && planType === 'trial') {
+        plan = { days: 7, price: 0, name: 'Prueba Gratuita', description: 'Prueba gratuita de 7 días con acceso completo' };
+      }
+      
       if (!plan) {
         throw new Error('Plan no válido');
       }
@@ -153,6 +159,59 @@ class SubscriptionService {
     }
   }
 
+  // Nuevo método: Activar trial automático para nuevos usuarios
+  async activateTrialForNewUser(userId) {
+    try {
+      console.log('🎯 Activando trial automático para nuevo usuario:', userId);
+      
+      // Verificar si el usuario ya tiene alguna suscripción (incluso expirada)
+      const { data: existingSubscriptions, error } = await window.supa
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error verificando suscripciones existentes:', error);
+        throw error;
+      }
+
+      // Si ya tiene suscripciones, no dar trial
+      if (existingSubscriptions && existingSubscriptions.length > 0) {
+        console.log('❌ Usuario ya tiene suscripciones previas, no se da trial');
+        return null;
+      }
+
+      // Activar trial de 7 días
+      console.log('✅ Usuario elegible para trial, activando...');
+      const trialSubscription = await this.activateSubscription(userId, 'trial');
+      
+      console.log('🎉 Trial activado exitosamente:', trialSubscription);
+      return trialSubscription;
+      
+    } catch (error) {
+      console.error('❌ Error activando trial para nuevo usuario:', error);
+      throw error;
+    }
+  }
+
+  // Nuevo método: Verificar si un usuario es elegible para trial
+  async isEligibleForTrial(userId) {
+    try {
+      const { data: subscriptions, error } = await window.supa
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Es elegible si no tiene suscripciones previas
+      return !subscriptions || subscriptions.length === 0;
+    } catch (error) {
+      console.error('Error verificando elegibilidad para trial:', error);
+      return false;
+    }
+  }
+
   // Mostrar modal de suscripción (verificar estado primero)
   async showSubscriptionModal() {
     console.log('🎯 showSubscriptionModal() llamado');
@@ -178,13 +237,24 @@ class SubscriptionService {
         // Usuario con suscripción activa - mostrar gestión
         await this.showSubscriptionManagement();
       } else {
-        console.log('❌ Usuario sin suscripción activa - mostrando modal de pago');
-        // Usuario sin suscripción - mostrar modal de pago
-        const modal = this.createSubscriptionModal();
-        document.body.appendChild(modal);
+        console.log('❌ Usuario sin suscripción activa');
         
-        // Animación de entrada
-        setTimeout(() => modal.classList.add('show'), 10);
+        // Verificar si es elegible para trial
+        const isEligible = await this.isEligibleForTrial(window.currentUser.id);
+        
+        if (isEligible) {
+          console.log('🎁 Usuario elegible para trial - mostrando modal con opción de trial');
+          // Mostrar modal con opción de trial gratuito y pago
+          const modal = this.createTrialAndSubscriptionModal();
+          document.body.appendChild(modal);
+          setTimeout(() => modal.classList.add('show'), 10);
+        } else {
+          console.log('💳 Usuario no elegible para trial - mostrando modal de pago');
+          // Usuario sin suscripción - mostrar modal de pago
+          const modal = this.createSubscriptionModal();
+          document.body.appendChild(modal);
+          setTimeout(() => modal.classList.add('show'), 10);
+        }
       }
     } catch (error) {
       console.error('❌ Error verificando suscripción:', error);
@@ -434,6 +504,310 @@ class SubscriptionService {
     return modal;
   }
 
+  // Crear modal combinado con trial gratuito y suscripción
+  createTrialAndSubscriptionModal() {
+    const modal = document.createElement('div');
+    modal.className = 'subscription-modal';
+    modal.innerHTML = `
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>🎁 ¡Bienvenido a ZETALAB!</h2>
+          <button class="modal-close" onclick="this.closest('.subscription-modal').remove()">✕</button>
+        </div>
+        
+        <div class="trial-options-container">
+          <div class="welcome-message">
+            <h3>🚀 Comienza tu experiencia Premium</h3>
+            <p>Elige cómo quieres acceder a todas las funciones de la calculadora más avanzada de impresión 3D:</p>
+          </div>
+
+          <div class="options-grid">
+            <!-- Opción Trial Gratuito -->
+            <div class="option-card trial-card">
+              <div class="option-badge free">🆓 Recomendado</div>
+              <h4>🎯 Prueba Gratuita</h4>
+              <div class="option-price">
+                <span class="price-big">GRATIS</span>
+                <span class="price-period">7 días</span>
+              </div>
+              <p class="option-description">
+                Prueba todas las funciones sin restricciones durante 7 días
+              </p>
+              <ul class="features-mini">
+                <li>✅ Acceso completo inmediato</li>
+                <li>✅ Sin tarjeta de crédito</li>
+                <li>✅ Guardado ilimitado</li>
+                <li>✅ Todas las funciones premium</li>
+              </ul>
+              <button class="btn-option btn-trial" data-action="start-trial">
+                🎁 Comenzar Prueba Gratuita
+              </button>
+            </div>
+
+            <!-- Opción Suscripción Directa -->
+            <div class="option-card subscription-card">
+              <div class="option-badge premium">💳 Directo</div>
+              <h4>⭐ Suscripción Premium</h4>
+              <div class="option-price">
+                <span class="currency">$</span>
+                <span class="price-big">5.000</span>
+                <span class="price-period">ARS/mes</span>
+              </div>
+              <p class="option-description">
+                Acceso inmediato y permanente a todas las funciones
+              </p>
+              <ul class="features-mini">
+                <li>✅ Sin período de espera</li>
+                <li>✅ Facturación mensual</li>
+                <li>✅ Soporte prioritario</li>
+                <li>✅ Nuevas funciones primero</li>
+              </ul>
+              <button class="btn-option btn-subscribe" data-action="subscribe">
+                💳 Suscribirse Ahora
+              </button>
+            </div>
+          </div>
+
+          <div class="trial-note">
+            <p>💡 <strong>Tip:</strong> Puedes comenzar con la prueba gratuita y suscribirte en cualquier momento dentro de los 7 días para continuar sin interrupción.</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // CSS específico para el modal de trial y suscripción
+    const style = document.createElement('style');
+    style.textContent = `
+      .trial-options-container {
+        text-align: center;
+      }
+      .welcome-message {
+        margin-bottom: 30px;
+      }
+      .welcome-message h3 {
+        margin: 0 0 12px;
+        color: var(--text-primary);
+        font-size: 1.3em;
+      }
+      .welcome-message p {
+        margin: 0;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+      .options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+      @media (max-width: 600px) {
+        .options-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .option-card {
+        background: var(--bg-tertiary);
+        border: 2px solid var(--border-primary);
+        border-radius: 16px;
+        padding: 24px;
+        position: relative;
+        transition: all 0.3s ease;
+      }
+      .option-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      }
+      .trial-card {
+        border-color: var(--terminal-green);
+        box-shadow: 0 0 20px rgba(79, 154, 101, 0.2);
+      }
+      .subscription-card {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+      }
+      .option-badge {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .option-badge.free {
+        background: var(--terminal-green);
+        color: white;
+      }
+      .option-badge.premium {
+        background: #8b5cf6;
+        color: white;
+      }
+      .option-card h4 {
+        margin: 16px 0 12px;
+        color: var(--text-primary);
+        font-size: 1.2em;
+      }
+      .option-price {
+        margin: 16px 0;
+        font-weight: 700;
+      }
+      .price-big {
+        font-size: 2.2em;
+        color: var(--terminal-green);
+      }
+      .subscription-card .price-big {
+        color: #8b5cf6;
+      }
+      .currency {
+        font-size: 1em;
+        color: var(--terminal-green);
+        vertical-align: top;
+      }
+      .subscription-card .currency {
+        color: #8b5cf6;
+      }
+      .price-period {
+        font-size: 0.9em;
+        color: var(--text-secondary);
+        display: block;
+        margin-top: 4px;
+      }
+      .option-description {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.4;
+        margin: 12px 0 16px;
+      }
+      .features-mini {
+        list-style: none;
+        padding: 0;
+        margin: 16px 0;
+        text-align: left;
+      }
+      .features-mini li {
+        padding: 4px 0;
+        color: var(--text-primary);
+        font-size: 13px;
+      }
+      .btn-option {
+        width: 100%;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 16px;
+      }
+      .btn-trial {
+        background: linear-gradient(135deg, var(--terminal-green), #10b981);
+        color: white;
+      }
+      .btn-trial:hover {
+        background: linear-gradient(135deg, #10b981, var(--terminal-green));
+        transform: scale(1.02);
+      }
+      .btn-subscribe {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+      }
+      .btn-subscribe:hover {
+        background: linear-gradient(135deg, #7c3aed, #6d28d9);
+        transform: scale(1.02);
+      }
+      .trial-note {
+        background: rgba(79, 154, 101, 0.1);
+        border: 1px solid var(--terminal-green);
+        border-radius: 8px;
+        padding: 16px;
+        text-align: left;
+      }
+      .trial-note p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-primary);
+        line-height: 1.4;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Event listeners
+    modal.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) {
+        modal.remove();
+      }
+      
+      const action = e.target.dataset.action;
+      if (action === 'start-trial') {
+        this.handleTrialActivation(modal);
+      } else if (action === 'subscribe') {
+        // Cerrar modal actual y mostrar modal de pago
+        modal.remove();
+        setTimeout(() => {
+          const paymentModal = this.createSubscriptionModal();
+          document.body.appendChild(paymentModal);
+          setTimeout(() => paymentModal.classList.add('show'), 10);
+        }, 100);
+      }
+    });
+
+    return modal;
+  }
+
+  // Manejar activación del trial gratuito
+  async handleTrialActivation(modal) {
+    try {
+      if (!window.currentUser) {
+        alert('Debes estar autenticado para activar el trial');
+        return;
+      }
+
+      // Mostrar loading
+      const button = modal.querySelector('.btn-trial');
+      const originalText = button.textContent;
+      button.textContent = '⏳ Activando trial...';
+      button.disabled = true;
+
+      // Activar trial
+      await this.activateTrialForNewUser(window.currentUser.id);
+
+      // Mostrar éxito
+      button.textContent = '🎉 ¡Trial activado!';
+      
+      setTimeout(() => {
+        modal.remove();
+        
+        // Actualizar UI
+        if (typeof window.initializeSubscriptionSystem === 'function') {
+          window.initializeSubscriptionSystem();
+        }
+        
+        // Mostrar notificación de éxito
+        alert('¡Perfecto! Tu prueba gratuita de 7 días está activa. ¡Disfruta de todas las funciones premium!');
+        
+        // Recargar página para aplicar cambios
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error activando trial:', error);
+      
+      // Restaurar botón
+      const button = modal.querySelector('.btn-trial');
+      button.textContent = originalText;
+      button.disabled = false;
+      
+      alert('Error activando el trial: ' + error.message);
+    }
+  }
+
   // Manejar selección de plan - Solo mensual
   async handlePlanSelection(planType, modal) {
     try {
@@ -621,6 +995,11 @@ class SubscriptionService {
           ` : ''}
 
           <div class="subscription-actions">
+            ${!isExpired && subscription.plan_type === 'monthly' ? `
+            <button class="btn-cancel" data-action="cancel">
+              ⚠️ Cancelar Suscripción
+            </button>
+            ` : ''}
             <button class="btn-secondary" data-action="close">
               ← Continuar usando ZetaLab
             </button>
@@ -754,6 +1133,7 @@ class SubscriptionService {
         display: flex;
         justify-content: center;
         gap: 12px;
+        flex-wrap: wrap;
       }
       .btn-secondary {
         background: var(--bg-tertiary);
@@ -768,6 +1148,22 @@ class SubscriptionService {
       .btn-secondary:hover {
         background: var(--bg-hover);
         border-color: var(--border-focus);
+      }
+      .btn-cancel {
+        background: transparent;
+        color: #dc2626;
+        border: 1px solid #dc2626;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+      }
+      .btn-cancel:hover {
+        background: #dc2626;
+        color: white;
+        transform: scale(1.02);
       }
     `;
     document.head.appendChild(style);
@@ -789,10 +1185,53 @@ class SubscriptionService {
           document.body.appendChild(paymentModal);
           setTimeout(() => paymentModal.classList.add('show'), 10);
         }, 100);
+      } else if (action === 'cancel') {
+        this.handleSubscriptionCancellation(subscription, modal);
       }
     });
 
     return modal;
+  }
+
+  // Manejar cancelación de suscripción
+  async handleSubscriptionCancellation(subscription, modal) {
+    const confirmed = confirm(
+      '⚠️ ¿Estás seguro de que quieres cancelar tu suscripción?\n\n' +
+      '• Perderás acceso a las funciones premium cuando expire\n' +
+      '• Tu suscripción permanecerá activa hasta: ' + new Date(subscription.expires_at).toLocaleDateString('es-AR') + '\n' +
+      '• Podrás suscribirte nuevamente en cualquier momento\n\n' +
+      'Presiona OK para confirmar la cancelación.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      // Marcar como cancelada (desactivar)
+      const { error } = await window.supa
+        .from('subscriptions')
+        .update({ active: false })
+        .eq('id', subscription.id);
+
+      if (error) throw error;
+
+      // Mostrar confirmación
+      alert('✅ Suscripción cancelada exitosamente.\n\nTu acceso premium permanecerá activo hasta ' + 
+            new Date(subscription.expires_at).toLocaleDateString('es-AR') + '.');
+
+      // Cerrar modal y actualizar UI
+      modal.remove();
+      
+      // Actualizar el sistema de suscripciones
+      if (typeof window.initializeSubscriptionSystem === 'function') {
+        setTimeout(() => {
+          window.initializeSubscriptionSystem();
+        }, 1000);
+      }
+
+    } catch (error) {
+      console.error('Error cancelando suscripción:', error);
+      alert('Error cancelando la suscripción. Por favor intenta nuevamente.');
+    }
   }
 
   // Verificar si es necesario mostrar modal
