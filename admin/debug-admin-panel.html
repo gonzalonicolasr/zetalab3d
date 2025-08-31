@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZETALAB Admin Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .test-section { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+    </style>
+</head>
+<body>
+    <h1>🔧 ZETALAB Admin Panel - Debug Tool</h1>
+    
+    <div class="test-section">
+        <h2>1. Conexión a Supabase</h2>
+        <button class="btn-primary" onclick="testSupabaseConnection()">Probar Conexión</button>
+        <div id="supabase-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Verificar Vistas de Base de Datos</h2>
+        <button class="btn-primary" onclick="testDatabaseViews()">Probar Vistas</button>
+        <div id="views-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Cargar Usuarios de auth.users</h2>
+        <button class="btn-success" onclick="testLoadAllUsers()">Cargar TODOS los Usuarios</button>
+        <div id="users-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Cargar Suscripciones Completas</h2>
+        <button class="btn-success" onclick="testLoadSubscriptions()">Cargar Usuarios + Suscripciones</button>
+        <div id="subs-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Verificar Funciones JavaScript</h2>
+        <button class="btn-warning" onclick="testJavaScriptFunctions()">Probar Funciones</button>
+        <div id="js-result" class="result"></div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = "https://fwmyiovamcxvinoxnput.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc";
+        
+        const supabaseAdmin = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function testSupabaseConnection() {
+            const resultDiv = document.getElementById('supabase-result');
+            resultDiv.innerHTML = '<p class="info">Probando conexión...</p>';
+            
+            try {
+                // Test basic connection
+                const { data, error } = await supabaseAdmin
+                    .from('pieces')
+                    .select('id')
+                    .limit(1);
+                
+                if (error) {
+                    resultDiv.innerHTML = `<p class="error">❌ Error de conexión: ${error.message}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="success">✅ Conexión exitosa a Supabase</p>`;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${err.message}</p>`;
+            }
+        }
+
+        async function testDatabaseViews() {
+            const resultDiv = document.getElementById('views-result');
+            resultDiv.innerHTML = '<p class="info">Probando vistas de base de datos...</p>';
+            
+            const results = [];
+            
+            // Test admin_auth_users_view
+            try {
+                const { data: authUsers, error: authError } = await supabaseAdmin
+                    .from('admin_auth_users_view')
+                    .select('*')
+                    .limit(5);
+                
+                if (authError) {
+                    results.push(`❌ admin_auth_users_view: ${authError.message}`);
+                } else {
+                    results.push(`✅ admin_auth_users_view: ${authUsers.length} registros encontrados`);
+                }
+            } catch (err) {
+                results.push(`❌ admin_auth_users_view: ${err.message}`);
+            }
+
+            // Test admin_complete_users
+            try {
+                const { data: completeUsers, error: completeError } = await supabaseAdmin
+                    .from('admin_complete_users')
+                    .select('*')
+                    .limit(5);
+                
+                if (completeError) {
+                    results.push(`❌ admin_complete_users: ${completeError.message}`);
+                } else {
+                    results.push(`✅ admin_complete_users: ${completeUsers.length} registros encontrados`);
+                }
+            } catch (err) {
+                results.push(`❌ admin_complete_users: ${err.message}`);
+            }
+
+            // Test comprehensive stats function
+            try {
+                const { data: stats, error: statsError } = await supabaseAdmin
+                    .rpc('get_comprehensive_admin_stats');
+                
+                if (statsError) {
+                    results.push(`❌ get_comprehensive_admin_stats: ${statsError.message}`);
+                } else {
+                    results.push(`✅ get_comprehensive_admin_stats: ${JSON.stringify(stats, null, 2)}`);
+                }
+            } catch (err) {
+                results.push(`❌ get_comprehensive_admin_stats: ${err.message}`);
+            }
+            
+            resultDiv.innerHTML = `<pre>${results.join('\n')}</pre>`;
+        }
+
+        async function testLoadAllUsers() {
+            const resultDiv = document.getElementById('users-result');
+            resultDiv.innerHTML = '<p class="info">Cargando TODOS los usuarios registrados...</p>';
+            
+            let allUsers = [];
+            let usedMethod = '';
+            
+            // Try auth users view first
+            try {
+                const { data: authUsers, error: authError } = await supabaseAdmin
+                    .from('admin_auth_users_view')
+                    .select('*')
+                    .order('registration_date', { ascending: false });
+
+                if (!authError && authUsers && authUsers.length > 0) {
+                    allUsers = authUsers;
+                    usedMethod = 'admin_auth_users_view';
+                } else {
+                    throw new Error(authError?.message || 'No data from auth view');
+                }
+            } catch (e) {
+                console.log('Auth view failed, trying RPC...');
+                
+                try {
+                    const { data: rpcData, error: rpcError } = await supabaseAdmin
+                        .rpc('get_comprehensive_admin_stats');
+
+                    if (!rpcError && rpcData) {
+                        allUsers = [{ summary: rpcData }];
+                        usedMethod = 'RPC function (stats only)';
+                    } else {
+                        throw new Error(rpcError?.message || 'RPC failed');
+                    }
+                } catch (rpcErr) {
+                    console.log('RPC failed, using fallback...');
+                    
+                    // Ultimate fallback - get known users from pieces table
+                    const { data: pieceUsers, error: pieceError } = await supabaseAdmin
+                        .from('pieces')
+                        .select('user_id, created_at')
+                        .not('user_id', 'is', null);
+
+                    if (!pieceError) {
+                        const uniqueUsers = new Map();
+                        (pieceUsers || []).forEach(p => {
+                            if (!uniqueUsers.has(p.user_id)) {
+                                uniqueUsers.set(p.user_id, {
+                                    id: p.user_id,
+                                    email: `user-${p.user_id.substring(0, 8)}@zetalab.local`,
+                                    registration_date: p.created_at
+                                });
+                            }
+                        });
+                        allUsers = Array.from(uniqueUsers.values());
+                        usedMethod = 'Fallback from pieces table';
+                    }
+                }
+            }
+
+            resultDiv.innerHTML = `
+                <p class="success">✅ Método usado: ${usedMethod}</p>
+                <p class="info">📊 Total de usuarios encontrados: ${allUsers.length}</p>
+                <pre>${JSON.stringify(allUsers.slice(0, 3), null, 2)}</pre>
+                ${allUsers.length > 3 ? '<p>... y más usuarios</p>' : ''}
+            `;
+        }
+
+        async function testLoadSubscriptions() {
+            const resultDiv = document.getElementById('subs-result');
+            resultDiv.innerHTML = '<p class="info">Cargando datos de suscripciones...</p>';
+            
+            try {
+                // Get all users first
+                const { data: authUsers, error: authError } = await supabaseAdmin
+                    .from('admin_auth_users_view')
+                    .select('*')
+                    .limit(10);
+
+                if (authError) throw authError;
+
+                // Get subscriptions data
+                const { data: subscriptions, error: subsError } = await supabaseAdmin
+                    .from('subscriptions')
+                    .select('*');
+
+                const { data: userSubscriptions, error: userSubsError } = await supabaseAdmin
+                    .from('user_subscriptions')
+                    .select('*');
+
+                const { data: plans, error: plansError } = await supabaseAdmin
+                    .from('subscription_plans')
+                    .select('*');
+
+                const { data: payments, error: paymentsError } = await supabaseAdmin
+                    .from('payment_transactions')
+                    .select('*');
+
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Datos cargados correctamente:</p>
+                    <ul>
+                        <li>👥 Usuarios: ${authUsers?.length || 0}</li>
+                        <li>📋 Suscripciones (legacy): ${subscriptions?.length || 0}</li>
+                        <li>💳 User Subscriptions (modern): ${userSubscriptions?.length || 0}</li>
+                        <li>📦 Planes: ${plans?.length || 0}</li>
+                        <li>💰 Transacciones: ${payments?.length || 0}</li>
+                    </ul>
+                    <p class="info">Muestra de datos:</p>
+                    <pre>${JSON.stringify({
+                        sample_user: authUsers?.[0] || 'No users',
+                        sample_subscription: subscriptions?.[0] || 'No subscriptions',
+                        sample_user_subscription: userSubscriptions?.[0] || 'No user subscriptions',
+                        sample_plan: plans?.[0] || 'No plans'
+                    }, null, 2)}</pre>
+                `;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testJavaScriptFunctions() {
+            const resultDiv = document.getElementById('js-result');
+            const results = [];
+
+            // Test AdminUtils functions
+            try {
+                if (typeof AdminUtils !== 'undefined') {
+                    results.push('✅ AdminUtils está disponible');
+                    
+                    // Test date formatting
+                    const testDate = new Date().toISOString();
+                    results.push(`✅ formatDate: ${AdminUtils.formatDate(testDate)}`);
+                    results.push(`✅ formatDateTime: ${AdminUtils.formatDateTime(testDate)}`);
+                    results.push(`✅ getRelativeTime: ${AdminUtils.getRelativeTime(testDate)}`);
+                    results.push(`✅ formatCurrency: ${AdminUtils.formatCurrency(1500)}`);
+                } else {
+                    results.push('❌ AdminUtils no está disponible');
+                }
+            } catch (err) {
+                results.push(`❌ Error con AdminUtils: ${err.message}`);
+            }
+
+            // Test class availability
+            const classes = ['AdminUsers', 'AdminSubscriptions', 'AdminDashboard'];
+            classes.forEach(className => {
+                if (typeof window[className] !== 'undefined') {
+                    results.push(`✅ ${className} está disponible`);
+                } else {
+                    results.push(`❌ ${className} no está disponible`);
+                }
+            });
+
+            resultDiv.innerHTML = `<pre>${results.join('\n')}</pre>`;
+        }
+
+        // Auto test on page load
+        window.addEventListener('load', () => {
+            console.log('Debug page loaded');
+        });
+    </script>
+</body>
+</html>

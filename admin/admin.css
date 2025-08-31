@@ -1,6 +1,11 @@
 /* ============================================================================
    ZETALAB Admin Panel - Modern Admin Interface Design
    Based on ZETALAB terminal green theme with enhanced admin styling
+   
+   Recent Updates:
+   - Enhanced subscription table styling for users with/without subscriptions
+   - Improved user data display with auth method indicators
+   - Fixed loading states and error handling
    ============================================================================ */
 
 :root {
