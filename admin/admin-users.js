@@ -195,19 +195,107 @@ class AdminUsers {
 
   async loadUsersFromView() {
     try {
-      // Skip views completely - use comprehensive data loading
-      console.log('⚠️ Loading user data from actual tables...');
+      console.log('📊 Loading ALL users from comprehensive admin view...');
       
-      // Use comprehensive approach without relying on views or auth.users
-      const allUsers = await this.getAllUsersComprehensive();
-      this.users = allUsers;
-      return this.users;
+      // First try the comprehensive view that includes auth.users data
+      const { data: completeUsers, error: viewError } = await supabaseAdmin
+        .from('admin_complete_users')
+        .select('*')
+        .order('registration_date', { ascending: false });
+
+      if (!viewError && completeUsers && completeUsers.length > 0) {
+        console.log(`✅ Loaded ${completeUsers.length} users from comprehensive view (includes ALL registered users)`);
+        this.users = this.transformCompleteUsersData(completeUsers);
+        return this.users;
+      } else {
+        console.warn('⚠️ Comprehensive view not available, using fallback method');
+        return await this.getAllUsersComprehensive();
+      }
 
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('❌ Error loading users from view:', error);
       // Ultimate fallback - get basic user data from pieces table
       return await this.loadUsersLegacy();
     }
+  }
+
+  transformCompleteUsersData(completeUsers) {
+    return completeUsers.map(user => ({
+      id: user.user_id,
+      email: user.email || `user-${user.user_id.substring(0, 8)}@zetalab.local`,
+      created_at: user.registration_date,
+      updated_at: user.updated_at,
+      last_sign_in_at: user.last_sign_in_at,
+      email_confirmed_at: user.email_confirmed_at,
+      auth_method: this.extractPrimaryAuthMethod(user.auth_methods),
+      banned_until: user.banned_until,
+      raw_user_meta_data: user.raw_user_meta_data,
+      raw_app_meta_data: user.raw_app_meta_data,
+      
+      // Admin information
+      is_admin: user.is_admin,
+      admin_role: user.admin_role,
+      admin_permissions: user.admin_permissions,
+      admin_since: user.admin_since,
+      
+      // Subscription information
+      subscription: user.subscription_id ? {
+        id: user.subscription_id,
+        status: user.subscription_status,
+        current_period_start: user.current_period_start,
+        current_period_end: user.current_period_end,
+        trial_ends_at: user.trial_ends_at,
+        plan_name: user.plan_name,
+        plan_price: user.plan_price,
+        created_at: user.subscription_created_at
+      } : null,
+      subscription_type: user.plan_slug || user.legacy_plan_type || 'free',
+      subscription_status: user.subscription_status || 'none',
+      subscription_expires_at: user.current_period_end || user.legacy_expires_at,
+      plan_name: user.plan_name,
+      plan_price: user.plan_price,
+      
+      // Usage statistics
+      piece_count: user.piece_count || 0,
+      version_count: user.version_count || 0,
+      total_estimated_value: user.total_estimated_value || 0,
+      first_piece_created: user.first_piece_created,
+      last_piece_created: user.last_piece_created,
+      last_calculation_date: user.last_calculation_date,
+      
+      // Configuration and inventory
+      config_profile_count: user.config_profile_count || 0,
+      filament_count: user.filament_count || 0,
+      total_filament_weight: user.total_filament_weight || 0,
+      
+      // Payment information
+      payment_count: user.payment_count || 0,
+      total_amount_paid: user.total_amount_paid || 0,
+      successful_payments: user.successful_payments || 0,
+      last_payment_date: user.last_payment_date,
+      
+      // Monthly usage
+      current_month_calculations: user.current_month_calculations || 0,
+      current_month_pieces: user.current_month_pieces || 0,
+      current_month_exports: user.current_month_exports || 0,
+      
+      // Calculated fields
+      activity_score: user.activity_score || 0,
+      current_status: user.current_status || 'active',
+      status: user.current_status || 'active',
+      last_activity: user.last_piece_created || user.last_sign_in_at || user.registration_date,
+      total_revenue: user.total_estimated_value || 0
+    }));
+  }
+
+  extractPrimaryAuthMethod(authMethods) {
+    if (!authMethods) return 'unknown';
+    
+    const methods = authMethods.split(',');
+    if (methods.includes('google')) return 'google';
+    if (methods.includes('facebook')) return 'facebook';
+    if (methods.includes('email')) return 'email';
+    return methods[0] || 'unknown';
   }
 
   transformViewData(viewData) {
