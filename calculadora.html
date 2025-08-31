@@ -640,10 +640,16 @@
   
   // Función para inicializar el botón de suscripciones
   function initializeSubscriptionButton() {
-    if (subscriptionButtonInitialized) return;
+    if (subscriptionButtonInitialized) {
+      console.log('⚠️ Botón ya inicializado, saltando...');
+      return;
+    }
     
     const subscriptionButton = document.getElementById('subscriptionButton');
-    if (!subscriptionButton) return;
+    if (!subscriptionButton) {
+      console.error('❌ Botón de suscripción no encontrado en DOM');
+      return;
+    }
     
     console.log('🔧 Inicializando botón de suscripciones...');
     
@@ -651,39 +657,56 @@
     subscriptionButton.style.display = '';
     subscriptionButton.disabled = false;
     
-    // Limpiar event listeners previos (por si acaso)
-    subscriptionButton.replaceWith(subscriptionButton.cloneNode(true));
-    const newButton = document.getElementById('subscriptionButton');
+    // Limpiar event listeners previos completamente
+    const newButton = subscriptionButton.cloneNode(true);
+    subscriptionButton.parentNode.replaceChild(newButton, subscriptionButton);
     
-    // Añadir el event listener con mejor manejo de errores
-    newButton.addEventListener('click', async function() {
-      console.log('🖱️ Click en botón de suscripciones');
+    // Añadir el event listener con manejo mejorado de errores y debugging
+    newButton.addEventListener('click', async function(event) {
+      console.log('🖱️ CLICK DETECTADO en botón de suscripciones');
       
-      // Verificar que el usuario esté autenticado
-      if (!window.currentUser) {
-        alert('Debes estar autenticado para acceder a las suscripciones');
-        return;
-      }
+      // Prevenir comportamiento por defecto
+      event.preventDefault();
+      event.stopPropagation();
       
-      // Verificar que el servicio esté disponible
-      if (!window.subscriptionService) {
-        console.error('❌ SubscriptionService no disponible');
-        alert('Servicio de suscripciones no disponible. Por favor recarga la página.');
-        return;
-      }
+      // Deshabilitar botón temporalmente para prevenir dobles clicks
+      this.disabled = true;
+      const originalText = this.querySelector('.btn-text').textContent;
+      this.querySelector('.btn-text').textContent = 'Cargando...';
       
       try {
+        // Verificar que el usuario esté autenticado
+        if (!window.currentUser) {
+          console.error('❌ Usuario no autenticado');
+          alert('Debes estar autenticado para acceder a las suscripciones');
+          return;
+        }
+        
+        // Verificar que el servicio esté disponible
+        if (!window.subscriptionService) {
+          console.error('❌ SubscriptionService no disponible');
+          alert('Servicio de suscripciones no disponible. Por favor recarga la página.');
+          return;
+        }
+        
         console.log('📡 Llamando a showSubscriptionModal...');
         await window.subscriptionService.showSubscriptionModal();
-        console.log('✅ Modal de suscripción mostrado correctamente');
+        console.log('✅ Llamada a showSubscriptionModal completada');
+        
       } catch (error) {
-        console.error('❌ Error mostrando modal de suscripciones:', error);
-        alert('Error al cargar las suscripciones. Por favor intenta nuevamente.');
+        console.error('❌ Error en click handler:', error);
+        alert('Error al cargar las suscripciones: ' + error.message);
+      } finally {
+        // Rehabilitar botón
+        setTimeout(() => {
+          this.disabled = false;
+          this.querySelector('.btn-text').textContent = originalText;
+        }, 1000);
       }
     });
     
     subscriptionButtonInitialized = true;
-    console.log('✅ Botón de suscripciones inicializado correctamente');
+    console.log('✅ Botón de suscripciones inicializado correctamente con ID:', newButton.id);
   }
   
   // Inicializar botón cuando el DOM esté listo

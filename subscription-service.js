@@ -225,6 +225,13 @@ class SubscriptionService {
     console.log('👤 Usuario autenticado:', window.currentUser.id);
 
     try {
+      // Remover cualquier modal existente antes de crear uno nuevo
+      const existingModal = document.querySelector('.subscription-modal');
+      if (existingModal) {
+        console.log('🗑️ Removiendo modal existente');
+        existingModal.remove();
+      }
+
       console.log('🔍 Verificando si el usuario tiene suscripción activa...');
       
       // Verificar si el usuario tiene suscripción activa
@@ -246,20 +253,87 @@ class SubscriptionService {
           console.log('🎁 Usuario elegible para trial - mostrando modal con opción de trial');
           // Mostrar modal con opción de trial gratuito y pago
           const modal = this.createTrialAndSubscriptionModal();
-          document.body.appendChild(modal);
-          setTimeout(() => modal.classList.add('show'), 10);
+          this.showModal(modal);
         } else {
           console.log('💳 Usuario no elegible para trial - mostrando modal de pago');
           // Usuario sin suscripción - mostrar modal de pago
           const modal = this.createSubscriptionModal();
-          document.body.appendChild(modal);
-          setTimeout(() => modal.classList.add('show'), 10);
+          this.showModal(modal);
         }
       }
     } catch (error) {
       console.error('❌ Error verificando suscripción:', error);
       alert('Error al verificar tu suscripción. Por favor intenta nuevamente.');
     }
+  }
+
+  // Método helper para limpiar estilos existentes
+  removeExistingModalStyles() {
+    const existingStyles = document.querySelectorAll('#subscription-modal-styles, style[id*="subscription"]');
+    existingStyles.forEach(style => style.remove());
+  }
+
+  // Método helper para mostrar modales con mejor debugging
+  showModal(modal) {
+    console.log('🎨 Mostrando modal...');
+    
+    // Limpiar estilos conflictivos
+    this.removeExistingModalStyles();
+    
+    // Asegurar que el modal tenga la clase correcta
+    modal.className = 'subscription-modal';
+    
+    // Agregar estilos inline como fallback
+    modal.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 99999 !important;
+      opacity: 0 !important;
+      transition: opacity 0.3s ease !important;
+      pointer-events: all !important;
+      display: block !important;
+    `;
+    
+    // Agregar al DOM
+    document.body.appendChild(modal);
+    console.log('✅ Modal añadido al DOM');
+    
+    // Forzar reflow antes de agregar la clase show
+    modal.offsetHeight;
+    
+    // Mostrar modal con animación
+    requestAnimationFrame(() => {
+      modal.classList.add('show');
+      modal.style.opacity = '1';
+      console.log('✨ Modal mostrado con opacity 1');
+      
+      // Verificar que el modal sea visible
+      const modalRect = modal.getBoundingClientRect();
+      const computedStyle = window.getComputedStyle(modal);
+      
+      console.log('📏 Dimensiones del modal:', {
+        top: modalRect.top,
+        left: modalRect.left,
+        width: modalRect.width,
+        height: modalRect.height,
+        opacity: computedStyle.opacity,
+        zIndex: computedStyle.zIndex,
+        display: computedStyle.display,
+        position: computedStyle.position
+      });
+      
+      // Verificación adicional - si todavía no es visible, forzar
+      if (modalRect.width === 0 || modalRect.height === 0) {
+        console.warn('⚠️ Modal sin dimensiones - aplicando estilos de emergencia');
+        modal.style.cssText += `
+          background: rgba(0,0,0,0.8) !important;
+          backdrop-filter: blur(5px) !important;
+        `;
+      }
+    });
   }
 
   // Crear modal de suscripción - Solo plan mensual
@@ -315,21 +389,24 @@ class SubscriptionService {
       </div>
     `;
 
-    // CSS del modal simplificado
+    // CSS del modal simplificado - Fixed z-index and visibility
     const style = document.createElement('style');
+    style.id = 'subscription-modal-styles';
     style.textContent = `
       .subscription-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 10000;
-        opacity: 0;
-        transition: opacity 0.3s ease;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 99999 !important;
+        opacity: 0 !important;
+        transition: opacity 0.3s ease !important;
+        pointer-events: all !important;
+        display: block !important;
       }
       .subscription-modal.show {
-        opacity: 1;
+        opacity: 1 !important;
       }
       .modal-overlay {
         position: absolute;
@@ -873,14 +950,9 @@ class SubscriptionService {
       
       console.log('✅ Suscripción obtenida, creando modal de gestión:', subscription);
       const modal = this.createSubscriptionManagementModal(subscription);
-      document.body.appendChild(modal);
       
-      console.log('🎨 Modal añadido al DOM, aplicando animación...');
-      // Animación de entrada
-      setTimeout(() => {
-        modal.classList.add('show');
-        console.log('✅ Modal de gestión mostrado correctamente');
-      }, 10);
+      // Usar el helper showModal para consistencia
+      this.showModal(modal);
       
     } catch (error) {
       console.error('❌ Error en showSubscriptionManagement:', error);

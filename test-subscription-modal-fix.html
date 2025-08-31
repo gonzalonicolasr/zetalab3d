@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Test Subscription Modal Fix</title>
+  
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Estilos básicos -->
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .test-container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border-primary);
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid var(--border-secondary);
+      border-radius: 8px;
+      background: var(--bg-tertiary);
+    }
+    .test-button {
+      margin: 10px;
+      padding: 12px 20px;
+      background: var(--terminal-green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .test-button:hover {
+      background: #5a9d6b;
+    }
+    .test-button.secondary {
+      background: #6b7280;
+    }
+    .test-log {
+      background: #1a1a1a;
+      color: #10b981;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="test-container">
+  <h1>🧪 Test Subscription Modal Fix</h1>
+  <p>Esta página permite probar las correcciones del modal de suscripciones sin afectar la aplicación principal.</p>
+
+  <div class="test-section">
+    <h3>🔍 Estado de Inicialización</h3>
+    <div id="initStatus">
+      <p>❌ Sistemas no inicializados</p>
+    </div>
+    <button class="test-button secondary" onclick="checkSystemStatus()">
+      🔍 Verificar Estado de Sistemas
+    </button>
+  </div>
+
+  <div class="test-section">
+    <h3>🖱️ Test de Botón de Suscripciones</h3>
+    <p>Este botón simula exactamente el comportamiento del botón real:</p>
+    <button id="testSubscriptionButton" class="pill subscription-btn enhanced-btn test-button" data-tooltip="Test del modal de suscripciones">
+      <span class="btn-icon">💳</span>
+      <span class="btn-text">Test Suscripciones</span>
+    </button>
+  </div>
+
+  <div class="test-section">
+    <h3>🛠️ Herramientas de Debug</h3>
+    <button class="test-button secondary" onclick="debugSubscriptionService()">
+      🔧 Debug SubscriptionService
+    </button>
+    <button class="test-button secondary" onclick="testModalCreation()">
+      🎭 Test Creación Modal
+    </button>
+    <button class="test-button secondary" onclick="clearConsole()">
+      🧹 Limpiar Console
+    </button>
+  </div>
+
+  <div class="test-section">
+    <h3>📊 Log de Debug</h3>
+    <div id="debugLog" class="test-log">
+Sistema iniciando...
+    </div>
+  </div>
+</div>
+
+<!-- Scripts del sistema -->
+<script src="subscription-service.js"></script>
+<script type="module" src="auth.js"></script>
+
+<script>
+// Test helper para logging
+function logToDebug(message) {
+  const debugLog = document.getElementById('debugLog');
+  const timestamp = new Date().toLocaleTimeString();
+  debugLog.textContent += `\n[${timestamp}] ${message}`;
+  debugLog.scrollTop = debugLog.scrollHeight;
+  console.log(message);
+}
+
+// Verificar estado de sistemas
+function checkSystemStatus() {
+  const statusEl = document.getElementById('initStatus');
+  let status = [];
+  
+  if (window.supa) {
+    status.push('✅ Supabase Client disponible');
+  } else {
+    status.push('❌ Supabase Client no disponible');
+  }
+  
+  if (window.currentUser) {
+    status.push(`✅ Usuario autenticado: ${window.currentUser.email}`);
+  } else {
+    status.push('❌ Usuario no autenticado');
+  }
+  
+  if (window.subscriptionService) {
+    status.push('✅ SubscriptionService disponible');
+  } else {
+    status.push('❌ SubscriptionService no disponible');
+  }
+  
+  statusEl.innerHTML = '<p>' + status.join('</p><p>') + '</p>';
+  logToDebug('Estado verificado: ' + status.join(' | '));
+}
+
+// Debug del servicio de suscripciones
+async function debugSubscriptionService() {
+  logToDebug('🔍 Iniciando debug del SubscriptionService...');
+  
+  if (!window.subscriptionService) {
+    logToDebug('❌ SubscriptionService no disponible');
+    return;
+  }
+  
+  if (!window.currentUser) {
+    logToDebug('❌ Usuario no autenticado - no se puede hacer debug completo');
+    return;
+  }
+  
+  try {
+    logToDebug('📡 Verificando suscripción activa...');
+    const hasActive = await window.subscriptionService.hasActiveSubscription(window.currentUser.id);
+    logToDebug(`📊 ¿Tiene suscripción activa?: ${hasActive}`);
+    
+    logToDebug('📋 Obteniendo suscripción actual...');
+    const subscription = await window.subscriptionService.getCurrentSubscription(window.currentUser.id);
+    logToDebug(`📄 Suscripción: ${subscription ? JSON.stringify(subscription, null, 2) : 'null'}`);
+    
+    logToDebug('🎭 Verificando elegibilidad para trial...');
+    const isEligible = await window.subscriptionService.isEligibleForTrial(window.currentUser.id);
+    logToDebug(`🎁 ¿Elegible para trial?: ${isEligible}`);
+    
+  } catch (error) {
+    logToDebug(`❌ Error en debug: ${error.message}`);
+  }
+}
+
+// Test de creación de modal
+async function testModalCreation() {
+  logToDebug('🎭 Probando creación directa de modal...');
+  
+  if (!window.subscriptionService) {
+    logToDebug('❌ SubscriptionService no disponible');
+    return;
+  }
+  
+  try {
+    // Crear modal de prueba
+    const testModal = window.subscriptionService.createSubscriptionModal();
+    
+    // Aplicar el método showModal
+    logToDebug('✨ Aplicando showModal...');
+    window.subscriptionService.showModal(testModal);
+    
+    logToDebug('✅ Modal de prueba creado y mostrado');
+    
+    // Agregar botón para cerrarlo después de 5 segundos
+    setTimeout(() => {
+      if (document.querySelector('.subscription-modal')) {
+        document.querySelector('.subscription-modal').remove();
+        logToDebug('🗑️ Modal de prueba removido automáticamente');
+      }
+    }, 5000);
+    
+  } catch (error) {
+    logToDebug(`❌ Error creando modal: ${error.message}`);
+  }
+}
+
+// Limpiar console
+function clearConsole() {
+  document.getElementById('debugLog').textContent = 'Console limpiado...';
+  console.clear();
+}
+
+// Inicializar test cuando esté listo
+document.addEventListener('DOMContentLoaded', function() {
+  logToDebug('🚀 Test de Subscription Modal Fix iniciado');
+  
+  // Configurar botón de test
+  const testButton = document.getElementById('testSubscriptionButton');
+  testButton.addEventListener('click', async function() {
+    logToDebug('🖱️ CLICK en botón de test detectado');
+    
+    if (!window.currentUser) {
+      logToDebug('❌ Usuario no autenticado');
+      alert('Debes estar autenticado para probar las suscripciones');
+      return;
+    }
+    
+    if (!window.subscriptionService) {
+      logToDebug('❌ SubscriptionService no disponible');
+      alert('SubscriptionService no disponible');
+      return;
+    }
+    
+    try {
+      logToDebug('📡 Llamando a showSubscriptionModal...');
+      await window.subscriptionService.showSubscriptionModal();
+      logToDebug('✅ showSubscriptionModal ejecutado correctamente');
+    } catch (error) {
+      logToDebug(`❌ Error: ${error.message}`);
+      alert('Error: ' + error.message);
+    }
+  });
+  
+  // Verificar estado inicial después de un momento
+  setTimeout(() => {
+    checkSystemStatus();
+    logToDebug('📊 Estado inicial verificado');
+  }, 1000);
+  
+  // Escuchar evento userReady
+  if (!window.currentUser) {
+    window.addEventListener('userReady', () => {
+      logToDebug('👤 Usuario listo detectado');
+      checkSystemStatus();
+    });
+  }
+});
+</script>
+</body>
+</html>
