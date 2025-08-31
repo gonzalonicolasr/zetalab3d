@@ -195,22 +195,10 @@ class AdminUsers {
 
   async loadUsersFromView() {
     try {
-      // Try to use the comprehensive view first
-      const { data: viewData, error: viewError } = await supabaseAdmin
-        .from('admin_users_view')
-        .select('*')
-        .order('admin_role', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (!viewError && viewData) {
-        console.log('✅ Using admin_users_view with comprehensive data');
-        this.users = this.transformViewData(viewData);
-        return this.users;
-      }
-
-      console.log('⚠️ Admin view not available, creating comprehensive user data...');
+      // Skip views completely - use comprehensive data loading
+      console.log('⚠️ Loading user data from actual tables...');
       
-      // Fallback: Get all users from auth.users via REST API proxy
+      // Use comprehensive approach without relying on views or auth.users
       const allUsers = await this.getAllUsersComprehensive();
       this.users = allUsers;
       return this.users;
@@ -433,13 +421,23 @@ class AdminUsers {
         
         user.piece_count = pieceCount || 0;
 
-        // Get version count
-        const { count: versionCount } = await supabaseAdmin
-          .from('piece_versions')
-          .select('*', { count: 'exact', head: true })
+        // Get version count - using piece_id from user's pieces
+        const { data: userPieces } = await supabaseAdmin
+          .from('pieces')
+          .select('id')
           .eq('user_id', userId);
         
-        user.version_count = versionCount || 0;
+        let versionCount = 0;
+        if (userPieces && userPieces.length > 0) {
+          const pieceIds = userPieces.map(p => p.id);
+          const { count } = await supabaseAdmin
+            .from('piece_versions')
+            .select('*', { count: 'exact', head: true })
+            .in('piece_id', pieceIds);
+          versionCount = count || 0;
+        }
+        
+        user.version_count = versionCount;
       }
 
       this.users = Array.from(userMap.values());
@@ -779,17 +777,23 @@ class AdminUsers {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      // Get user piece versions
-      const { data: versions, error: versionsError } = await supabaseAdmin
-        .from('piece_versions')
-        .select('created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1);
+      // Get user piece versions via pieces
+      let lastVersion = null;
+      if (pieces && pieces.length > 0) {
+        const pieceIds = pieces.map(p => p.id);
+        const { data: versions, error: versionsError } = await supabaseAdmin
+          .from('piece_versions')
+          .select('created_at')
+          .in('piece_id', pieceIds)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        lastVersion = versions?.[0]?.created_at || null;
+      }
 
       return {
         pieces: pieces || [],
-        lastVersion: versions?.[0]?.created_at
+        lastVersion: lastVersion
       };
     } catch (error) {
       console.error('Error loading user details:', error);

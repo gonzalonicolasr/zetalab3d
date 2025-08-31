@@ -150,44 +150,30 @@ class AdminDashboard {
 
   async loadSubscriptionsStats() {
     try {
-      // Load from user_subscriptions (main subscription table)
+      // Load from subscriptions table (using actual schema)
       const { data: userSubs, error: userSubsError } = await supabaseAdmin
-        .from('user_subscriptions')
-        .select(`
-          id, status, trial_started_at, trial_ends_at, 
-          current_period_start, current_period_end, 
-          canceled_at, created_at,
-          subscription_plans (name, slug, price_ars)
-        `);
-
-      // Load from simple subscriptions table (backup/legacy)
-      const { data: simpleSubs, error: simpleSubsError } = await supabaseAdmin
         .from('subscriptions')
-        .select('id, plan_type, active, expires_at, created_at, amount');
+        .select(`
+          id, user_id, plan_type, active, expires_at, 
+          created_at, payment_id, amount, payment_status
+        `);
 
       const now = new Date();
       
-      // Process user_subscriptions
+      // Process subscriptions (using actual schema)
       if (!userSubsError && userSubs) {
         const activeSubs = userSubs.filter(sub => {
-          return sub.status === 'active' && 
-                 (!sub.canceled_at) &&
-                 (!sub.current_period_end || new Date(sub.current_period_end) > now);
-        });
-        
-        const trialSubs = userSubs.filter(sub => {
-          return sub.status === 'trial' &&
-                 (!sub.trial_ends_at || new Date(sub.trial_ends_at) > now);
+          return sub.active === true && 
+                 (!sub.expires_at || new Date(sub.expires_at) > now);
         });
 
         this.stats.activeSubscriptions = activeSubs.length;
-        this.stats.trialSubscriptions = trialSubs.length;
         this.stats.totalSubscriptions = userSubs.length;
         
-        // Calculate subscription distribution
+        // Calculate subscription distribution by plan_type
         this.stats.subscriptionsByPlan = {};
         userSubs.forEach(sub => {
-          const planName = sub.subscription_plans?.name || 'Unknown';
+          const planName = sub.plan_type || 'Free';
           this.stats.subscriptionsByPlan[planName] = 
             (this.stats.subscriptionsByPlan[planName] || 0) + 1;
         });
@@ -198,15 +184,6 @@ class AdminDashboard {
         this.stats.subscriptionGrowth = userSubs.filter(sub => 
           new Date(sub.created_at) > monthAgo
         ).length;
-      }
-      
-      // Add simple subscriptions if available
-      if (!simpleSubsError && simpleSubs) {
-        const activeSimpleSubs = simpleSubs.filter(sub => 
-          sub.active && (!sub.expires_at || new Date(sub.expires_at) > now)
-        );
-        this.stats.activeSubscriptions += activeSimpleSubs.length;
-        this.stats.totalSubscriptions += simpleSubs.length;
       }
 
       // Calculate free users
@@ -312,13 +289,13 @@ class AdminDashboard {
         // Daily revenue for charts
         this.stats.dailyRevenue = this.calculateDailyRevenue(successfulPayments);
       } else {
-        // Fallback: estimate based on subscriptions and plans
-        const { data: plans, error: plansError } = await supabaseAdmin
-          .from('subscription_plans')
-          .select('price_ars');
+        // Fallback: estimate based on subscriptions amounts
+        const { data: subs, error: subsError } = await supabaseAdmin
+          .from('subscriptions')
+          .select('amount');
 
-        if (!plansError && plans) {
-          const avgPrice = plans.reduce((sum, p) => sum + (p.price_ars || 0), 0) / plans.length;
+        if (!subsError && subs && subs.length > 0) {
+          const avgPrice = subs.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0) / subs.length;
           this.stats.monthlyRevenue = this.stats.activeSubscriptions * avgPrice;
         } else {
           this.stats.monthlyRevenue = this.stats.activeSubscriptions * 2000; // Default estimate
@@ -335,18 +312,17 @@ class AdminDashboard {
   // Helper method for user analytics
   async loadUserAnalytics(piecesData) {
     try {
-      // Load config profiles for user activity analysis
-      const { data: profiles, error: profilesError } = await supabaseAdmin
-        .from('config_profiles')
-        .select('user_id, created_at');
+      // Skip config profiles and user usage for now - use simpler approach
+      // const { data: profiles, error: profilesError } = await supabaseAdmin
+      //   .from('config_profiles')
+      //   .select('user_id, created_at');
 
-      // Load user usage data
-      const { data: usage, error: usageError } = await supabaseAdmin
-        .from('user_usage')
-        .select('user_id, calculations_used, pieces_created, month_year');
+      // const { data: usage, error: usageError } = await supabaseAdmin
+      //   .from('user_usage')
+      //   .select('user_id, calculations_used, pieces_created, month_year');
 
       // Calculate power user metrics (users with high activity)
-      if (piecesData && !profilesError && profiles) {
+      if (piecesData) {
         const userPieceCount = {};
         piecesData.forEach(piece => {
           userPieceCount[piece.user_id] = (userPieceCount[piece.user_id] || 0) + 1;
@@ -568,11 +544,8 @@ class AdminDashboard {
 
       // Get recent subscriptions
       const { data: recentSubs, error: subsError } = await supabaseAdmin
-        .from('user_subscriptions')
-        .select(`
-          created_at, status,
-          subscription_plans (name)
-        `)
+        .from('subscriptions')
+        .select('created_at, plan_type, active')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -581,8 +554,8 @@ class AdminDashboard {
           activities.push({
             type: 'subscription',
             title: 'Nueva suscripción',
-            description: sub.subscription_plans?.name || 'Plan desconocido',
-            detail: `Estado: ${sub.status}`,
+            description: sub.plan_type || 'Plan desconocido',
+            detail: `Estado: ${sub.active ? 'Activa' : 'Inactiva'}`,
             time: sub.created_at,
             icon: '📈'
           });
@@ -609,25 +582,26 @@ class AdminDashboard {
         });
       }
 
-      // Get recent config profiles
-      const { data: recentProfiles, error: profilesError } = await supabaseAdmin
-        .from('config_profiles')
-        .select('created_at, name, user_id')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Skip config profiles for now - focus on main activity
+      // const { data: recentProfiles, error: profilesError } = await supabaseAdmin
+      //   .from('config_profiles')
+      //   .select('created_at, name, user_id')
+      //   .order('created_at', { ascending: false })
+      //   .limit(5);
 
-      if (!profilesError && recentProfiles) {
-        recentProfiles.forEach(profile => {
-          activities.push({
-            type: 'profile_created',
-            title: 'Nuevo perfil de configuración',
-            description: profile.name || 'Sin nombre',
-            detail: 'Perfil personalizado',
-            time: profile.created_at,
-            icon: '⚙️'
-          });
-        });
-      }
+      // Skip profile activities for now
+      // if (!profilesError && recentProfiles) {
+      //   recentProfiles.forEach(profile => {
+      //     activities.push({
+      //       type: 'profile_created',
+      //       title: 'Nuevo perfil de configuración',
+      //       description: profile.name || 'Sin nombre',
+      //       detail: 'Perfil personalizado',
+      //       time: profile.created_at,
+      //       icon: '⚙️'
+      //     });
+      //   });
+      // }
 
       // Sort by time and take latest 15
       activities.sort((a, b) => new Date(b.time) - new Date(a.time));
@@ -687,6 +661,12 @@ class AdminDashboard {
   initUserGrowthChart() {
     const canvas = document.getElementById('userGrowthChart');
     if (!canvas) return;
+
+    // Destroy existing chart if it exists
+    if (this.charts.userGrowth) {
+      this.charts.userGrowth.destroy();
+      this.charts.userGrowth = null;
+    }
 
     const ctx = canvas.getContext('2d');
     
@@ -821,6 +801,12 @@ class AdminDashboard {
   initSubscriptionChart() {
     const canvas = document.getElementById('subscriptionChart');
     if (!canvas) return;
+
+    // Destroy existing chart if it exists
+    if (this.charts.subscription) {
+      this.charts.subscription.destroy();
+      this.charts.subscription = null;
+    }
 
     const ctx = canvas.getContext('2d');
     
