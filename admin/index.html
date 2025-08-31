@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZETALAB - Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f1f1a, #1a2f26);
+            color: #00ff88;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #00ff88;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.3);
+        }
+
+        .stat-card h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #00ff88;
+        }
+
+        .stat-card .number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .label {
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            color: #ffaa00;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        .data-tables {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .table-container {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .table-container h3 {
+            margin-bottom: 20px;
+            color: #00ff88;
+            font-size: 1.4em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        th {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #00ff88, #00cc70);
+            color: #0f1f1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-active { background: #00ff88; color: #0f1f1a; }
+        .status-trial { background: #ffaa00; color: #0f1f1a; }
+        .status-expired { background: #ff4444; color: white; }
+
+        .error {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .user-email {
+            font-family: monospace;
+            background: rgba(0, 255, 136, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .data-tables {
+                grid-template-columns: 1fr;
+            }
+            .table-container {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 ZETALAB Admin Dashboard</h1>
+            <p>Gestión y estadísticas del sistema</p>
+            <button class="refresh-btn" onclick="loadAllData()">🔄 Actualizar Datos</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>👥 Usuarios Registrados</h3>
+                <div class="number" id="totalUsers">-</div>
+                <div class="label">Total en la plataforma</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>💳 Suscripciones Activas</h3>
+                <div class="number" id="activeSubscriptions">-</div>
+                <div class="label">Pagando actualmente</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>🎯 Usuarios en Trial</h3>
+                <div class="number" id="trialUsers">-</div>
+                <div class="label">Período de prueba</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>📄 Piezas Creadas</h3>
+                <div class="number" id="totalPieces">-</div>
+                <div class="label">Proyectos guardados</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>🔄 Versiones Guardadas</h3>
+                <div class="number" id="totalVersions">-</div>
+                <div class="label">Historial de cálculos</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>💰 Ingresos Total</h3>
+                <div class="number" id="totalRevenue">-</div>
+                <div class="label">ARS acumulados</div>
+            </div>
+        </div>
+
+        <div class="data-tables">
+            <div class="table-container">
+                <h3>👥 Usuarios Recientes</h3>
+                <div id="usersTable">
+                    <div class="loading">Cargando usuarios...</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3>💳 Suscripciones</h3>
+                <div id="subscriptionsTable">
+                    <div class="loading">Cargando suscripciones...</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3>📄 Piezas Recientes</h3>
+                <div id="piecesTable">
+                    <div class="loading">Cargando piezas...</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3>💰 Transacciones</h3>
+                <div id="paymentsTable">
+                    <div class="loading">Cargando pagos...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Configuración Supabase
+        const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Función para formatear números
+        function formatNumber(num) {
+            return new Intl.NumberFormat('es-AR').format(num || 0);
+        }
+
+        // Función para formatear moneda
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS'
+            }).format(amount || 0);
+        }
+
+        // Función para formatear fechas
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-AR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Cargar estadísticas principales
+        async function loadStats() {
+            try {
+                // Contar usuarios únicos desde pieces (método seguro)
+                const { count: usersFromPieces } = await supabase
+                    .from('pieces')
+                    .select('user_id', { count: 'exact', head: true });
+
+                // Contar suscripciones activas
+                const { count: activeSubscriptions } = await supabase
+                    .from('subscriptions')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('active', true);
+
+                // Contar usuarios en trial
+                const { count: trialUsers } = await supabase
+                    .from('subscriptions')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('plan_type', 'trial')
+                    .eq('active', true);
+
+                // Contar piezas totales
+                const { count: totalPieces } = await supabase
+                    .from('pieces')
+                    .select('*', { count: 'exact', head: true });
+
+                // Contar versiones totales
+                const { count: totalVersions } = await supabase
+                    .from('piece_versions')
+                    .select('*', { count: 'exact', head: true });
+
+                // Calcular ingresos totales
+                const { data: payments } = await supabase
+                    .from('payment_transactions')
+                    .select('amount')
+                    .eq('status', 'approved');
+
+                const totalRevenue = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+
+                // Actualizar UI
+                document.getElementById('totalUsers').textContent = formatNumber(usersFromPieces || 0);
+                document.getElementById('activeSubscriptions').textContent = formatNumber(activeSubscriptions || 0);
+                document.getElementById('trialUsers').textContent = formatNumber(trialUsers || 0);
+                document.getElementById('totalPieces').textContent = formatNumber(totalPieces || 0);
+                document.getElementById('totalVersions').textContent = formatNumber(totalVersions || 0);
+                document.getElementById('totalRevenue').textContent = formatCurrency(totalRevenue);
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                document.querySelectorAll('.number').forEach(el => {
+                    el.textContent = 'Error';
+                    el.className = 'number error';
+                });
+            }
+        }
+
+        // Cargar usuarios recientes
+        async function loadUsers() {
+            try {
+                const { data: pieces, error } = await supabase
+                    .from('pieces')
+                    .select(`
+                        user_id,
+                        created_at,
+                        title
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                // Agrupar por usuario
+                const usersMap = new Map();
+                pieces?.forEach(piece => {
+                    if (!usersMap.has(piece.user_id)) {
+                        usersMap.set(piece.user_id, {
+                            user_id: piece.user_id,
+                            first_piece_date: piece.created_at,
+                            pieces_count: 0
+                        });
+                    }
+                    usersMap.get(piece.user_id).pieces_count++;
+                });
+
+                const users = Array.from(usersMap.values()).slice(0, 10);
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Primera Pieza</th>
+                                <th>Total Piezas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                users.forEach(user => {
+                    html += `
+                        <tr>
+                            <td><span class="user-email">${user.user_id.substring(0, 8)}...</span></td>
+                            <td>${formatDate(user.first_piece_date)}</td>
+                            <td>${user.pieces_count}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('usersTable').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersTable').innerHTML = `
+                    <div class="error">Error cargando usuarios: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Cargar suscripciones
+        async function loadSubscriptions() {
+            try {
+                const { data: subscriptions, error } = await supabase
+                    .from('subscriptions')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Plan</th>
+                                <th>Estado</th>
+                                <th>Expira</th>
+                                <th>Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                subscriptions?.forEach(sub => {
+                    const statusClass = sub.active ? 
+                        (sub.plan_type === 'trial' ? 'status-trial' : 'status-active') : 
+                        'status-expired';
+
+                    html += `
+                        <tr>
+                            <td><span class="user-email">${sub.user_id.substring(0, 8)}...</span></td>
+                            <td>${sub.plan_type}</td>
+                            <td><span class="status-badge ${statusClass}">
+                                ${sub.active ? 'Activa' : 'Inactiva'}
+                            </span></td>
+                            <td>${formatDate(sub.expires_at)}</td>
+                            <td>${formatCurrency(sub.amount)}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('subscriptionsTable').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading subscriptions:', error);
+                document.getElementById('subscriptionsTable').innerHTML = `
+                    <div class="error">Error cargando suscripciones: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Cargar piezas recientes
+        async function loadPieces() {
+            try {
+                const { data: pieces, error } = await supabase
+                    .from('pieces')
+                    .select('title, user_id, created_at, est_price_ars')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Usuario</th>
+                                <th>Precio Est.</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                pieces?.forEach(piece => {
+                    html += `
+                        <tr>
+                            <td>${piece.title || 'Sin título'}</td>
+                            <td><span class="user-email">${piece.user_id.substring(0, 8)}...</span></td>
+                            <td>${formatCurrency(piece.est_price_ars)}</td>
+                            <td>${formatDate(piece.created_at)}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('piecesTable').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading pieces:', error);
+                document.getElementById('piecesTable').innerHTML = `
+                    <div class="error">Error cargando piezas: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Cargar transacciones
+        async function loadPayments() {
+            try {
+                const { data: payments, error } = await supabase
+                    .from('payment_transactions')
+                    .select('user_id, amount, status, created_at, description')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                payments?.forEach(payment => {
+                    const statusClass = payment.status === 'approved' ? 'status-active' :
+                                      payment.status === 'pending' ? 'status-trial' : 'status-expired';
+
+                    html += `
+                        <tr>
+                            <td><span class="user-email">${payment.user_id.substring(0, 8)}...</span></td>
+                            <td>${formatCurrency(payment.amount)}</td>
+                            <td><span class="status-badge ${statusClass}">${payment.status}</span></td>
+                            <td>${formatDate(payment.created_at)}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('paymentsTable').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading payments:', error);
+                document.getElementById('paymentsTable').innerHTML = `
+                    <div class="error">Error cargando transacciones: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Cargar todos los datos
+        async function loadAllData() {
+            console.log('🔄 Cargando datos del dashboard...');
+            await Promise.all([
+                loadStats(),
+                loadUsers(),
+                loadSubscriptions(),
+                loadPieces(),
+                loadPayments()
+            ]);
+            console.log('✅ Dashboard cargado completamente');
+        }
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', loadAllData);
+    </script>
+</body>
+</html>
