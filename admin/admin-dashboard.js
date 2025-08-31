@@ -223,6 +223,7 @@ class AdminDashboard {
 
   async loadPiecesStats() {
     try {
+      // Get total pieces count
       const { count: totalPieces, error } = await supabaseAdmin
         .from('pieces')
         .select('*', { count: 'exact', head: true });
@@ -245,6 +246,15 @@ class AdminDashboard {
 
       if (!todayError) {
         this.stats.piecesToday = todayPieces || 0;
+      }
+
+      // Get total calculations (piece versions)
+      const { count: totalCalculations, error: calcError } = await supabaseAdmin
+        .from('piece_versions')
+        .select('*', { count: 'exact', head: true });
+
+      if (!calcError) {
+        this.stats.totalCalculations = totalCalculations || 0;
       }
 
       return this.stats.totalPieces;
@@ -483,6 +493,12 @@ class AdminDashboard {
       revenueGrowthPercentEl.textContent = `${isPositive ? '+' : ''}${this.stats.revenueGrowthPercent}%`;
       revenueGrowthPercentEl.className = isPositive ? 'growth-positive' : 'growth-negative';
     }
+
+    // Additional metrics
+    const totalCalculationsEl = document.getElementById('totalCalculations');
+    if (totalCalculationsEl && this.stats.totalCalculations !== undefined) {
+      totalCalculationsEl.textContent = AdminUtils.formatNumber(this.stats.totalCalculations);
+    }
   }
 
   updateNavigationCounts() {
@@ -507,47 +523,115 @@ class AdminDashboard {
     try {
       const activities = [];
 
-      // Get recent user registrations
-      const { data: recentUsers, error: usersError } = await supabaseAdmin
-        .from('auth.users')
-        .select('email, created_at')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (!usersError && recentUsers) {
-        recentUsers.forEach(user => {
-          activities.push({
-            type: 'user_registration',
-            title: 'Nuevo usuario registrado',
-            description: user.email,
-            time: user.created_at,
-            icon: '👤'
-          });
-        });
-      }
-
-      // Get recent pieces
+      // Get recent pieces created
       const { data: recentPieces, error: piecesError } = await supabaseAdmin
         .from('pieces')
-        .select('name, created_at, user_id')
+        .select('title, created_at, user_id, category')
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(8);
 
       if (!piecesError && recentPieces) {
         recentPieces.forEach(piece => {
           activities.push({
             type: 'piece_created',
             title: 'Nueva pieza creada',
-            description: piece.name || 'Sin nombre',
+            description: piece.title || 'Sin nombre',
+            detail: piece.category || 'Sin categoría',
             time: piece.created_at,
             icon: '🔧'
           });
         });
       }
 
-      // Sort by time and take latest 10
+      // Get recent piece versions (calculations)
+      const { data: recentVersions, error: versionsError } = await supabaseAdmin
+        .from('piece_versions')
+        .select(`
+          created_at, total, ml_price,
+          pieces (title, user_id)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      if (!versionsError && recentVersions) {
+        recentVersions.forEach(version => {
+          activities.push({
+            type: 'calculation',
+            title: 'Nuevo cálculo realizado',
+            description: version.pieces?.title || 'Pieza sin nombre',
+            detail: `Total: ${AdminUtils.formatCurrency(version.total)}`,
+            time: version.created_at,
+            icon: '💰'
+          });
+        });
+      }
+
+      // Get recent subscriptions
+      const { data: recentSubs, error: subsError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .select(`
+          created_at, status,
+          subscription_plans (name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!subsError && recentSubs) {
+        recentSubs.forEach(sub => {
+          activities.push({
+            type: 'subscription',
+            title: 'Nueva suscripción',
+            description: sub.subscription_plans?.name || 'Plan desconocido',
+            detail: `Estado: ${sub.status}`,
+            time: sub.created_at,
+            icon: '📈'
+          });
+        });
+      }
+
+      // Get recent payments
+      const { data: recentPayments, error: paymentsError } = await supabaseAdmin
+        .from('payment_transactions')
+        .select('created_at, amount, status, mp_payment_type')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!paymentsError && recentPayments) {
+        recentPayments.forEach(payment => {
+          activities.push({
+            type: 'payment',
+            title: 'Nuevo pago',
+            description: `${AdminUtils.formatCurrency(payment.amount)}`,
+            detail: `${payment.mp_payment_type || 'Desconocido'} - ${payment.status}`,
+            time: payment.created_at,
+            icon: '💳'
+          });
+        });
+      }
+
+      // Get recent config profiles
+      const { data: recentProfiles, error: profilesError } = await supabaseAdmin
+        .from('config_profiles')
+        .select('created_at, name, user_id')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!profilesError && recentProfiles) {
+        recentProfiles.forEach(profile => {
+          activities.push({
+            type: 'profile_created',
+            title: 'Nuevo perfil de configuración',
+            description: profile.name || 'Sin nombre',
+            detail: 'Perfil personalizado',
+            time: profile.created_at,
+            icon: '⚙️'
+          });
+        });
+      }
+
+      // Sort by time and take latest 15
       activities.sort((a, b) => new Date(b.time) - new Date(a.time));
-      const latestActivities = activities.slice(0, 10);
+      const latestActivities = activities.slice(0, 15);
 
       this.renderRecentActivity(latestActivities);
 
@@ -576,11 +660,12 @@ class AdminDashboard {
     }
 
     const activityHtml = activities.map(activity => `
-      <div class="activity-item fade-in">
+      <div class="activity-item fade-in" data-type="${activity.type}">
         <div class="activity-icon">${activity.icon}</div>
         <div class="activity-content">
           <div class="activity-title">${activity.title}</div>
           <div class="activity-description">${activity.description}</div>
+          ${activity.detail ? `<div class="activity-detail">${activity.detail}</div>` : ''}
         </div>
         <div class="activity-time">${AdminUtils.getRelativeTime(activity.time)}</div>
       </div>
@@ -605,10 +690,11 @@ class AdminDashboard {
 
     const ctx = canvas.getContext('2d');
     
-    // Generate sample data for the last 30 days
+    // Use real daily revenue data if available, otherwise create sample data
     const days = 30;
     const labels = [];
-    const data = [];
+    const revenueData = [];
+    const pieceData = [];
     const today = new Date();
     
     for (let i = days - 1; i >= 0; i--) {
@@ -616,51 +702,116 @@ class AdminDashboard {
       date.setDate(date.getDate() - i);
       labels.push(date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }));
       
-      // Generate realistic growth data
-      const baseGrowth = Math.floor(this.stats.totalUsers / days);
-      const randomVariation = Math.floor(Math.random() * baseGrowth * 0.5);
-      data.push(baseGrowth + randomVariation);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Use real revenue data if available
+      if (this.stats.dailyRevenue && this.stats.dailyRevenue[dateStr] !== undefined) {
+        revenueData.push(this.stats.dailyRevenue[dateStr]);
+      } else {
+        // Generate sample revenue data
+        const avgDailyRevenue = (this.stats.monthlyRevenue || 0) / 30;
+        const variation = Math.random() * avgDailyRevenue * 0.5;
+        revenueData.push(Math.max(0, avgDailyRevenue + variation - (avgDailyRevenue * 0.25)));
+      }
+      
+      // Generate piece creation data (sample based on total pieces)
+      const avgDailyPieces = Math.max(1, Math.floor((this.stats.totalPieces || 0) / 90)); // 90 days average
+      const pieceVariation = Math.floor(Math.random() * avgDailyPieces);
+      pieceData.push(avgDailyPieces + pieceVariation);
     }
 
     this.charts.userGrowth = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
-        datasets: [{
-          label: 'Nuevos Usuarios',
-          data: data,
-          borderColor: ADMIN_CONFIG.CHART_COLORS.primary,
-          backgroundColor: ADMIN_CONFIG.CHART_COLORS.primary + '20',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4
-        }]
+        datasets: [
+          {
+            label: 'Ingresos Diarios (ARS)',
+            data: revenueData,
+            borderColor: ADMIN_CONFIG.CHART_COLORS.primary,
+            backgroundColor: ADMIN_CONFIG.CHART_COLORS.primary + '20',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Piezas Creadas',
+            data: pieceData,
+            borderColor: ADMIN_CONFIG.CHART_COLORS.secondary,
+            backgroundColor: ADMIN_CONFIG.CHART_COLORS.secondary + '20',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            yAxisID: 'y1'
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
         plugins: {
           legend: {
-            display: false
+            display: true,
+            position: 'top',
+            labels: {
+              color: '#b9c7bf',
+              usePointStyle: true,
+              padding: 20
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                if (context.datasetIndex === 0) {
+                  return `Ingresos: ${AdminUtils.formatCurrency(context.raw)}`;
+                } else {
+                  return `Piezas: ${context.raw}`;
+                }
+              }
+            }
           }
         },
         scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              color: '#b9c7bf'
-            },
-            grid: {
-              color: '#385f4d'
-            }
-          },
           x: {
             ticks: {
               color: '#b9c7bf'
             },
             grid: {
+              color: '#385f4d',
+              display: false
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            beginAtZero: true,
+            ticks: {
+              color: '#b9c7bf',
+              callback: function(value) {
+                return AdminUtils.formatCurrency(value);
+              }
+            },
+            grid: {
               color: '#385f4d'
             }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            beginAtZero: true,
+            ticks: {
+              color: '#b9c7bf'
+            },
+            grid: {
+              drawOnChartArea: false,
+            },
           }
         }
       }
@@ -673,25 +824,53 @@ class AdminDashboard {
 
     const ctx = canvas.getContext('2d');
     
-    // Sample subscription distribution data
-    const subscriptionData = {
-      premium: Math.floor(this.stats.activeSubscriptions * 0.3),
-      basic: Math.floor(this.stats.activeSubscriptions * 0.4),
-      trial: Math.floor(this.stats.activeSubscriptions * 0.3)
-    };
+    // Use real subscription data from stats
+    const subscriptionData = this.stats.subscriptionsByPlan || {};
+    const trialCount = this.stats.trialSubscriptions || 0;
+    const freeCount = this.stats.freeUsers || 0;
+    
+    // Create labels and data arrays
+    const labels = [];
+    const data = [];
+    const colors = [];
+    
+    // Add subscription plans
+    Object.entries(subscriptionData).forEach(([planName, count], index) => {
+      labels.push(planName);
+      data.push(count);
+      colors.push(Object.values(ADMIN_CONFIG.CHART_COLORS)[index % Object.values(ADMIN_CONFIG.CHART_COLORS).length]);
+    });
+    
+    // Add trials if any
+    if (trialCount > 0) {
+      labels.push('En Prueba');
+      data.push(trialCount);
+      colors.push(ADMIN_CONFIG.CHART_COLORS.warning);
+    }
+    
+    // Add free users
+    if (freeCount > 0) {
+      labels.push('Usuarios Gratuitos');
+      data.push(freeCount);
+      colors.push('#9CA3AF'); // Gray for free users
+    }
+    
+    // Fallback data if no real data available
+    if (data.length === 0) {
+      labels.push('Sin datos');
+      data.push(1);
+      colors.push('#E5E7EB');
+    }
 
     this.charts.subscription = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Premium', 'Básico', 'Prueba'],
+        labels: labels,
         datasets: [{
-          data: [subscriptionData.premium, subscriptionData.basic, subscriptionData.trial],
-          backgroundColor: [
-            ADMIN_CONFIG.CHART_COLORS.primary,
-            ADMIN_CONFIG.CHART_COLORS.secondary,
-            ADMIN_CONFIG.CHART_COLORS.warning
-          ],
-          borderWidth: 0
+          data: data,
+          backgroundColor: colors,
+          borderWidth: 2,
+          borderColor: '#1e3a2e'
         }]
       },
       options: {
@@ -701,10 +880,22 @@ class AdminDashboard {
           legend: {
             position: 'bottom',
             labels: {
-              color: '#b9c7bf'
+              color: '#b9c7bf',
+              padding: 15,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                const percentage = ((context.raw / total) * 100).toFixed(1);
+                return `${context.label}: ${context.raw} (${percentage}%)`;
+              }
             }
           }
-        }
+        },
+        cutout: '60%'
       }
     });
   }

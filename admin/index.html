@@ -113,39 +113,83 @@
                 
                 <!-- Stats Grid -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <!-- Primary Metrics Row -->
+                    <div class="stat-card primary">
                         <div class="stat-icon">👥</div>
                         <div class="stat-content">
                             <div class="stat-number" id="totalUsers">0</div>
                             <div class="stat-label">Usuarios Totales</div>
                             <div class="stat-change" id="userGrowth">+0 esta semana</div>
+                            <div class="stat-extra" id="activeUsers">0 activos</div>
                         </div>
                     </div>
                     
-                    <div class="stat-card">
+                    <div class="stat-card primary">
                         <div class="stat-icon">💳</div>
                         <div class="stat-content">
                             <div class="stat-number" id="activeSubscriptions">0</div>
                             <div class="stat-label">Suscripciones Activas</div>
                             <div class="stat-change" id="subGrowth">+0 este mes</div>
+                            <div class="stat-extra" id="trialSubscriptions">0 en prueba</div>
                         </div>
                     </div>
                     
-                    <div class="stat-card">
+                    <div class="stat-card primary">
                         <div class="stat-icon">🔧</div>
                         <div class="stat-content">
                             <div class="stat-number" id="totalPieces">0</div>
                             <div class="stat-label">Piezas Creadas</div>
                             <div class="stat-change" id="pieceGrowth">+0 hoy</div>
+                            <div class="stat-extra" id="avgPiecesPerUser">0 piezas/usuario</div>
                         </div>
                     </div>
                     
-                    <div class="stat-card">
+                    <div class="stat-card primary">
                         <div class="stat-icon">💰</div>
                         <div class="stat-content">
                             <div class="stat-number" id="monthlyRevenue">$0</div>
                             <div class="stat-label">Ingresos del Mes</div>
                             <div class="stat-change" id="revenueGrowth">+0% vs mes anterior</div>
+                            <div class="stat-extra" id="revenueGrowthPercent">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary Metrics Row -->
+                <div class="stats-grid secondary">
+                    <div class="stat-card">
+                        <div class="stat-icon">🆓</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="freeUsers">0</div>
+                            <div class="stat-label">Usuarios Gratuitos</div>
+                            <div class="stat-change" id="retentionRate">0% retención</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="powerUsers">0</div>
+                            <div class="stat-label">Usuarios Avanzados</div>
+                            <div class="stat-change">5+ piezas</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🏆</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalRevenue">$0</div>
+                            <div class="stat-label">Ingresos Totales</div>
+                            <div class="stat-change">Histórico</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalCalculations">0</div>
+                            <div class="stat-label">Cálculos Totales</div>
+                            <div class="stat-change">Piece versions</div>
                         </div>
                     </div>
                 </div>
@@ -153,12 +197,12 @@
                 <!-- Charts Row -->
                 <div class="charts-row">
                     <div class="chart-container">
-                        <h3>Crecimiento de Usuarios</h3>
+                        <h3>Ingresos Diarios & Piezas Creadas</h3>
                         <canvas id="userGrowthChart"></canvas>
                     </div>
                     
                     <div class="chart-container">
-                        <h3>Distribución de Suscripciones</h3>
+                        <h3>Distribución de Usuarios por Plan</h3>
                         <canvas id="subscriptionChart"></canvas>
                     </div>
                 </div>

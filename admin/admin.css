@@ -503,6 +503,13 @@ body {
   margin-bottom: 2rem;
 }
 
+/* Secondary stats grid with smaller cards */
+.stats-grid.secondary {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
 .stat-card {
   background: var(--bg-secondary);
   border: 2px solid var(--border-primary);
@@ -512,12 +519,36 @@ body {
   align-items: center;
   gap: 1rem;
   transition: all var(--duration-fast);
+  position: relative;
+  overflow: hidden;
 }
 
 .stat-card:hover {
   border-color: var(--border-focus);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+/* Primary stat cards have enhanced styling */
+.stat-card.primary {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border-width: 3px;
+}
+
+.stat-card.primary:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+}
+
+/* Secondary stats have smaller, more subtle styling */
+.stats-grid.secondary .stat-card {
+  padding: 1.25rem;
+  background: var(--bg-tertiary);
+}
+
+.stats-grid.secondary .stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-icon {
@@ -529,6 +560,22 @@ body {
   justify-content: center;
   background: var(--bg-tertiary);
   border-radius: 12px;
+  transition: all var(--duration-fast);
+}
+
+/* Primary card icons */
+.stat-card.primary .stat-icon {
+  background: linear-gradient(135deg, var(--text-accent) 0%, var(--text-success) 100%);
+  color: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Secondary card icons */
+.stats-grid.secondary .stat-icon {
+  font-size: 1.75rem;
+  width: 50px;
+  height: 50px;
+  background: var(--bg-secondary);
 }
 
 .stat-content {
@@ -540,16 +587,42 @@ body {
   font-weight: 700;
   color: var(--text-success);
   margin-bottom: 0.25rem;
+  transition: all var(--duration-fast);
+}
+
+/* Secondary stats numbers */
+.stats-grid.secondary .stat-number {
+  font-size: 1.5rem;
+  color: var(--text-primary);
 }
 
 .stat-label {
   color: var(--text-secondary);
   margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .stat-change {
   font-size: 0.875rem;
   color: var(--text-accent);
+  font-weight: 500;
+}
+
+.stat-extra {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+  opacity: 0.8;
+}
+
+/* Growth indicators */
+.growth-positive {
+  color: var(--status-active) !important;
+}
+
+.growth-negative {
+  color: var(--status-expired) !important;
 }
 
 /* Charts */
@@ -631,9 +704,35 @@ body {
   font-size: 0.875rem;
 }
 
+.activity-detail {
+  color: var(--text-accent);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
 .activity-time {
   color: var(--text-secondary);
   font-size: 0.875rem;
+  min-width: 100px;
+  text-align: right;
+}
+
+/* Activity item type-specific styling */
+.activity-item[data-type="payment"] .activity-icon {
+  background: var(--status-active);
+}
+
+.activity-item[data-type="subscription"] .activity-icon {
+  background: var(--text-warning);
+}
+
+.activity-item[data-type="calculation"] .activity-icon {
+  background: var(--chart-tertiary);
+}
+
+.activity-item[data-type="profile_created"] .activity-icon {
+  background: var(--text-secondary);
 }
 
 /* ============================================================================
