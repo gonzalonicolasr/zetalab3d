@@ -419,8 +419,9 @@
         // Cargar suscripciones
         async function loadSubscriptions() {
             try {
+                // Usar vista que incluye emails
                 const { data: subscriptions, error } = await supabase
-                    .from('subscriptions')
+                    .from('admin_subscriptions_with_emails')
                     .select('*')
                     .order('created_at', { ascending: false })
                     .limit(10);
@@ -431,6 +432,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>Email</th>
                                 <th>User ID</th>
                                 <th>Plan</th>
                                 <th>Estado</th>
@@ -448,7 +450,8 @@
 
                     html += `
                         <tr>
-                            <td><span class="user-email">${sub.user_id.substring(0, 8)}...</span></td>
+                            <td><span class="user-email">${sub.user_email || 'Sin email'}</span></td>
+                            <td><code style="font-size: 0.8em;">${sub.user_id.substring(0, 8)}...</code></td>
                             <td>${sub.plan_type}</td>
                             <td><span class="status-badge ${statusClass}">
                                 ${sub.active ? 'Activa' : 'Inactiva'}
