@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZETALAB Admin Panel</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="icon" type="image/png" href="../logo.png">
+</head>
+<body>
+    <!-- Admin Login Modal -->
+    <div id="loginModal" class="modal active">
+        <div class="modal-content admin-login">
+            <div class="admin-logo">
+                <img src="../logo.png" alt="ZETALAB" class="logo">
+                <h1>ADMIN PANEL</h1>
+                <div class="security-badge">
+                    <span class="security-icon">🔒</span>
+                    <span>Acceso Restringido</span>
+                </div>
+            </div>
+            
+            <form id="adminLoginForm" class="login-form">
+                <div class="input-group">
+                    <label for="adminEmail">Email de Administrador</label>
+                    <input type="email" id="adminEmail" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="adminPassword">Contraseña</label>
+                    <input type="password" id="adminPassword" required>
+                </div>
+                
+                <button type="submit" class="btn-admin-login">
+                    <span class="btn-text">Iniciar Sesión</span>
+                    <span class="btn-loading">Verificando...</span>
+                </button>
+                
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Admin Interface -->
+    <div id="adminInterface" class="admin-interface hidden">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-content">
+                <div class="admin-brand">
+                    <img src="../logo.png" alt="ZETALAB" class="header-logo">
+                    <span class="brand-name">ZETALAB</span>
+                    <span class="admin-badge">ADMIN</span>
+                </div>
+                
+                <div class="header-actions">
+                    <div class="admin-user">
+                        <span id="adminUserName">Administrador</span>
+                        <button id="logoutBtn" class="btn-logout">Cerrar Sesión</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Sidebar -->
+        <nav class="admin-sidebar">
+            <div class="nav-menu">
+                <button class="nav-item active" data-section="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </button>
+                
+                <button class="nav-item" data-section="users">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Usuarios</span>
+                    <span class="nav-count" id="userCount">0</span>
+                </button>
+                
+                <button class="nav-item" data-section="subscriptions">
+                    <span class="nav-icon">💳</span>
+                    <span class="nav-text">Suscripciones</span>
+                    <span class="nav-count" id="subCount">0</span>
+                </button>
+                
+                <button class="nav-item" data-section="analytics">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">Analíticas</span>
+                </button>
+                
+                <button class="nav-item" data-section="pieces">
+                    <span class="nav-icon">🔧</span>
+                    <span class="nav-text">Piezas</span>
+                    <span class="nav-count" id="pieceCount">0</span>
+                </button>
+                
+                <button class="nav-item" data-section="system">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Sistema</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="admin-section active">
+                <div class="section-header">
+                    <h2>Panel de Control</h2>
+                    <div class="refresh-btn" id="refreshDashboard">
+                        <span class="refresh-icon">🔄</span>
+                        Actualizar
+                    </div>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalUsers">0</div>
+                            <div class="stat-label">Usuarios Totales</div>
+                            <div class="stat-change" id="userGrowth">+0 esta semana</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💳</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="activeSubscriptions">0</div>
+                            <div class="stat-label">Suscripciones Activas</div>
+                            <div class="stat-change" id="subGrowth">+0 este mes</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🔧</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalPieces">0</div>
+                            <div class="stat-label">Piezas Creadas</div>
+                            <div class="stat-change" id="pieceGrowth">+0 hoy</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="monthlyRevenue">$0</div>
+                            <div class="stat-label">Ingresos del Mes</div>
+                            <div class="stat-change" id="revenueGrowth">+0% vs mes anterior</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts Row -->
+                <div class="charts-row">
+                    <div class="chart-container">
+                        <h3>Crecimiento de Usuarios</h3>
+                        <canvas id="userGrowthChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Distribución de Suscripciones</h3>
+                        <canvas id="subscriptionChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="activity-section">
+                    <h3>Actividad Reciente</h3>
+                    <div id="recentActivity" class="activity-list">
+                        <!-- Activity items will be loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="users" class="admin-section">
+                <div class="section-header">
+                    <h2>Gestión de Usuarios</h2>
+                    <div class="section-actions">
+                        <input type="text" id="userSearch" placeholder="Buscar usuarios..." class="search-input">
+                        <button id="exportUsers" class="btn-secondary">Exportar</button>
+                        <button id="refreshUsers" class="btn-primary">Actualizar</button>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="filters-bar">
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">Todos los estados</option>
+                        <option value="active">Activos</option>
+                        <option value="trial">En prueba</option>
+                        <option value="expired">Expirados</option>
+                        <option value="disabled">Deshabilitados</option>
+                    </select>
+                    
+                    <select id="subscriptionFilter" class="filter-select">
+                        <option value="">Todas las suscripciones</option>
+                        <option value="premium">Premium</option>
+                        <option value="basic">Básico</option>
+                        <option value="trial">Prueba</option>
+                        <option value="none">Sin suscripción</option>
+                    </select>
+                    
+                    <input type="date" id="dateFromFilter" class="filter-date">
+                    <input type="date" id="dateToFilter" class="filter-date">
+                </div>
+                
+                <!-- Users Table -->
+                <div class="table-container">
+                    <table id="usersTable" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAllUsers">
+                                </th>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>Suscripción</th>
+                                <th>Estado</th>
+                                <th>Registro</th>
+                                <th>Último acceso</th>
+                                <th>Piezas</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button id="prevPage" class="page-btn">Anterior</button>
+                    <span id="pageInfo">Página 1 de 1</span>
+                    <button id="nextPage" class="page-btn">Siguiente</button>
+                    
+                    <div class="page-size">
+                        <label>Mostrar:</label>
+                        <select id="pageSize">
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Bulk Actions -->
+                <div class="bulk-actions hidden" id="bulkActions">
+                    <span id="selectedCount">0 usuarios seleccionados</span>
+                    <button id="bulkEnable" class="bulk-btn">Habilitar</button>
+                    <button id="bulkDisable" class="bulk-btn">Deshabilitar</button>
+                    <button id="bulkExport" class="bulk-btn">Exportar</button>
+                </div>
+            </section>
+
+            <!-- User Detail Modal -->
+            <div id="userDetailModal" class="modal">
+                <div class="modal-content user-detail">
+                    <div class="modal-header">
+                        <h3 id="userDetailName">Detalles del Usuario</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="user-info-grid">
+                            <div class="info-section">
+                                <h4>Información Personal</h4>
+                                <div class="info-item">
+                                    <label>Email:</label>
+                                    <span id="detailEmail"></span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Fecha de registro:</label>
+                                    <span id="detailCreatedAt"></span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Último acceso:</label>
+                                    <span id="detailLastLogin"></span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Estado:</label>
+                                    <span id="detailStatus" class="status-badge"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h4>Suscripción</h4>
+                                <div class="info-item">
+                                    <label>Tipo:</label>
+                                    <span id="detailSubscriptionType"></span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Estado:</label>
+                                    <span id="detailSubscriptionStatus"></span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Expira:</label>
+                                    <span id="detailExpiresAt"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="user-stats">
+                            <h4>Estadísticas de Uso</h4>
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <span class="stat-value" id="detailPieceCount">0</span>
+                                    <span class="stat-label">Piezas Creadas</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="detailVersionCount">0</span>
+                                    <span class="stat-label">Versiones</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="detailLastUsage">-</span>
+                                    <span class="stat-label">Último Uso</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="user-actions-panel">
+                            <h4>Acciones de Administrador</h4>
+                            <div class="action-buttons">
+                                <button id="toggleUserStatus" class="btn-action">Cambiar Estado</button>
+                                <button id="resetUserPassword" class="btn-action">Reset Password</button>
+                                <button id="viewUserPieces" class="btn-action">Ver Piezas</button>
+                                <button id="exportUserData" class="btn-action">Exportar Datos</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other sections will be implemented similarly -->
+            <section id="subscriptions" class="admin-section">
+                <div class="section-header">
+                    <h2>Gestión de Suscripciones</h2>
+                </div>
+                <div class="coming-soon">
+                    <h3>Próximamente</h3>
+                    <p>Panel de gestión de suscripciones en desarrollo</p>
+                </div>
+            </section>
+
+            <section id="analytics" class="admin-section">
+                <div class="section-header">
+                    <h2>Analíticas Avanzadas</h2>
+                </div>
+                <div class="coming-soon">
+                    <h3>Próximamente</h3>
+                    <p>Dashboard de analíticas avanzadas en desarrollo</p>
+                </div>
+            </section>
+
+            <section id="pieces" class="admin-section">
+                <div class="section-header">
+                    <h2>Gestión de Piezas</h2>
+                </div>
+                <div class="coming-soon">
+                    <h3>Próximamente</h3>
+                    <p>Panel de gestión de piezas en desarrollo</p>
+                </div>
+            </section>
+
+            <section id="system" class="admin-section">
+                <div class="section-header">
+                    <h2>Configuración del Sistema</h2>
+                </div>
+                <div class="coming-soon">
+                    <h3>Próximamente</h3>
+                    <p>Panel de configuración del sistema en desarrollo</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Cargando datos...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="admin-config.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="admin-dashboard.js"></script>
+    <script src="admin-users.js"></script>
+    <script src="admin-charts.js"></script>
+    <script src="admin-main.js"></script>
+</body>
+</html>
