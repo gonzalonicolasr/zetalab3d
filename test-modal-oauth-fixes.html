@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Test Modal & OAuth Fixes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🧪 Test Modal & OAuth Fixes</h1>
+            <p>Esta página permite probar las correcciones realizadas:</p>
+            
+            <div style="margin: 20px 0;">
+                <h3>🎭 Test Modal/Popup Fixes</h3>
+                <p>Verifica que los modales se vean correctamente sin blur conflicts:</p>
+                <button id="testModal" class="primary">Abrir Modal de Prueba</button>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <h3>🔐 Test OAuth Implementation</h3>
+                <p>Verifica que el OAuth funcione correctamente:</p>
+                <button id="testGoogleOAuth" style="background: #4285f4; color: white; margin: 5px;">Test Google OAuth</button>
+                <button id="testFacebookOAuth" style="background: #1877f2; color: white; margin: 5px;">Test Facebook OAuth</button>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <h3>📊 Status & Debug</h3>
+                <div id="debugInfo" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px;">
+                    Cargando...
+                </div>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <a href="index.html" class="pill">← Volver al Login</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="subscription-service.js"></script>
+    
+    <script>
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(
+            "https://fwmyiovamcxvinoxnput.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc"
+        );
+        window.supa = supabase;
+
+        // Test modal functionality
+        document.getElementById('testModal').onclick = () => {
+            const modal = document.createElement('div');
+            modal.className = 'subscription-modal';
+            modal.innerHTML = `
+                <div class="modal-overlay" onclick="this.closest('.subscription-modal').remove()"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>🧪 Modal Test - Fixed Blur Issues</h2>
+                        <button onclick="this.closest('.subscription-modal').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <h3>✅ Fixes aplicados:</h3>
+                        <ul style="text-align: left;">
+                            <li>• Z-index corregido (100000+)</li>
+                            <li>• Backdrop-filter optimizado (3px)</li>
+                            <li>• Modal content sin backdrop-filter</li>
+                            <li>• Will-change para performance</li>
+                        </ul>
+                        <p><strong>¿Se ve claramente este texto sin blur?</strong></p>
+                        <button onclick="this.closest('.subscription-modal').remove()" class="primary">Cerrar Modal</button>
+                    </div>
+                </div>
+            `;
+            
+            // Apply fixed styles
+            modal.style.cssText = `
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                z-index: 200000 !important;
+                display: block !important;
+                opacity: 1 !important;
+            `;
+            
+            document.body.appendChild(modal);
+        };
+
+        // Test OAuth functions
+        const testOAuth = async (provider) => {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML += `<br>🔄 Testing ${provider} OAuth...`;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: provider,
+                    options: {
+                        redirectTo: `${window.location.origin}/calculadora.html`,
+                        queryParams: {
+                            access_type: 'offline',
+                            prompt: 'consent',
+                        }
+                    }
+                });
+                
+                if (error) {
+                    debugDiv.innerHTML += `<br>❌ ${provider} Error: ${error.message}`;
+                } else {
+                    debugDiv.innerHTML += `<br>✅ ${provider} OAuth initiated successfully`;
+                }
+            } catch (err) {
+                debugDiv.innerHTML += `<br>💥 ${provider} Exception: ${err.message}`;
+            }
+        };
+
+        document.getElementById('testGoogleOAuth').onclick = () => testOAuth('google');
+        document.getElementById('testFacebookOAuth').onclick = () => testOAuth('facebook');
+
+        // Show debug info
+        (async () => {
+            const debugDiv = document.getElementById('debugInfo');
+            
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                debugDiv.innerHTML = `
+                    <strong>🔧 Debug Information:</strong><br>
+                    • Supabase Client: ${supabase ? '✅ Loaded' : '❌ Not loaded'}<br>
+                    • Subscription Service: ${window.subscriptionService ? '✅ Loaded' : '❌ Not loaded'}<br>
+                    • Current User: ${session ? `✅ ${session.user.email}` : '❌ Not authenticated'}<br>
+                    • URL: ${window.location.href}<br>
+                    • Hash: ${window.location.hash || 'None'}<br>
+                    • User Agent: ${navigator.userAgent.substring(0, 50)}...<br>
+                    • Online: ${navigator.onLine ? '✅ Yes' : '❌ No'}<br>
+                    <br><strong>🎯 Test Results:</strong>
+                `;
+                
+                if (session && window.subscriptionService) {
+                    const hasActive = await window.subscriptionService.hasActiveSubscription(session.user.id);
+                    debugDiv.innerHTML += `<br>• Active Subscription: ${hasActive ? '✅ Yes' : '❌ No'}`;
+                }
+                
+            } catch (error) {
+                debugDiv.innerHTML = `❌ Error loading debug info: ${error.message}`;
+            }
+        })();
+    </script>
+</body>
+</html>

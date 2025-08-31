@@ -172,27 +172,83 @@
 
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Load subscription service before auth logic -->
+<script src="subscription-service.js"></script>
 <script>
   /*** CONFIG SUPABASE (tu proyecto) ***/
   // CONFIGURACIÓN: Centralizar credenciales para uso global
   window.SUPABASE_URL = "https://fwmyiovamcxvinoxnput.supabase.co";
   window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc";
   const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  
+  // Make supabase available to subscription service
+  window.supa = supabase;
 
-  /*** Capturar tokens del hash si viniste de un magic link ***/
+  /*** Enhanced OAuth callback handling with trial activation ***/
   (async () => {
-    if (location.hash && location.hash.includes('access_token')) {
-      const p = new URLSearchParams(location.hash.slice(1));
-      const access_token = p.get('access_token');
-      const refresh_token = p.get('refresh_token');
-      if (access_token && refresh_token) {
-        await supabase.auth.setSession({ access_token, refresh_token });
+    try {
+      let isOAuthCallback = false;
+      
+      // Handle OAuth callback from URL hash (magic link, OAuth)
+      if (location.hash && location.hash.includes('access_token')) {
+        console.log('🔐 Procesando callback de autenticación...');
+        
+        const p = new URLSearchParams(location.hash.slice(1));
+        const access_token = p.get('access_token');
+        const refresh_token = p.get('refresh_token');
+        const type = p.get('type'); // 'signup', 'magiclink', 'recovery', etc.
+        
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({ access_token, refresh_token });
+          isOAuthCallback = true;
+          
+          console.log(`✅ Sesión establecida (tipo: ${type || 'oauth'})`);
+        }
+        
+        // Clean URL
+        history.replaceState({}, document.title, location.pathname + location.search);
       }
-      history.replaceState({}, document.title, location.pathname + location.search);
+      
+      // Check current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        console.log('👤 Usuario autenticado:', session.user.email);
+        
+        // If this is a new OAuth user, try to activate trial automatically
+        if (isOAuthCallback && window.subscriptionService) {
+          try {
+            console.log('🎁 Verificando elegibilidad para trial automático...');
+            const isEligible = await window.subscriptionService.isEligibleForTrial(session.user.id);
+            
+            if (isEligible) {
+              console.log('✅ Usuario elegible - activando trial automático...');
+              await window.subscriptionService.activateTrialForNewUser(session.user.id);
+              console.log('🎉 Trial automático activado para nuevo usuario OAuth');
+            } else {
+              console.log('ℹ️ Usuario no elegible para trial (ya tuvo suscripciones previas)');
+            }
+          } catch (trialError) {
+            console.warn('⚠️ Error activando trial automático:', trialError);
+            // Don't block login if trial activation fails
+          }
+        }
+        
+        // Redirect to calculator
+        console.log('🚀 Redirigiendo a calculadora...');
+        location.href = 'calculadora.html';
+      } else {
+        console.log('🔓 Usuario no autenticado, mostrando formulario de login');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error procesando autenticación:', error);
+      // Show error but don't block the login page
+      const msg = document.getElementById('login-msg');
+      if (msg) {
+        msg.textContent = 'Error procesando autenticación. Intenta iniciar sesión manualmente.';
+      }
     }
-    // Si ya estás logueado, vamos directo a la calculadora
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) location.href = 'calculadora.html';
   })();
 
   /*** Tabs simples ***/
@@ -231,24 +287,62 @@
     }
   });
 
-  /*** Registro con email + password ***/
+  /*** Enhanced email registration with auto trial ***/
   formRegister.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('reg-email').value.trim();
     const pass1 = document.getElementById('reg-pass').value;
     const pass2 = document.getElementById('reg-pass2').value;
     const msg = document.getElementById('reg-msg');
+    
     if (pass1 !== pass2) { msg.textContent = 'Las contraseñas no coinciden.'; return; }
+    
     msg.textContent = 'Creando cuenta…';
-    const { error } = await supabase.auth.signUp({
-      email, password: pass1,
-      options: { emailRedirectTo: window.location.href } // si pide confirmación, vuelve acá
-    });
-    if (error) { msg.textContent = error.message; return; }
-    msg.textContent = 'Listo. Revisá tu email si te pide confirmación. Ya podés iniciar sesión.';
-    // Si la confirmación NO es obligatoria, redirigimos:
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) location.href = 'calculadora.html';
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email, 
+        password: pass1,
+        options: { emailRedirectTo: window.location.href }
+      });
+      
+      if (error) { 
+        msg.textContent = error.message; 
+        return; 
+      }
+      
+      // Check if user was created and is immediately available (no email confirmation required)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // User is immediately logged in - activate trial
+        msg.textContent = 'Cuenta creada. Activando trial gratuito...';
+        
+        try {
+          if (window.subscriptionService) {
+            await window.subscriptionService.activateTrialForNewUser(session.user.id);
+            console.log('🎉 Trial automático activado para nuevo usuario email');
+            msg.textContent = '¡Perfecto! Cuenta creada con 7 días de acceso premium gratuito.';
+          }
+        } catch (trialError) {
+          console.warn('⚠️ Error activando trial automático:', trialError);
+          msg.textContent = 'Cuenta creada exitosamente.';
+        }
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+          location.href = 'calculadora.html';
+        }, 2000);
+        
+      } else {
+        // Email confirmation required
+        msg.textContent = 'Listo. Revisá tu email para confirmar la cuenta. Una vez confirmada, tendrás 7 días de acceso premium gratuito.';
+      }
+      
+    } catch (err) {
+      console.error('Error en registro:', err);
+      msg.textContent = 'Error creando cuenta. Intentá de nuevo.';
+    }
   });
 
   /*** Magic link (sin contraseña) ***/
@@ -275,7 +369,7 @@
     msg.textContent = error ? error.message : 'Te enviamos un email para cambiar la contraseña.';
   };
 
-  /*** OAuth Login Functions ***/
+  /*** Improved OAuth Login Functions with proper error handling ***/
   const handleSocialLogin = async (provider) => {
     const currentTabIsRegister = document.getElementById('tab-register').classList.contains('active');
     const msg = currentTabIsRegister ? 
@@ -285,6 +379,7 @@
     msg.textContent = `Conectando con ${provider}...`;
     
     try {
+      // Enhanced OAuth configuration with proper redirect handling
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
@@ -292,22 +387,39 @@
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-          }
+          },
+          // Skip confirmation page for better UX
+          skipBrowserRedirect: false
         }
       });
       
       if (error) {
-        console.error(`Error en login con ${provider}:`, error);
-        msg.textContent = `Error conectando con ${provider}: ${error.message}`;
+        console.error(`❌ Error en login con ${provider}:`, error);
+        msg.textContent = `Error conectando con ${provider}. ${error.message}`;
+        
+        // Specific error handling for common OAuth issues
+        if (error.message.includes('not enabled')) {
+          msg.textContent = `${provider} no está habilitado. Contacta al administrador.`;
+        } else if (error.message.includes('Invalid redirect')) {
+          msg.textContent = `Error de configuración. Intenta con email/contraseña.`;
+        }
         return;
       }
       
-      // OAuth success - the redirect will happen automatically
-      msg.textContent = `Redirigiendo...`;
+      // OAuth initiated successfully - user will be redirected
+      msg.textContent = `Redirigiendo a ${provider}...`;
+      
+      // Log success for debugging
+      console.log(`✅ OAuth iniciado exitosamente para ${provider}`);
       
     } catch (err) {
-      console.error(`Error inesperado con ${provider}:`, err);
-      msg.textContent = `Error de conexión con ${provider}. Intentá de nuevo.`;
+      console.error(`❌ Error inesperado con ${provider}:`, err);
+      msg.textContent = `Error de conexión con ${provider}. Verifica tu conexión e intenta de nuevo.`;
+      
+      // Additional debugging info
+      if (navigator.onLine === false) {
+        msg.textContent = `Sin conexión a internet. Verifica tu conexión.`;
+      }
     }
   };
 
