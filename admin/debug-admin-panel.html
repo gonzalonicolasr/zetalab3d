@@ -3,298 +3,760 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZETALAB Admin Debug</title>
+    <title>Debug Admin Panel - ZETALAB</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .test-section { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; }
-        .success { color: green; }
-        .error { color: red; }
-        .info { color: blue; }
-        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
-        pre { white-space: pre-wrap; word-wrap: break-word; }
-        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-warning { background: #ffc107; color: black; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .debug-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+        
+        .debug-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .debug-section h3 {
+            margin-bottom: 1rem;
+            color: #4f9a65;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .debug-output {
+            background: #000;
+            color: #0f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-top: 1rem;
+            border: 1px solid #333;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4f9a65, #10b981);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 154, 101, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #6b7280, #9ca3af);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ef4444, #f87171);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #f59e0b, #fbbf24);
+        }
+        
+        .status {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        
+        .status.success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left-color: #10b981;
+            color: #10b981;
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: #ef4444;
+            color: #ef4444;
+        }
+        
+        .status.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: #f59e0b;
+            color: #f59e0b;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .results-summary {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #4f9a65;
+        }
+        
+        .test-group {
+            margin-bottom: 1rem;
+        }
+        
+        .test-group h4 {
+            color: #10b981;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 <body>
-    <h1>🔧 ZETALAB Admin Panel - Debug Tool</h1>
-    
-    <div class="test-section">
-        <h2>1. Conexión a Supabase</h2>
-        <button class="btn-primary" onclick="testSupabaseConnection()">Probar Conexión</button>
-        <div id="supabase-result" class="result"></div>
-    </div>
+    <div class="debug-container">
+        <div class="header">
+            <h1>🔧 Debug Admin Panel</h1>
+            <div class="subtitle">Diagnosticar problemas de la carga de usuarios</div>
+        </div>
 
-    <div class="test-section">
-        <h2>2. Verificar Vistas de Base de Datos</h2>
-        <button class="btn-primary" onclick="testDatabaseViews()">Probar Vistas</button>
-        <div id="views-result" class="result"></div>
-    </div>
-
-    <div class="test-section">
-        <h2>3. Cargar Usuarios de auth.users</h2>
-        <button class="btn-success" onclick="testLoadAllUsers()">Cargar TODOS los Usuarios</button>
-        <div id="users-result" class="result"></div>
-    </div>
-
-    <div class="test-section">
-        <h2>4. Cargar Suscripciones Completas</h2>
-        <button class="btn-success" onclick="testLoadSubscriptions()">Cargar Usuarios + Suscripciones</button>
-        <div id="subs-result" class="result"></div>
-    </div>
-
-    <div class="test-section">
-        <h2>5. Verificar Funciones JavaScript</h2>
-        <button class="btn-warning" onclick="testJavaScriptFunctions()">Probar Funciones</button>
-        <div id="js-result" class="result"></div>
-    </div>
-
-    <!-- Supabase -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
-    <script>
-        // Supabase configuration
-        const SUPABASE_URL = "https://fwmyiovamcxvinoxnput.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc";
+        <div class="results-summary" id="summarySection" style="display: none;">
+            <h3>📊 Resumen de Diagnóstico</h3>
+            <div id="summaryContent"></div>
+        </div>
         
-        const supabaseAdmin = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        <div class="grid">
+            <div class="debug-section">
+                <h3>🔗 Conexión Base de Datos</h3>
+                <button class="btn" onclick="testConnection()">Probar Conexión</button>
+                <button class="btn btn-secondary" onclick="testAllTables()">Probar Todas las Tablas</button>
+                <div id="connectionResult" class="debug-output" style="display: none;"></div>
+            </div>
 
-        async function testSupabaseConnection() {
-            const resultDiv = document.getElementById('supabase-result');
-            resultDiv.innerHTML = '<p class="info">Probando conexión...</p>';
+            <div class="debug-section">
+                <h3>👑 Usuarios Administradores</h3>
+                <button class="btn" onclick="checkAdminUsers()">Verificar Admins</button>
+                <button class="btn btn-secondary" onclick="checkCurrentUser()">Verificar Usuario Actual</button>
+                <div id="adminResult" class="debug-output" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h3>📊 Fuentes de Datos de Usuarios</h3>
+            <div class="test-group">
+                <button class="btn" onclick="checkDataSources()">Verificar Todas las Fuentes</button>
+                <button class="btn btn-secondary" onclick="analyzeUserDistribution()">Analizar Distribución</button>
+                <button class="btn btn-warning" onclick="findMissingUsers()">Buscar Usuarios Perdidos</button>
+            </div>
+            <div id="dataSourceResult" class="debug-output" style="display: none;"></div>
+        </div>
+
+        <div class="debug-section">
+            <h3>⚡ Vistas y Funciones SQL</h3>
+            <div class="test-group">
+                <button class="btn" onclick="testDatabaseViews()">Probar Vistas</button>
+                <button class="btn btn-secondary" onclick="testRPCFunctions()">Probar Funciones RPC</button>
+                <button class="btn btn-danger" onclick="runDirectAuthQuery()">Consulta Directa Auth</button>
+            </div>
+            <div id="rawQueryResult" class="debug-output" style="display: none;"></div>
+        </div>
+
+        <div class="debug-section">
+            <h3>🧪 Simulación de Carga Admin</h3>
+            <div class="test-group">
+                <button class="btn" onclick="simulateAdminUserLoad()">Simular Carga de Usuarios</button>
+                <button class="btn btn-secondary" onclick="testUserTransformation()">Probar Transformación</button>
+            </div>
+            <div id="simulationResult" class="debug-output" style="display: none;"></div>
+        </div>
+
+        <div class="debug-section">
+            <h3>🛠️ Acciones</h3>
+            <a href="index.html" class="btn">← Volver al Admin Panel</a>
+            <a href="database-setup.html" class="btn btn-warning">🔧 Setup Base de Datos</a>
+            <button class="btn btn-secondary" onclick="exportDebugReport()">📄 Exportar Reporte</button>
+            <button class="btn btn-danger" onclick="clearAllLogs()">🧹 Limpiar Logs</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="admin-config.js"></script>
+    <script>
+        // Global debug state
+        const debugState = {
+            results: {},
+            startTime: new Date(),
+            errors: []
+        };
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            if (element.style.display === 'none') {
+                element.style.display = 'block';
+            }
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'debug': '🔍'
+            }[type] || 'ℹ️';
+            
+            const logMessage = `[${timestamp}] ${prefix} ${message}`;
+            element.textContent += logMessage + '\n';
+            element.scrollTop = element.scrollHeight;
+            console.log(logMessage);
+            
+            // Track for summary
+            if (!debugState.results[elementId]) {
+                debugState.results[elementId] = [];
+            }
+            debugState.results[elementId].push({ type, message, timestamp });
+        }
+
+        async function testConnection() {
+            const resultId = 'connectionResult';
+            document.getElementById(resultId).textContent = '';
+            log(resultId, 'Probando conexión a Supabase...', 'debug');
             
             try {
                 // Test basic connection
                 const { data, error } = await supabaseAdmin
                     .from('pieces')
-                    .select('id')
-                    .limit(1);
+                    .select('id', { count: 'exact', head: true });
                 
                 if (error) {
-                    resultDiv.innerHTML = `<p class="error">❌ Error de conexión: ${error.message}</p>`;
+                    log(resultId, `Error de conexión: ${error.message}`, 'error');
+                    debugState.errors.push(`Connection: ${error.message}`);
                 } else {
-                    resultDiv.innerHTML = `<p class="success">✅ Conexión exitosa a Supabase</p>`;
+                    log(resultId, 'Conexión exitosa a Supabase', 'success');
+                    log(resultId, `Base de datos responde correctamente`, 'success');
+                    log(resultId, `Tabla pieces: ${data?.count || 0} registros`, 'info');
                 }
-            } catch (err) {
-                resultDiv.innerHTML = `<p class="error">❌ Error: ${err.message}</p>`;
+                
+                // Test auth status
+                const { data: user } = await supabaseAdmin.auth.getUser();
+                if (user?.user) {
+                    log(resultId, `Usuario autenticado: ${user.user.email}`, 'success');
+                } else {
+                    log(resultId, 'No hay usuario autenticado (normal para admin panel)', 'info');
+                }
+                
+            } catch (error) {
+                log(resultId, `Error crítico de conexión: ${error.message}`, 'error');
+                debugState.errors.push(`Critical connection: ${error.message}`);
+            }
+        }
+
+        async function testAllTables() {
+            const resultId = 'connectionResult';
+            log(resultId, '', 'info');
+            log(resultId, 'Probando acceso a todas las tablas...', 'debug');
+            
+            const tables = ['pieces', 'piece_versions', 'subscriptions', 'admin_users', 'payments', 'user_filaments', 'monthly_usage'];
+            
+            for (const table of tables) {
+                try {
+                    const { data, error } = await supabaseAdmin
+                        .from(table)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    if (error) {
+                        log(resultId, `❌ Tabla ${table}: ${error.message}`, 'error');
+                    } else {
+                        log(resultId, `✅ Tabla ${table}: ${data?.count || 0} registros`, 'success');
+                    }
+                } catch (e) {
+                    log(resultId, `❌ Tabla ${table}: ${e.message}`, 'error');
+                }
+            }
+        }
+
+        async function checkAdminUsers() {
+            const resultId = 'adminResult';
+            document.getElementById(resultId).textContent = '';
+            log(resultId, 'Verificando usuarios administradores...', 'debug');
+            
+            try {
+                const { data: adminUsers, error } = await supabaseAdmin
+                    .from('admin_users')
+                    .select('*');
+                
+                if (error) {
+                    log(resultId, `Error accediendo admin_users: ${error.message}`, 'error');
+                    debugState.errors.push(`Admin users: ${error.message}`);
+                } else {
+                    log(resultId, `Tabla admin_users accesible`, 'success');
+                    log(resultId, `Total administradores: ${adminUsers.length}`, 'info');
+                    
+                    adminUsers.forEach((admin, index) => {
+                        log(resultId, `Admin ${index + 1}:`, 'info');
+                        log(resultId, `  - Email: ${admin.email}`, 'info');
+                        log(resultId, `  - Role: ${admin.role}`, 'info');
+                        log(resultId, `  - Active: ${admin.active}`, 'info');
+                        log(resultId, `  - User ID: ${admin.user_id}`, 'debug');
+                    });
+                    
+                    if (adminUsers.length === 0) {
+                        log(resultId, 'No hay administradores configurados', 'warning');
+                    }
+                }
+            } catch (error) {
+                log(resultId, `Error crítico verificando admins: ${error.message}`, 'error');
+                debugState.errors.push(`Admin check: ${error.message}`);
+            }
+        }
+
+        async function checkCurrentUser() {
+            const resultId = 'adminResult';
+            log(resultId, '', 'info');
+            log(resultId, 'Verificando usuario actual...', 'debug');
+            
+            try {
+                const { data: { user } } = await supabaseAdmin.auth.getUser();
+                
+                if (user) {
+                    log(resultId, `Usuario actual: ${user.email}`, 'success');
+                    log(resultId, `User ID: ${user.id}`, 'debug');
+                    
+                    // Check if current user is admin
+                    const { data: isAdmin, error } = await supabaseAdmin
+                        .from('admin_users')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .eq('active', true)
+                        .single();
+                    
+                    if (error && error.code !== 'PGRST116') {
+                        log(resultId, `Error verificando status admin: ${error.message}`, 'error');
+                    } else if (isAdmin) {
+                        log(resultId, `✅ Usuario actual ES administrador (Role: ${isAdmin.role})`, 'success');
+                    } else {
+                        log(resultId, `❌ Usuario actual NO es administrador`, 'warning');
+                    }
+                } else {
+                    log(resultId, 'No hay usuario autenticado', 'warning');
+                }
+            } catch (error) {
+                log(resultId, `Error verificando usuario actual: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkDataSources() {
+            const resultId = 'dataSourceResult';
+            document.getElementById(resultId).textContent = '';
+            log(resultId, 'Analizando fuentes de datos de usuarios...', 'debug');
+            
+            const sources = [
+                { name: 'pieces', query: 'user_id' },
+                { name: 'subscriptions', query: 'user_id' },  
+                { name: 'admin_users', query: 'user_id' },
+                { name: 'payments', query: 'user_id' },
+                { name: 'user_filaments', query: 'user_id' },
+                { name: 'monthly_usage', query: 'user_id' }
+            ];
+            
+            const userIds = new Set();
+            const sourceStats = {};
+            
+            for (const source of sources) {
+                try {
+                    const { data, error } = await supabaseAdmin
+                        .from(source.name)
+                        .select(source.query)
+                        .not(source.query, 'is', null);
+                    
+                    if (error) {
+                        log(resultId, `❌ ${source.name}: ${error.message}`, 'error');
+                        sourceStats[source.name] = { count: 0, uniqueUsers: 0, error: true };
+                    } else {
+                        const uniqueInSource = new Set(data.map(item => item[source.query]));
+                        sourceStats[source.name] = { 
+                            count: data.length, 
+                            uniqueUsers: uniqueInSource.size, 
+                            error: false 
+                        };
+                        
+                        // Add to global user set
+                        uniqueInSource.forEach(id => userIds.add(id));
+                        
+                        log(resultId, `✅ ${source.name}: ${data.length} registros, ${uniqueInSource.size} usuarios únicos`, 'success');
+                    }
+                } catch (e) {
+                    log(resultId, `❌ ${source.name}: ${e.message}`, 'error');
+                    sourceStats[source.name] = { count: 0, uniqueUsers: 0, error: true };
+                }
+            }
+            
+            log(resultId, '', 'info');
+            log(resultId, `🎯 TOTAL USUARIOS ÚNICOS ENCONTRADOS: ${userIds.size}`, 'success');
+            log(resultId, '', 'info');
+            log(resultId, 'Desglose por fuente:', 'info');
+            Object.entries(sourceStats).forEach(([source, stats]) => {
+                if (!stats.error) {
+                    log(resultId, `  📊 ${source}: ${stats.uniqueUsers} usuarios`, 'info');
+                }
+            });
+            
+            if (userIds.size > 0) {
+                log(resultId, '', 'info');
+                log(resultId, 'Muestra de User IDs:', 'debug');
+                Array.from(userIds).slice(0, 5).forEach((id, index) => {
+                    log(resultId, `  ${index + 1}. ${id}`, 'debug');
+                });
+                
+                if (userIds.size > 5) {
+                    log(resultId, `  ... y ${userIds.size - 5} más`, 'debug');
+                }
             }
         }
 
         async function testDatabaseViews() {
-            const resultDiv = document.getElementById('views-result');
-            resultDiv.innerHTML = '<p class="info">Probando vistas de base de datos...</p>';
+            const resultId = 'rawQueryResult';
+            document.getElementById(resultId).textContent = '';
+            log(resultId, 'Probando vistas de base de datos...', 'debug');
             
-            const results = [];
+            const views = ['admin_auth_users_view', 'admin_complete_users'];
             
-            // Test admin_auth_users_view
-            try {
-                const { data: authUsers, error: authError } = await supabaseAdmin
-                    .from('admin_auth_users_view')
-                    .select('*')
-                    .limit(5);
-                
-                if (authError) {
-                    results.push(`❌ admin_auth_users_view: ${authError.message}`);
-                } else {
-                    results.push(`✅ admin_auth_users_view: ${authUsers.length} registros encontrados`);
+            for (const view of views) {
+                try {
+                    log(resultId, `Probando vista: ${view}`, 'debug');
+                    const { data, error } = await supabaseAdmin
+                        .from(view)
+                        .select('*')
+                        .limit(3);
+                    
+                    if (error) {
+                        log(resultId, `❌ Vista ${view}: ${error.message}`, 'error');
+                    } else {
+                        log(resultId, `✅ Vista ${view}: Disponible con ${data.length} registros de muestra`, 'success');
+                        if (data.length > 0) {
+                            const sample = data[0];
+                            log(resultId, `   Columnas disponibles: ${Object.keys(sample).join(', ')}`, 'debug');
+                        }
+                    }
+                } catch (e) {
+                    log(resultId, `❌ Vista ${view}: ${e.message}`, 'error');
                 }
-            } catch (err) {
-                results.push(`❌ admin_auth_users_view: ${err.message}`);
             }
-
-            // Test admin_complete_users
-            try {
-                const { data: completeUsers, error: completeError } = await supabaseAdmin
-                    .from('admin_complete_users')
-                    .select('*')
-                    .limit(5);
-                
-                if (completeError) {
-                    results.push(`❌ admin_complete_users: ${completeError.message}`);
-                } else {
-                    results.push(`✅ admin_complete_users: ${completeUsers.length} registros encontrados`);
-                }
-            } catch (err) {
-                results.push(`❌ admin_complete_users: ${err.message}`);
-            }
-
-            // Test comprehensive stats function
-            try {
-                const { data: stats, error: statsError } = await supabaseAdmin
-                    .rpc('get_comprehensive_admin_stats');
-                
-                if (statsError) {
-                    results.push(`❌ get_comprehensive_admin_stats: ${statsError.message}`);
-                } else {
-                    results.push(`✅ get_comprehensive_admin_stats: ${JSON.stringify(stats, null, 2)}`);
-                }
-            } catch (err) {
-                results.push(`❌ get_comprehensive_admin_stats: ${err.message}`);
-            }
-            
-            resultDiv.innerHTML = `<pre>${results.join('\n')}</pre>`;
         }
 
-        async function testLoadAllUsers() {
-            const resultDiv = document.getElementById('users-result');
-            resultDiv.innerHTML = '<p class="info">Cargando TODOS los usuarios registrados...</p>';
+        async function testRPCFunctions() {
+            const resultId = 'rawQueryResult';
+            log(resultId, '', 'info');
+            log(resultId, 'Probando funciones RPC...', 'debug');
             
-            let allUsers = [];
-            let usedMethod = '';
+            const functions = [
+                'get_all_users_for_admin',
+                'get_comprehensive_admin_stats',
+                'get_admin_user_details'
+            ];
             
-            // Try auth users view first
-            try {
-                const { data: authUsers, error: authError } = await supabaseAdmin
-                    .from('admin_auth_users_view')
-                    .select('*')
-                    .order('registration_date', { ascending: false });
+            for (const func of functions) {
+                try {
+                    log(resultId, `Probando función: ${func}`, 'debug');
+                    
+                    let result;
+                    if (func === 'get_admin_user_details') {
+                        // Skip this one as it needs a parameter
+                        log(resultId, `⏭️ ${func}: Requiere parámetro (omitido)`, 'warning');
+                        continue;
+                    }
+                    
+                    const { data, error } = await supabaseAdmin.rpc(func);
+                    
+                    if (error) {
+                        log(resultId, `❌ Función ${func}: ${error.message}`, 'error');
+                    } else {
+                        log(resultId, `✅ Función ${func}: Ejecutada correctamente`, 'success');
+                        
+                        if (func === 'get_all_users_for_admin') {
+                            log(resultId, `   Usuarios encontrados: ${data?.length || 0}`, 'info');
+                            if (data && data.length > 0) {
+                                const sample = data[0];
+                                log(resultId, `   Ejemplo: ${sample.email || sample.id} (Admin: ${sample.is_admin})`, 'debug');
+                            }
+                        } else if (func === 'get_comprehensive_admin_stats') {
+                            log(resultId, `   Stats disponibles: ${Object.keys(data || {}).join(', ')}`, 'debug');
+                        }
+                    }
+                } catch (e) {
+                    log(resultId, `❌ Función ${func}: ${e.message}`, 'error');
+                }
+            }
+        }
 
-                if (!authError && authUsers && authUsers.length > 0) {
-                    allUsers = authUsers;
-                    usedMethod = 'admin_auth_users_view';
+        async function simulateAdminUserLoad() {
+            const resultId = 'simulationResult';
+            document.getElementById(resultId).textContent = '';
+            log(resultId, 'Simulando carga de usuarios del admin panel...', 'debug');
+            
+            // Simulate the actual AdminUsers.loadUsersFromView logic
+            log(resultId, '🔄 Intentando RPC function get_all_users_for_admin...', 'info');
+            
+            try {
+                const { data: allUsers, error: rpcError } = await supabaseAdmin
+                    .rpc('get_all_users_for_admin');
+
+                if (!rpcError && allUsers && allUsers.length > 0) {
+                    log(resultId, `✅ RPC exitosa: ${allUsers.length} usuarios encontrados`, 'success');
+                    log(resultId, `   - ${allUsers.filter(u => u.is_admin).length} administradores`, 'info');
+                    log(resultId, `   - ${allUsers.filter(u => u.piece_count > 0).length} con piezas`, 'info');
+                    log(resultId, `   - ${allUsers.filter(u => u.subscription_status !== 'none').length} con suscripción`, 'info');
+                    
+                    log(resultId, '', 'info');
+                    log(resultId, '📋 Muestra de usuarios:', 'info');
+                    allUsers.slice(0, 3).forEach((user, index) => {
+                        log(resultId, `${index + 1}. ${user.email || user.id}`, 'info');
+                        log(resultId, `   - Status: ${user.current_status}`, 'debug');
+                        log(resultId, `   - Piezas: ${user.piece_count}`, 'debug');
+                        log(resultId, `   - Admin: ${user.is_admin}`, 'debug');
+                    });
+                    
+                    return; // Success path
                 } else {
-                    throw new Error(authError?.message || 'No data from auth view');
+                    log(resultId, `❌ RPC failed: ${rpcError?.message || 'Sin datos'}`, 'error');
                 }
             } catch (e) {
-                console.log('Auth view failed, trying RPC...');
-                
-                try {
-                    const { data: rpcData, error: rpcError } = await supabaseAdmin
-                        .rpc('get_comprehensive_admin_stats');
-
-                    if (!rpcError && rpcData) {
-                        allUsers = [{ summary: rpcData }];
-                        usedMethod = 'RPC function (stats only)';
-                    } else {
-                        throw new Error(rpcError?.message || 'RPC failed');
-                    }
-                } catch (rpcErr) {
-                    console.log('RPC failed, using fallback...');
-                    
-                    // Ultimate fallback - get known users from pieces table
-                    const { data: pieceUsers, error: pieceError } = await supabaseAdmin
-                        .from('pieces')
-                        .select('user_id, created_at')
-                        .not('user_id', 'is', null);
-
-                    if (!pieceError) {
-                        const uniqueUsers = new Map();
-                        (pieceUsers || []).forEach(p => {
-                            if (!uniqueUsers.has(p.user_id)) {
-                                uniqueUsers.set(p.user_id, {
-                                    id: p.user_id,
-                                    email: `user-${p.user_id.substring(0, 8)}@zetalab.local`,
-                                    registration_date: p.created_at
-                                });
-                            }
-                        });
-                        allUsers = Array.from(uniqueUsers.values());
-                        usedMethod = 'Fallback from pieces table';
-                    }
-                }
+                log(resultId, `❌ RPC error: ${e.message}`, 'error');
             }
-
-            resultDiv.innerHTML = `
-                <p class="success">✅ Método usado: ${usedMethod}</p>
-                <p class="info">📊 Total de usuarios encontrados: ${allUsers.length}</p>
-                <pre>${JSON.stringify(allUsers.slice(0, 3), null, 2)}</pre>
-                ${allUsers.length > 3 ? '<p>... y más usuarios</p>' : ''}
-            `;
-        }
-
-        async function testLoadSubscriptions() {
-            const resultDiv = document.getElementById('subs-result');
-            resultDiv.innerHTML = '<p class="info">Cargando datos de suscripciones...</p>';
+            
+            // Fallback simulation
+            log(resultId, '', 'info');
+            log(resultId, '🔄 Probando método fallback...', 'info');
             
             try {
-                // Get all users first
-                const { data: authUsers, error: authError } = await supabaseAdmin
-                    .from('admin_auth_users_view')
-                    .select('*')
-                    .limit(10);
-
-                if (authError) throw authError;
-
-                // Get subscriptions data
-                const { data: subscriptions, error: subsError } = await supabaseAdmin
+                // Simulate getAllUsersComprehensiveFallback
+                const userIds = new Set();
+                
+                // Get from pieces
+                const { data: pieceUsers } = await supabaseAdmin
+                    .from('pieces')
+                    .select('user_id, created_at')
+                    .not('user_id', 'is', null);
+                
+                pieceUsers?.forEach(p => userIds.add(p.user_id));
+                log(resultId, `📄 Pieces: ${pieceUsers?.length || 0} registros`, 'info');
+                
+                // Get from subscriptions  
+                const { data: subUsers } = await supabaseAdmin
                     .from('subscriptions')
-                    .select('*');
-
-                const { data: userSubscriptions, error: userSubsError } = await supabaseAdmin
-                    .from('user_subscriptions')
-                    .select('*');
-
-                const { data: plans, error: plansError } = await supabaseAdmin
-                    .from('subscription_plans')
-                    .select('*');
-
-                const { data: payments, error: paymentsError } = await supabaseAdmin
-                    .from('payment_transactions')
-                    .select('*');
-
-                resultDiv.innerHTML = `
-                    <p class="success">✅ Datos cargados correctamente:</p>
-                    <ul>
-                        <li>👥 Usuarios: ${authUsers?.length || 0}</li>
-                        <li>📋 Suscripciones (legacy): ${subscriptions?.length || 0}</li>
-                        <li>💳 User Subscriptions (modern): ${userSubscriptions?.length || 0}</li>
-                        <li>📦 Planes: ${plans?.length || 0}</li>
-                        <li>💰 Transacciones: ${payments?.length || 0}</li>
-                    </ul>
-                    <p class="info">Muestra de datos:</p>
-                    <pre>${JSON.stringify({
-                        sample_user: authUsers?.[0] || 'No users',
-                        sample_subscription: subscriptions?.[0] || 'No subscriptions',
-                        sample_user_subscription: userSubscriptions?.[0] || 'No user subscriptions',
-                        sample_plan: plans?.[0] || 'No plans'
-                    }, null, 2)}</pre>
-                `;
-
+                    .select('user_id, created_at')
+                    .not('user_id', 'is', null);
+                
+                subUsers?.forEach(s => userIds.add(s.user_id));
+                log(resultId, `💳 Subscriptions: ${subUsers?.length || 0} registros`, 'info');
+                
+                // Get from admin_users
+                const { data: adminUsers } = await supabaseAdmin
+                    .from('admin_users')
+                    .select('user_id, email');
+                
+                adminUsers?.forEach(a => userIds.add(a.user_id));
+                log(resultId, `👑 Admins: ${adminUsers?.length || 0} registros`, 'info');
+                
+                log(resultId, '', 'info');
+                log(resultId, `🎯 Fallback encontró ${userIds.size} usuarios únicos`, 'success');
+                
+                if (userIds.size === 0) {
+                    log(resultId, '❌ NO SE ENCONTRARON USUARIOS en ninguna tabla', 'error');
+                    log(resultId, 'Esto indica que:', 'warning');
+                    log(resultId, '  - No hay usuarios registrados', 'warning');
+                    log(resultId, '  - O hay un problema de permisos', 'warning');
+                    log(resultId, '  - O las tablas están vacías', 'warning');
+                }
+                
             } catch (error) {
-                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                log(resultId, `❌ Error en fallback: ${error.message}`, 'error');
             }
         }
 
-        async function testJavaScriptFunctions() {
-            const resultDiv = document.getElementById('js-result');
-            const results = [];
+        async function findMissingUsers() {
+            const resultId = 'dataSourceResult';
+            log(resultId, '', 'info');
+            log(resultId, '🔍 Buscando usuarios perdidos...', 'debug');
+            
+            // This would require direct access to auth.users which we can't do
+            // But we can suggest what to check
+            log(resultId, '', 'info');
+            log(resultId, '⚠️ Limitaciones de acceso a auth.users:', 'warning');
+            log(resultId, '   - No podemos acceder directamente a auth.users vía REST', 'info');
+            log(resultId, '   - Los usuarios que solo se registraron pero nunca usaron la app', 'info');
+            log(resultId, '     no aparecerán en pieces, subscriptions, etc.', 'info');
+            log(resultId, '   - Solo podemos ver usuarios que interactuaron con la app', 'info');
+            log(resultId, '', 'info');
+            log(resultId, '💡 Soluciones:', 'info');
+            log(resultId, '   1. Configurar las vistas SQL (ver database-setup.html)', 'info');
+            log(resultId, '   2. Usar funciones RPC para acceso seguro', 'info');
+            log(resultId, '   3. Consultar auth.users desde el Supabase Dashboard', 'info');
+        }
 
-            // Test AdminUtils functions
+        async function runDirectAuthQuery() {
+            const resultId = 'rawQueryResult';
+            log(resultId, '', 'info');
+            log(resultId, '⚠️ Intentando consulta directa a auth.users...', 'warning');
+            
             try {
-                if (typeof AdminUtils !== 'undefined') {
-                    results.push('✅ AdminUtils está disponible');
-                    
-                    // Test date formatting
-                    const testDate = new Date().toISOString();
-                    results.push(`✅ formatDate: ${AdminUtils.formatDate(testDate)}`);
-                    results.push(`✅ formatDateTime: ${AdminUtils.formatDateTime(testDate)}`);
-                    results.push(`✅ getRelativeTime: ${AdminUtils.getRelativeTime(testDate)}`);
-                    results.push(`✅ formatCurrency: ${AdminUtils.formatCurrency(1500)}`);
+                // This will definitely fail, but let's see the error
+                const { data, error } = await supabaseAdmin
+                    .from('auth.users')
+                    .select('*')
+                    .limit(1);
+                
+                if (error) {
+                    log(resultId, `❌ Como esperábamos: ${error.message}`, 'error');
+                    log(resultId, '   Esto confirma que necesitamos vistas/funciones SQL', 'warning');
                 } else {
-                    results.push('❌ AdminUtils no está disponible');
+                    log(resultId, `😱 ¡Sorpresa! Acceso directo funcionó: ${data.length} usuarios`, 'success');
                 }
-            } catch (err) {
-                results.push(`❌ Error con AdminUtils: ${err.message}`);
+            } catch (e) {
+                log(resultId, `❌ Error esperado: ${e.message}`, 'error');
+                log(resultId, '   auth.users no es accesible vía REST API', 'info');
             }
-
-            // Test class availability
-            const classes = ['AdminUsers', 'AdminSubscriptions', 'AdminDashboard'];
-            classes.forEach(className => {
-                if (typeof window[className] !== 'undefined') {
-                    results.push(`✅ ${className} está disponible`);
-                } else {
-                    results.push(`❌ ${className} no está disponible`);
-                }
-            });
-
-            resultDiv.innerHTML = `<pre>${results.join('\n')}</pre>`;
         }
 
-        // Auto test on page load
+        function analyzeUserDistribution() {
+            const resultId = 'dataSourceResult';
+            log(resultId, '', 'info');
+            log(resultId, '📊 Análisis de distribución no implementado aún', 'warning');
+        }
+
+        function testUserTransformation() {
+            const resultId = 'simulationResult';
+            log(resultId, '', 'info');
+            log(resultId, '🔧 Test de transformación no implementado aún', 'warning');
+        }
+
+        function updateSummary() {
+            const summarySection = document.getElementById('summarySection');
+            const summaryContent = document.getElementById('summaryContent');
+            
+            const totalErrors = debugState.errors.length;
+            const totalResults = Object.keys(debugState.results).length;
+            
+            let summary = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                    <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid #10b981;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #10b981;">${totalResults}</div>
+                        <div>Secciones Probadas</div>
+                    </div>
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid #ef4444;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #ef4444;">${totalErrors}</div>
+                        <div>Errores Encontrados</div>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #f59e0b;">${Math.round((Date.now() - debugState.startTime) / 1000)}s</div>
+                        <div>Tiempo de Diagnóstico</div>
+                    </div>
+                </div>
+            `;
+            
+            if (totalErrors > 0) {
+                summary += `
+                    <div style="margin-top: 1rem;">
+                        <h4 style="color: #ef4444; margin-bottom: 0.5rem;">🚨 Principales Problemas:</h4>
+                        <ul style="margin-left: 1rem;">
+                `;
+                debugState.errors.forEach(error => {
+                    summary += `<li style="color: #ef4444; margin: 0.25rem 0;">${error}</li>`;
+                });
+                summary += `</ul></div>`;
+            }
+            
+            summaryContent.innerHTML = summary;
+            summarySection.style.display = 'block';
+        }
+
+        function exportDebugReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                duration: Math.round((Date.now() - debugState.startTime) / 1000),
+                results: debugState.results,
+                errors: debugState.errors,
+                summary: {
+                    totalSections: Object.keys(debugState.results).length,
+                    totalErrors: debugState.errors.length
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zetalab-admin-debug-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAllLogs() {
+            document.querySelectorAll('.debug-output').forEach(el => {
+                el.textContent = '';
+                el.style.display = 'none';
+            });
+            debugState.results = {};
+            debugState.errors = [];
+            document.getElementById('summarySection').style.display = 'none';
+        }
+
+        // Auto-run basic tests on load
         window.addEventListener('load', () => {
-            console.log('Debug page loaded');
+            setTimeout(() => {
+                testConnection();
+                setTimeout(() => {
+                    checkAdminUsers();
+                    setTimeout(updateSummary, 1000);
+                }, 1000);
+            }, 500);
         });
     </script>
 </body>
