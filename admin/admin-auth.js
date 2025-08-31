@@ -90,11 +90,7 @@ class AdminAuth {
       this.setLoginLoading(true);
       this.hideError();
 
-      // First check if email is in admin list
-      if (!this.isEmailAdmin(email)) {
-        this.showError('Email no autorizado para acceso de administrador');
-        return;
-      }
+      // Remove hardcoded email check - will verify against database after login
 
       // Attempt to sign in with Supabase
       const { data, error } = await supabaseAdmin.auth.signInWithPassword({
@@ -157,35 +153,53 @@ class AdminAuth {
   async verifyAdminPrivileges(user) {
     if (!user) return false;
 
-    // Check if user is in admin configuration
-    if (AdminUtils.isAdmin(user)) {
-      return true;
-    }
-
-    // Additional database check - verify if user has admin role
     try {
-      // Query user profile or admin table if you have one
-      // This is where you'd check your custom admin table
-      const { data, error } = await supabaseAdmin
-        .from('user_profiles') // Assuming you have a profiles table
-        .select('role, is_admin')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // Ignore "not found" errors
-        console.error('Error checking admin privileges:', error);
-        return false;
+      // Use the database-driven admin check
+      const isAdmin = await AdminUtils.isAdmin(user);
+      
+      if (isAdmin) {
+        // Log admin login activity
+        await AdminUtils.logAdminActivity('admin_login', 'admin', user.id);
+        
+        // Update last login timestamp
+        await supabaseAdmin
+          .from('admin_users')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('user_id', user.id);
+          
+        // Create admin session record
+        await supabaseAdmin
+          .from('admin_sessions')
+          .insert({
+            admin_id: (await AdminUtils.getAdminDetails(user))?.id,
+            login_at: new Date().toISOString(),
+            ip_address: null, // Could be enhanced with real IP
+            user_agent: navigator.userAgent
+          });
       }
-
-      return data?.role === 'admin' || data?.is_admin === true;
+      
+      return isAdmin;
     } catch (error) {
       console.error('Error verifying admin privileges:', error);
       return false;
     }
   }
 
-  isEmailAdmin(email) {
-    return ADMIN_CONFIG.ADMIN_DOMAINS.includes(email);
+  // Legacy method - now checks database instead of hardcoded list
+  async isEmailAdmin(email) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('admin_users')
+        .select('id')
+        .eq('email', email)
+        .eq('active', true)
+        .single();
+        
+      return !error && !!data;
+    } catch (error) {
+      console.error('Error checking admin email:', error);
+      return false;
+    }
   }
 
   handleAuthSuccess(user) {
@@ -291,22 +305,29 @@ class AdminAuth {
   }
 
   // Method to check if current user can perform specific admin actions
-  canPerformAction(action) {
+  async canPerformAction(action) {
     if (!this.isAuthenticated || !this.currentUser) {
       return false;
     }
 
-    // Define permission levels here
-    const permissions = {
-      'view_users': true,
-      'edit_users': true,
-      'delete_users': AdminUtils.isAdmin(this.currentUser),
-      'view_analytics': true,
-      'system_settings': AdminUtils.isAdmin(this.currentUser),
-      'export_data': true
-    };
-
-    return permissions[action] || false;
+    try {
+      // Get admin details and permissions from database
+      const adminDetails = await AdminUtils.getAdminDetails(this.currentUser);
+      if (!adminDetails) return false;
+      
+      // Check specific permissions from database
+      const hasPermission = await AdminUtils.hasPermission(this.currentUser, action);
+      
+      // For some actions, check role level
+      if (action === 'admin_management' || action === 'system_settings') {
+        return adminDetails.role === 'super_admin';
+      }
+      
+      return hasPermission;
+    } catch (error) {
+      console.error('Error checking action permission:', error);
+      return false;
+    }
   }
 }
 

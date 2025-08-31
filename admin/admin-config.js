@@ -12,13 +12,12 @@ const supabaseAdmin = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Admin configuration
 const ADMIN_CONFIG = {
-  // Admin email domains (for basic admin verification)
-  ADMIN_DOMAINS: ['gonn.nicolas@gmail.com', 'gonzalo@zetalab.com'],
+  // Legacy - now using database-driven admin verification
+  // ADMIN_DOMAINS: ['gonn.nicolas@gmail.com', 'gonzalo@zetalab.com'], // DEPRECATED
+  // ADMIN_USER_IDS: [], // DEPRECATED
   
-  // Admin user IDs (can be set after first admin user is created)
-  ADMIN_USER_IDS: [
-    // Add admin user IDs here after creating them
-  ],
+  // Database-driven admin verification (replaces hardcoded domains)
+  USE_DATABASE_ADMIN_CHECK: true,
   
   // Pagination settings
   USERS_PER_PAGE: 25,
@@ -117,27 +116,80 @@ const AdminUtils = {
     }
   },
 
-  // Check if user is admin
-  isAdmin(user) {
+  // Check if user is admin (database-driven)
+  async isAdmin(user) {
     if (!user) return false;
     
-    // Check by email domain
-    const emailDomain = user.email;
-    if (ADMIN_CONFIG.ADMIN_DOMAINS.includes(emailDomain)) {
-      return true;
+    try {
+      // Query admin_users table to verify admin status
+      const { data: adminUser, error } = await supabaseAdmin
+        .from('admin_users')
+        .select('id, role, active, permissions')
+        .eq('user_id', user.id)
+        .eq('active', true)
+        .single();
+        
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
+      
+      return !!adminUser;
+    } catch (error) {
+      console.error('Admin verification error:', error);
+      return false;
     }
+  },
+
+  // Get admin details and permissions
+  async getAdminDetails(user) {
+    if (!user) return null;
     
-    // Check by user ID
-    if (ADMIN_CONFIG.ADMIN_USER_IDS.includes(user.id)) {
-      return true;
+    try {
+      const { data: adminUser, error } = await supabaseAdmin
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('active', true)
+        .single();
+        
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error getting admin details:', error);
+        return null;
+      }
+      
+      return adminUser;
+    } catch (error) {
+      console.error('Admin details error:', error);
+      return null;
     }
+  },
+
+  // Check specific admin permission
+  async hasPermission(user, permission) {
+    const adminDetails = await this.getAdminDetails(user);
+    if (!adminDetails) return false;
     
-    // Check by user metadata (if admin role is set)
-    if (user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin') {
-      return true;
+    return adminDetails.permissions?.[permission] === true;
+  },
+
+  // Log admin activity
+  async logAdminActivity(action, resourceType, resourceId = null, details = null) {
+    try {
+      const { error } = await supabaseAdmin.rpc('log_admin_activity', {
+        action_name: action,
+        resource_type_name: resourceType,
+        resource_uuid: resourceId,
+        details_json: details,
+        user_ip: null // Could be enhanced to capture real IP
+      });
+      
+      if (error) {
+        console.error('Error logging admin activity:', error);
+      }
+    } catch (error) {
+      console.error('Admin activity logging error:', error);
     }
-    
-    return false;
   },
 
   // Generate random color for charts
