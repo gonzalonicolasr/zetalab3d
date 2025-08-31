@@ -195,12 +195,28 @@ class AdminUsers {
 
   async loadUsersFromView() {
     try {
-      console.log('📊 Loading ALL users from database views...');
+      console.log('📊 Loading ALL users from database...');
       
-      // Try multiple approaches to get ALL registered users
-      
-      // 1. First try comprehensive view if it exists
+      // Try the new RPC function first (most comprehensive)
       try {
+        console.log('🔄 Trying RPC function get_all_users_for_admin...');
+        const { data: allUsers, error: rpcError } = await supabaseAdmin
+          .rpc('get_all_users_for_admin');
+
+        if (!rpcError && allUsers && allUsers.length > 0) {
+          console.log(`✅ Loaded ${allUsers.length} users from RPC function`);
+          this.users = this.transformRpcUsersData(allUsers);
+          return this.users;
+        } else if (rpcError) {
+          console.log('RPC function error:', rpcError);
+        }
+      } catch (e) {
+        console.log('RPC function not available yet, trying views...', e.message);
+      }
+
+      // Try comprehensive view if RPC failed
+      try {
+        console.log('🔄 Trying admin_complete_users view...');
         const { data: completeUsers, error: viewError } = await supabaseAdmin
           .from('admin_complete_users')
           .select('*')
@@ -210,13 +226,16 @@ class AdminUsers {
           console.log(`✅ Loaded ${completeUsers.length} users from comprehensive view`);
           this.users = this.transformCompleteUsersData(completeUsers);
           return this.users;
+        } else if (viewError) {
+          console.log('Comprehensive view error:', viewError);
         }
       } catch (e) {
-        console.log('Comprehensive view not available, trying auth view...');
+        console.log('Comprehensive view not available, trying auth view...', e.message);
       }
 
-      // 2. Try auth users view
+      // Try auth users view as backup
       try {
+        console.log('🔄 Trying admin_auth_users_view...');
         const { data: authUsers, error: authError } = await supabaseAdmin
           .from('admin_auth_users_view')
           .select('*')
@@ -226,32 +245,20 @@ class AdminUsers {
           console.log(`✅ Loaded ${authUsers.length} users from auth view`);
           this.users = await this.enhanceAuthUsersData(authUsers);
           return this.users;
+        } else if (authError) {
+          console.log('Auth view error:', authError);
         }
       } catch (e) {
-        console.log('Auth view not available, using RPC function...');
+        console.log('Auth view not available, trying comprehensive fallback...', e.message);
       }
 
-      // 3. Try RPC function for admin stats
-      try {
-        const { data: rpcData, error: rpcError } = await supabaseAdmin
-          .rpc('get_comprehensive_admin_stats');
-
-        if (!rpcError && rpcData && rpcData.all_users) {
-          console.log(`✅ Loaded user data from RPC function`);
-          this.users = this.transformRpcUsersData(rpcData.all_users);
-          return this.users;
-        }
-      } catch (e) {
-        console.log('RPC function not available, using fallback...');
-      }
-
-      // 4. Fallback to pieced-together data
-      console.warn('⚠️ Using fallback method - data may be incomplete');
-      return await this.getAllUsersComprehensive();
+      // Last resort - comprehensive manual approach
+      console.warn('⚠️ All views/functions failed, using comprehensive fallback method...');
+      return await this.getAllUsersComprehensiveFallback();
 
     } catch (error) {
       console.error('❌ Error loading users from view:', error);
-      return await this.loadUsersLegacy();
+      throw error;
     }
   }
 
@@ -371,102 +378,184 @@ class AdminUsers {
     }));
   }
 
-  async getAllUsersComprehensive() {
+  async getAllUsersComprehensiveFallback() {
     try {
-      console.log('📊 Loading comprehensive user data...');
+      console.log('📊 Loading comprehensive user data using fallback method...');
+      console.log('⚠️ Note: This method can only show users who have created pieces or have subscriptions');
       
-      // Get all users who have created pieces (active users)
+      // Get all user IDs from multiple sources
+      const userIds = new Set();
+      
+      // 1. Get users from pieces table
+      console.log('🔍 Getting users from pieces table...');
       const { data: pieceUsers, error: pieceError } = await supabaseAdmin
         .from('pieces')
         .select('user_id, created_at, title, est_price_ars')
         .not('user_id', 'is', null);
 
-      if (pieceError) throw pieceError;
-
-      // Get subscription data
+      if (pieceError) console.warn('Error fetching pieces:', pieceError);
+      
+      // 2. Get users from subscriptions table
+      console.log('🔍 Getting users from subscriptions table...');
       const { data: subscriptions, error: subError } = await supabaseAdmin
         .from('subscriptions')
         .select('*');
 
-      // Get admin users
+      if (subError) console.warn('Error fetching subscriptions:', subError);
+
+      // 3. Get admin users 
+      console.log('🔍 Getting admin users...');
       const { data: adminUsers, error: adminError } = await supabaseAdmin
         .from('admin_users')
         .select('*');
 
+      if (adminError) console.warn('Error fetching admin users:', adminError);
+      
+      // 4. Try to get users from payments table as well
+      console.log('🔍 Getting users from payments table...');
+      const { data: paymentUsers, error: paymentError } = await supabaseAdmin
+        .from('payments')
+        .select('user_id, created_at')
+        .not('user_id', 'is', null);
+        
+      if (paymentError) console.warn('Error fetching payment users:', paymentError);
+
+      // Collect all unique user IDs
+      (pieceUsers || []).forEach(p => userIds.add(p.user_id));
+      (subscriptions || []).forEach(s => userIds.add(s.user_id));  
+      (adminUsers || []).forEach(a => userIds.add(a.user_id));
+      (paymentUsers || []).forEach(p => userIds.add(p.user_id));
+
+      console.log(`📊 Found ${userIds.size} unique user IDs across all tables`);
+
       // Create comprehensive user objects
       const userMap = new Map();
 
-      // Process piece users
+      // Initialize user objects for all found user IDs
+      Array.from(userIds).forEach(userId => {
+        userMap.set(userId, {
+          id: userId,
+          email: `user-${userId.substring(0, 8)}@zetalab.local`, // Placeholder
+          created_at: new Date().toISOString(), // Default to now
+          last_sign_in_at: null,
+          email_confirmed_at: null,
+          auth_method: 'unknown',
+          pieces: [],
+          piece_count: 0,
+          version_count: 0,
+          last_piece_created: null,
+          total_revenue: 0,
+          subscription: null,
+          subscription_type: 'free',
+          subscription_status: 'none',
+          subscription_expires_at: null,
+          is_admin: false,
+          admin_role: null,
+          admin_permissions: null,
+          status: 'active',
+          payment_count: 0,
+          total_amount_paid: 0
+        });
+      });
+
+      // Process piece data
+      console.log('🔧 Processing piece data...');
       (pieceUsers || []).forEach(piece => {
-        const userId = piece.user_id;
-        if (!userMap.has(userId)) {
-          userMap.set(userId, {
-            id: userId,
-            email: `user-${userId.substring(0, 8)}@zetalab.local`, // Placeholder
-            created_at: piece.created_at,
-            last_sign_in_at: null,
-            email_confirmed_at: null,
-            auth_method: 'unknown',
-            pieces: [],
-            piece_count: 0,
-            version_count: 0,
-            last_piece_created: piece.created_at,
-            total_revenue: 0,
-            subscription: null,
-            subscription_type: 'free',
-            subscription_status: 'none',
-            is_admin: false,
-            admin_role: null,
-            status: 'active'
-          });
-        }
-        
-        const user = userMap.get(userId);
-        user.pieces.push(piece);
-        user.piece_count++;
-        user.total_revenue += parseFloat(piece.est_price_ars || 0);
-        
-        if (new Date(piece.created_at) > new Date(user.last_piece_created || 0)) {
-          user.last_piece_created = piece.created_at;
+        const user = userMap.get(piece.user_id);
+        if (user) {
+          user.pieces.push(piece);
+          user.piece_count++;
+          user.total_revenue += parseFloat(piece.est_price_ars || 0);
+          
+          // Use earliest piece as registration date approximation
+          if (!user.created_at || new Date(piece.created_at) < new Date(user.created_at)) {
+            user.created_at = piece.created_at;
+          }
+          
+          if (!user.last_piece_created || new Date(piece.created_at) > new Date(user.last_piece_created)) {
+            user.last_piece_created = piece.created_at;
+          }
         }
       });
 
-      // Add subscription information
+      // Process subscription data
+      console.log('🔧 Processing subscription data...');
       (subscriptions || []).forEach(sub => {
-        if (userMap.has(sub.user_id)) {
-          const user = userMap.get(sub.user_id);
+        const user = userMap.get(sub.user_id);
+        if (user) {
           user.subscription = sub;
-          user.subscription_type = sub.plan || 'free';
+          user.subscription_type = sub.plan_type || sub.type || 'free';
           user.subscription_status = sub.status || 'none';
-          user.subscription_expires_at = sub.expires_at;
+          user.subscription_expires_at = sub.expires_at || sub.current_period_end;
+          
+          // Update registration date if subscription is earlier
+          if (sub.created_at && (!user.created_at || new Date(sub.created_at) < new Date(user.created_at))) {
+            user.created_at = sub.created_at;
+          }
         }
       });
 
-      // Add admin information
+      // Process admin data  
+      console.log('🔧 Processing admin data...');
       (adminUsers || []).forEach(admin => {
-        if (userMap.has(admin.user_id)) {
-          const user = userMap.get(admin.user_id);
+        const user = userMap.get(admin.user_id);
+        if (user) {
           user.is_admin = true;
           user.admin_role = admin.role;
           user.admin_permissions = admin.permissions;
-          user.email = admin.email; // Get real email for admins
+          user.email = admin.email || user.email; // Get real email for admins
+          
+          if (admin.created_at && (!user.created_at || new Date(admin.created_at) < new Date(user.created_at))) {
+            user.created_at = admin.created_at;
+          }
         }
       });
 
-      // Get piece versions counts
-      for (const [userId, user] of userMap) {
-        const { count: versionCount } = await supabaseAdmin
-          .from('piece_versions')
-          .select('*', { count: 'exact', head: true })
-          .in('piece_id', user.pieces.map(p => p.id) || []);
-        
-        user.version_count = versionCount || 0;
-        user.activity_score = this.calculateActivityScore(user);
+      // Process payment data
+      console.log('🔧 Processing payment data...');
+      const paymentStats = new Map();
+      (paymentUsers || []).forEach(payment => {
+        if (!paymentStats.has(payment.user_id)) {
+          paymentStats.set(payment.user_id, { count: 0, totalAmount: 0 });
+        }
+        const stats = paymentStats.get(payment.user_id);
+        stats.count++;
+      });
+
+      // Get piece versions counts for users with pieces
+      console.log('🔧 Getting piece version counts...');
+      const usersWithPieces = Array.from(userMap.values()).filter(u => u.pieces.length > 0);
+      
+      for (const user of usersWithPieces) {
+        try {
+          const pieceIds = user.pieces.map(p => p.id).filter(Boolean);
+          if (pieceIds.length > 0) {
+            const { count: versionCount } = await supabaseAdmin
+              .from('piece_versions')
+              .select('*', { count: 'exact', head: true })
+              .in('piece_id', pieceIds);
+            
+            user.version_count = versionCount || 0;
+          }
+        } catch (error) {
+          console.warn(`Error getting versions for user ${user.id}:`, error);
+          user.version_count = 0;
+        }
       }
 
-      console.log(`📈 Loaded ${userMap.size} comprehensive user records`);
-      return Array.from(userMap.values()).sort((a, b) => {
-        // Sort: admins first, then by activity, then by registration
+      // Calculate activity scores for all users
+      console.log('🔧 Calculating activity scores...');
+      userMap.forEach(user => {
+        user.activity_score = this.calculateActivityScore(user);
+      });
+
+      const users = Array.from(userMap.values());
+      
+      console.log(`📈 Loaded ${users.length} comprehensive user records via fallback`);
+      console.log(`📊 Breakdown: ${users.filter(u => u.piece_count > 0).length} with pieces, ${users.filter(u => u.is_admin).length} admins, ${users.filter(u => u.subscription_type !== 'free').length} with subscriptions`);
+      
+      // Sort users: admins first, then by activity, then by registration
+      return users.sort((a, b) => {
         if (a.is_admin && !b.is_admin) return -1;
         if (!a.is_admin && b.is_admin) return 1;
         if (a.activity_score !== b.activity_score) return b.activity_score - a.activity_score;
@@ -474,7 +563,7 @@ class AdminUsers {
       });
 
     } catch (error) {
-      console.error('Error loading comprehensive user data:', error);
+      console.error('Error loading comprehensive user data via fallback:', error);
       throw error;
     }
   }

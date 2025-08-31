@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZETALAB - Database Setup for Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            padding: 2rem;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+            display: block;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        
+        .setup-steps {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .step {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border-left: 4px solid #4f9a65;
+        }
+        
+        .step h3 {
+            color: #4f9a65;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .step p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        
+        .code-block {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            border: 1px solid #333;
+        }
+        
+        .sql-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .sql-content {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border: 1px solid #333;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4f9a65, #10b981);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: transform 0.2s ease;
+            margin: 0.5rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #6b7280, #9ca3af);
+        }
+        
+        .warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid #f59e0b;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .warning-icon {
+            color: #f59e0b;
+            margin-right: 0.5rem;
+        }
+        
+        .success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .success-icon {
+            color: #10b981;
+            margin-right: 0.5rem;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .test-result {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../logo.png" alt="ZETALAB" class="logo">
+            <h1>Database Setup</h1>
+            <div class="subtitle">Configure your Supabase database for the Admin Panel</div>
+        </div>
+
+        <div class="setup-steps">
+            <div class="step">
+                <h3>🎯 Objetivo</h3>
+                <p>El admin panel necesita acceso a los datos de usuarios registrados en la tabla <code>auth.users</code> de Supabase. Por seguridad, esta tabla no es accesible directamente vía REST API, por lo que necesitamos crear vistas y funciones especializadas.</p>
+            </div>
+
+            <div class="step">
+                <h3>📋 Paso 1: Acceder al SQL Editor de Supabase</h3>
+                <p>1. Ve a tu proyecto Supabase: <a href="https://supabase.com/dashboard/projects" target="_blank">Supabase Dashboard</a></p>
+                <p>2. Selecciona tu proyecto ZETALAB</p>
+                <p>3. Ve a la sección "SQL Editor" en el menú lateral</p>
+                <p>4. Crea una nueva query haciendo clic en "New Query"</p>
+            </div>
+
+            <div class="step">
+                <h3>🔧 Paso 2: Ejecutar el SQL Setup</h3>
+                <p>Copia y pega el siguiente código SQL en el editor y ejecútalo:</p>
+                
+                <div class="warning">
+                    <span class="warning-icon">⚠️</span>
+                    <strong>Importante:</strong> Asegúrate de estar en tu proyecto correcto antes de ejecutar estas consultas.
+                </div>
+                
+                <button class="btn" onclick="copySQL()">📋 Copiar SQL al Portapapeles</button>
+                
+                <div class="sql-section">
+                    <div class="sql-content" id="sqlContent">
+-- ==============================
+-- ZETALAB Admin Database Setup  
+-- Create views and functions for admin panel
+-- ==============================
+
+-- 1. Create view for auth users (read-only access to auth.users)
+CREATE OR REPLACE VIEW admin_auth_users_view AS
+SELECT 
+  id,
+  email,
+  email_confirmed_at,
+  created_at AS registration_date,
+  updated_at,
+  last_sign_in_at,
+  raw_user_meta_data,
+  raw_app_meta_data,
+  CASE 
+    WHEN banned_until IS NOT NULL AND banned_until > NOW() THEN 'disabled'
+    WHEN last_sign_in_at IS NULL THEN 'inactive'
+    ELSE 'active'
+  END AS login_status,
+  banned_until,
+  -- Extract auth methods from identities
+  (
+    SELECT STRING_AGG(provider, ',')
+    FROM auth.identities 
+    WHERE user_id = auth.users.id
+  ) AS auth_methods
+FROM auth.users
+ORDER BY created_at DESC;
+
+-- 2. Create RPC function to get all users safely
+CREATE OR REPLACE FUNCTION get_all_users_for_admin()
+RETURNS TABLE (
+  id UUID,
+  email TEXT,
+  registration_date TIMESTAMPTZ,
+  last_sign_in_at TIMESTAMPTZ,
+  current_status TEXT,
+  is_admin BOOLEAN,
+  piece_count BIGINT,
+  version_count BIGINT,
+  activity_score INTEGER,
+  subscription_status TEXT,
+  plan_slug TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    u.id,
+    u.email,
+    u.created_at AS registration_date,
+    u.last_sign_in_at,
+    CASE 
+      WHEN u.banned_until IS NOT NULL AND u.banned_until > NOW() THEN 'disabled'
+      WHEN u.last_sign_in_at IS NULL THEN 'inactive'
+      ELSE 'active'
+    END AS current_status,
+    (admin.id IS NOT NULL) AS is_admin,
+    COALESCE(piece_stats.piece_count, 0) AS piece_count,
+    COALESCE(piece_stats.version_count, 0) AS version_count,
+    COALESCE(
+      CASE 
+        WHEN piece_stats.last_piece > NOW() - INTERVAL '7 days' THEN 5
+        WHEN piece_stats.last_piece > NOW() - INTERVAL '30 days' THEN 4
+        WHEN piece_stats.piece_count > 5 THEN 3
+        WHEN piece_stats.piece_count > 0 THEN 2
+        ELSE 1
+      END, 1
+    ) AS activity_score,
+    COALESCE(sub.status, 'none') AS subscription_status,
+    COALESCE(sub.plan_type, 'free') AS plan_slug
+  FROM auth.users u
+  LEFT JOIN admin_users admin ON admin.user_id = u.id AND admin.active = true
+  LEFT JOIN (
+    SELECT 
+      p.user_id,
+      COUNT(p.id) AS piece_count,
+      COUNT(pv.id) AS version_count,
+      MAX(p.created_at) AS last_piece
+    FROM pieces p
+    LEFT JOIN piece_versions pv ON pv.piece_id = p.id
+    GROUP BY p.user_id
+  ) piece_stats ON piece_stats.user_id = u.id
+  LEFT JOIN subscriptions sub ON sub.user_id = u.id AND sub.status = 'active'
+  ORDER BY u.created_at DESC;
+END;
+$$;
+
+-- 3. Grant necessary permissions
+GRANT SELECT ON admin_auth_users_view TO authenticated;
+GRANT EXECUTE ON FUNCTION get_all_users_for_admin() TO authenticated;
+
+-- 4. Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_admin_users_user_id ON admin_users(user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_users_active ON admin_users(active);
+CREATE INDEX IF NOT EXISTS idx_pieces_user_id ON pieces(user_id);
+
+-- 5. Enable RLS and create policy for admin access
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY IF NOT EXISTS admin_users_admin_read ON admin_users
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM admin_users au 
+      WHERE au.user_id = auth.uid() 
+      AND au.active = true
+    )
+  );
+
+-- Success message
+SELECT 'Database setup completed successfully! ✅' as status;
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>✅ Paso 3: Verificar la instalación</h3>
+                <p>Después de ejecutar el SQL, puedes probar si todo funciona correctamente:</p>
+                <button class="btn" onclick="testSetup()">🧪 Probar Configuración</button>
+                <div id="testResults" class="test-result" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🚀 Prueba Final</h3>
+            <p>Una vez completada la configuración, ve al admin panel y actualiza la página. Deberías ver todos los usuarios registrados.</p>
+            <a href="index.html" class="btn">🔗 Ir al Admin Panel</a>
+            <a href="debug-admin-panel.html" class="btn btn-secondary">🔧 Panel de Debug</a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="admin-config.js"></script>
+    <script>
+        function copySQL() {
+            const sqlContent = document.getElementById('sqlContent').textContent;
+            navigator.clipboard.writeText(sqlContent).then(() => {
+                // Show success message
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copiado al Portapapeles';
+                btn.style.background = 'linear-gradient(45deg, #10b981, #34d399)';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = 'linear-gradient(45deg, #4f9a65, #10b981)';
+                }, 2000);
+            }).catch(err => {
+                console.error('Error copying SQL:', err);
+                alert('Error al copiar al portapapeles. Por favor copia manualmente.');
+            });
+        }
+
+        async function testSetup() {
+            const testResults = document.getElementById('testResults');
+            testResults.style.display = 'block';
+            testResults.innerHTML = '<div style="color: #f59e0b;">🔄 Probando configuración...</div>';
+
+            try {
+                // Test 1: Try the new RPC function
+                console.log('Testing get_all_users_for_admin function...');
+                const { data: users, error: rpcError } = await supabaseAdmin
+                    .rpc('get_all_users_for_admin');
+
+                let results = '';
+                
+                if (!rpcError && users && users.length > 0) {
+                    results += `<div style="color: #10b981;">✅ RPC Function: Encontrados ${users.length} usuarios</div>`;
+                    results += `<div style="color: #10b981;">   - ${users.filter(u => u.is_admin).length} administradores</div>`;
+                    results += `<div style="color: #10b981;">   - ${users.filter(u => u.piece_count > 0).length} usuarios con piezas</div>`;
+                } else {
+                    results += `<div style="color: #ef4444;">❌ RPC Function: ${rpcError?.message || 'No se encontraron usuarios'}</div>`;
+                }
+
+                // Test 2: Try the auth view
+                console.log('Testing admin_auth_users_view...');
+                const { data: authUsers, error: viewError } = await supabaseAdmin
+                    .from('admin_auth_users_view')
+                    .select('*')
+                    .limit(5);
+
+                if (!viewError && authUsers && authUsers.length > 0) {
+                    results += `<div style="color: #10b981;">✅ Auth View: Acceso correcto (${authUsers.length} usuarios de muestra)</div>`;
+                } else {
+                    results += `<div style="color: #f59e0b;">⚠️ Auth View: ${viewError?.message || 'No accesible'}</div>`;
+                }
+
+                // Test 3: Check admin table access
+                console.log('Testing admin_users table access...');
+                const { data: adminUsers, error: adminError } = await supabaseAdmin
+                    .from('admin_users')
+                    .select('*')
+                    .limit(5);
+
+                if (!adminError) {
+                    results += `<div style="color: #10b981;">✅ Admin Table: Acceso correcto (${adminUsers?.length || 0} admins)</div>`;
+                } else {
+                    results += `<div style="color: #f59e0b;">⚠️ Admin Table: ${adminError.message}</div>`;
+                }
+
+                testResults.innerHTML = results + '<div style="margin-top: 1rem; color: #10b981;"><strong>🎉 Configuración probada. Ve al admin panel para ver los resultados completos.</strong></div>';
+
+            } catch (error) {
+                testResults.innerHTML = `<div style="color: #ef4444;">❌ Error durante las pruebas: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
