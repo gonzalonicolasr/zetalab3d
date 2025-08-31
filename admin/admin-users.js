@@ -195,26 +195,62 @@ class AdminUsers {
 
   async loadUsersFromView() {
     try {
-      console.log('📊 Loading ALL users from comprehensive admin view...');
+      console.log('📊 Loading ALL users from database views...');
       
-      // First try the comprehensive view that includes auth.users data
-      const { data: completeUsers, error: viewError } = await supabaseAdmin
-        .from('admin_complete_users')
-        .select('*')
-        .order('registration_date', { ascending: false });
+      // Try multiple approaches to get ALL registered users
+      
+      // 1. First try comprehensive view if it exists
+      try {
+        const { data: completeUsers, error: viewError } = await supabaseAdmin
+          .from('admin_complete_users')
+          .select('*')
+          .order('registration_date', { ascending: false });
 
-      if (!viewError && completeUsers && completeUsers.length > 0) {
-        console.log(`✅ Loaded ${completeUsers.length} users from comprehensive view (includes ALL registered users)`);
-        this.users = this.transformCompleteUsersData(completeUsers);
-        return this.users;
-      } else {
-        console.warn('⚠️ Comprehensive view not available, using fallback method');
-        return await this.getAllUsersComprehensive();
+        if (!viewError && completeUsers && completeUsers.length > 0) {
+          console.log(`✅ Loaded ${completeUsers.length} users from comprehensive view`);
+          this.users = this.transformCompleteUsersData(completeUsers);
+          return this.users;
+        }
+      } catch (e) {
+        console.log('Comprehensive view not available, trying auth view...');
       }
+
+      // 2. Try auth users view
+      try {
+        const { data: authUsers, error: authError } = await supabaseAdmin
+          .from('admin_auth_users_view')
+          .select('*')
+          .order('registration_date', { ascending: false });
+
+        if (!authError && authUsers && authUsers.length > 0) {
+          console.log(`✅ Loaded ${authUsers.length} users from auth view`);
+          this.users = await this.enhanceAuthUsersData(authUsers);
+          return this.users;
+        }
+      } catch (e) {
+        console.log('Auth view not available, using RPC function...');
+      }
+
+      // 3. Try RPC function for admin stats
+      try {
+        const { data: rpcData, error: rpcError } = await supabaseAdmin
+          .rpc('get_comprehensive_admin_stats');
+
+        if (!rpcError && rpcData && rpcData.all_users) {
+          console.log(`✅ Loaded user data from RPC function`);
+          this.users = this.transformRpcUsersData(rpcData.all_users);
+          return this.users;
+        }
+      } catch (e) {
+        console.log('RPC function not available, using fallback...');
+      }
+
+      // 4. Fallback to pieced-together data
+      console.warn('⚠️ Using fallback method - data may be incomplete');
+      return await this.getAllUsersComprehensive();
 
     } catch (error) {
       console.error('❌ Error loading users from view:', error);
-      // Ultimate fallback - get basic user data from pieces table
       return await this.loadUsersLegacy();
     }
   }
@@ -441,6 +477,130 @@ class AdminUsers {
       console.error('Error loading comprehensive user data:', error);
       throw error;
     }
+  }
+
+  // Enhanced data transformation methods for different data sources
+  async enhanceAuthUsersData(authUsers) {
+    console.log('🔧 Enhancing auth users data with business information...');
+    
+    const enhancedUsers = [];
+    
+    for (const authUser of authUsers) {
+      try {
+        // Get user's pieces count and stats
+        const { data: pieces, error: piecesError } = await supabaseAdmin
+          .from('pieces')
+          .select('id, created_at, est_price_ars')
+          .eq('user_id', authUser.id);
+
+        // Get subscription info
+        const { data: subscription, error: subError } = await supabaseAdmin
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', authUser.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        // Get admin info
+        const { data: adminInfo, error: adminError } = await supabaseAdmin
+          .from('admin_users')
+          .select('*')
+          .eq('user_id', authUser.id)
+          .single();
+
+        // Calculate piece versions count
+        let versionCount = 0;
+        if (pieces && pieces.length > 0) {
+          const pieceIds = pieces.map(p => p.id);
+          const { count } = await supabaseAdmin
+            .from('piece_versions')
+            .select('*', { count: 'exact', head: true })
+            .in('piece_id', pieceIds);
+          versionCount = count || 0;
+        }
+
+        const enhancedUser = {
+          id: authUser.id,
+          email: authUser.email,
+          created_at: authUser.registration_date,
+          updated_at: authUser.updated_at,
+          last_sign_in_at: authUser.last_sign_in_at,
+          email_confirmed_at: authUser.email_confirmed_at,
+          auth_method: authUser.auth_methods?.split(',')[0] || 'email',
+          banned_until: authUser.banned_until,
+          raw_user_meta_data: authUser.raw_user_meta_data,
+          raw_app_meta_data: authUser.raw_app_meta_data,
+          
+          // Admin information
+          is_admin: !!adminInfo,
+          admin_role: adminInfo?.role || null,
+          admin_permissions: adminInfo?.permissions || null,
+          admin_since: adminInfo?.created_at || null,
+          
+          // Subscription information
+          subscription: subscription || null,
+          subscription_type: subscription?.plan_type || 'free',
+          subscription_status: subscription?.active ? (subscription.plan_type || 'active') : 'inactive',
+          subscription_expires_at: subscription?.expires_at || null,
+          plan_name: subscription?.plan_type || 'free',
+          
+          // Usage statistics
+          piece_count: pieces?.length || 0,
+          version_count: versionCount,
+          total_estimated_value: pieces?.reduce((sum, p) => sum + (parseFloat(p.est_price_ars) || 0), 0) || 0,
+          last_piece_created: pieces?.length > 0 ? pieces[0].created_at : null,
+          
+          // Status calculation
+          status: authUser.login_status === 'never_logged_in' ? 'inactive' : 
+                 authUser.banned_until ? 'disabled' : 'active',
+          last_activity: authUser.last_sign_in_at || authUser.registration_date
+        };
+
+        enhancedUser.activity_score = this.calculateActivityScore(enhancedUser);
+        enhancedUsers.push(enhancedUser);
+
+      } catch (userError) {
+        console.warn(`Error enhancing user ${authUser.id}:`, userError);
+        // Add basic user info even if enhancement fails
+        enhancedUsers.push({
+          id: authUser.id,
+          email: authUser.email,
+          created_at: authUser.registration_date,
+          status: 'active',
+          piece_count: 0,
+          version_count: 0,
+          subscription_type: 'free',
+          is_admin: false,
+          activity_score: 0
+        });
+      }
+    }
+
+    console.log(`✅ Enhanced ${enhancedUsers.length} users with business data`);
+    return enhancedUsers;
+  }
+
+  transformRpcUsersData(rpcUsers) {
+    if (!rpcUsers || !Array.isArray(rpcUsers)) return [];
+    
+    return rpcUsers.map(user => ({
+      id: user.user_id || user.id,
+      email: user.email,
+      created_at: user.registration_date || user.created_at,
+      updated_at: user.updated_at,
+      last_sign_in_at: user.last_sign_in_at,
+      email_confirmed_at: user.email_confirmed_at,
+      auth_method: user.auth_method || 'email',
+      piece_count: user.piece_count || 0,
+      version_count: user.version_count || 0,
+      subscription_type: user.subscription_type || 'free',
+      subscription_status: user.subscription_status || 'none',
+      is_admin: user.is_admin || false,
+      admin_role: user.admin_role,
+      status: user.status || 'active',
+      activity_score: user.activity_score || 0
+    }));
   }
 
   calculateActivityScore(user) {

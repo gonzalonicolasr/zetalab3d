@@ -60,9 +60,10 @@ class AdminMain {
       this.components.charts.init();
     }
 
-    // Dashboard and Users will be initialized when first accessed
-    this.components.dashboard = window.AdminDashboard;
-    this.components.users = window.AdminUsers;
+    // Reference all components - they will be initialized when accessed
+    this.components.dashboard = window.adminDashboard;
+    this.components.users = window.adminUsers;
+    this.components.subscriptions = window.adminSubscriptions;
   }
 
   setupGlobalEvents() {
@@ -242,8 +243,10 @@ class AdminMain {
           break;
 
         case 'subscriptions':
-          // Initialize subscriptions component when ready
-          this.showComingSoonMessage('Gestión de Suscripciones');
+          if (window.adminSubscriptions && !window.adminSubscriptions.initialized) {
+            await window.adminSubscriptions.init();
+            window.adminSubscriptions.initialized = true;
+          }
           break;
 
         case 'analytics':
@@ -333,6 +336,12 @@ class AdminMain {
         }
         break;
 
+      case 'subscriptions':
+        if (this.components.subscriptions) {
+          this.components.subscriptions.loadSubscriptions();
+        }
+        break;
+
       default:
         AdminUtils.showToast('Sección actualizada', 'info');
     }
@@ -349,6 +358,12 @@ class AdminMain {
       case 'users':
         if (this.components.users) {
           this.components.users.exportUsers();
+        }
+        break;
+
+      case 'subscriptions':
+        if (this.components.subscriptions) {
+          this.components.subscriptions.exportSubscriptions();
         }
         break;
 

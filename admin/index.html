@@ -606,13 +606,250 @@
                 </div>
             </section>
 
+            <!-- Payments Section -->
+            <section id="payments" class="admin-section">
+                <div class="section-header">
+                    <h2>Gestión de Pagos</h2>
+                    <div class="section-actions">
+                        <input type="text" id="paymentSearch" placeholder="Buscar pagos..." class="search-input">
+                        <select id="paymentStatusFilter" class="filter-select">
+                            <option value="">Todos los estados</option>
+                            <option value="approved">Aprobados</option>
+                            <option value="completed">Completados</option>
+                            <option value="pending">Pendientes</option>
+                            <option value="rejected">Rechazados</option>
+                            <option value="cancelled">Cancelados</option>
+                        </select>
+                        <button id="exportPayments" class="btn-secondary">Exportar</button>
+                        <button id="refreshPayments" class="btn-primary">Actualizar</button>
+                    </div>
+                </div>
+                
+                <!-- Payment Stats Cards -->
+                <div class="stats-grid secondary">
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalPaymentsCount">0</div>
+                            <div class="stat-label">Total Transacciones</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="successfulPaymentsCount">0</div>
+                            <div class="stat-label">Exitosas</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="pendingPaymentsCount">0</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="avgPaymentAmount">$0</div>
+                            <div class="stat-label">Promedio</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payments Table -->
+                <div class="table-container">
+                    <table id="paymentsTable" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID de Pago</th>
+                                <th>Usuario</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                                <th>Método</th>
+                                <th>Fecha</th>
+                                <th>Procesado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsTableBody">
+                            <!-- Payments will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Inventory Section -->
+            <section id="inventory" class="admin-section">
+                <div class="section-header">
+                    <h2>Inventario de Usuarios</h2>
+                    <div class="section-actions">
+                        <input type="text" id="inventorySearch" placeholder="Buscar inventario..." class="search-input">
+                        <select id="materialFilter" class="filter-select">
+                            <option value="">Todos los materiales</option>
+                            <option value="PLA">PLA</option>
+                            <option value="ABS">ABS</option>
+                            <option value="PETG">PETG</option>
+                            <option value="TPU">TPU</option>
+                        </select>
+                        <button id="exportInventory" class="btn-secondary">Exportar</button>
+                        <button id="refreshInventory" class="btn-primary">Actualizar</button>
+                    </div>
+                </div>
+                
+                <!-- Inventory Stats -->
+                <div class="stats-grid secondary">
+                    <div class="stat-card">
+                        <div class="stat-icon">🧵</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalFilamentsInventory">0</div>
+                            <div class="stat-label">Filamentos Totales</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚖️</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalWeightInventory">0kg</div>
+                            <div class="stat-label">Peso Total</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚙️</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="configProfilesInventory">0</div>
+                            <div class="stat-label">Perfiles de Configuración</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="usersWithInventory">0</div>
+                            <div class="stat-label">Usuarios con Inventario</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Tabs -->
+                <div class="tabs-container">
+                    <div class="tabs-nav">
+                        <button class="tab-btn active" data-tab="filaments">
+                            <span class="tab-icon">🧵</span>
+                            <span class="tab-text">Filamentos</span>
+                        </button>
+                        <button class="tab-btn" data-tab="profiles">
+                            <span class="tab-icon">⚙️</span>
+                            <span class="tab-text">Perfiles de Config</span>
+                        </button>
+                        <button class="tab-btn" data-tab="usage">
+                            <span class="tab-icon">📊</span>
+                            <span class="tab-text">Uso Mensual</span>
+                        </button>
+                    </div>
+
+                    <!-- Filaments Tab -->
+                    <div id="filaments" class="tab-content active">
+                        <div class="table-container">
+                            <table id="filamentsTable" class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Marca</th>
+                                        <th>Material</th>
+                                        <th>Color</th>
+                                        <th>Peso (g)</th>
+                                        <th>Precio/kg</th>
+                                        <th>Agregado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="filamentsTableBody">
+                                    <!-- Filaments will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Config Profiles Tab -->
+                    <div id="profiles" class="tab-content">
+                        <div class="table-container">
+                            <table id="profilesTable" class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Nombre del Perfil</th>
+                                        <th>Configuraciones</th>
+                                        <th>Creado</th>
+                                        <th>Última Modificación</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="profilesTableBody">
+                                    <!-- Config profiles will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Usage Tab -->
+                    <div id="usage" class="tab-content">
+                        <div class="table-container">
+                            <table id="usageTable" class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Mes/Año</th>
+                                        <th>Cálculos Usados</th>
+                                        <th>Piezas Creadas</th>
+                                        <th>Exports HTML</th>
+                                        <th>Llamadas API</th>
+                                        <th>Actualizado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usageTableBody">
+                                    <!-- Usage data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section id="system" class="admin-section">
                 <div class="section-header">
                     <h2>Configuración del Sistema</h2>
                 </div>
-                <div class="coming-soon">
-                    <h3>Próximamente</h3>
-                    <p>Panel de configuración del sistema en desarrollo</p>
+                
+                <!-- System Overview -->
+                <div class="stats-grid secondary">
+                    <div class="stat-card">
+                        <div class="stat-icon">👑</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalAdmins">0</div>
+                            <div class="stat-label">Administradores</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="adminActivities">0</div>
+                            <div class="stat-label">Actividades Admin</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="systemUptime">0h</div>
+                            <div class="stat-label">Tiempo Activo</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Activity Log -->
+                <div class="activity-section">
+                    <h3>Registro de Actividad de Administradores</h3>
+                    <div id="adminActivityLog" class="activity-list">
+                        <!-- Admin activities will be loaded here -->
+                    </div>
                 </div>
             </section>
         </main>
@@ -631,11 +868,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="admin-config.js"></script>
     <script src="admin-auth.js"></script>
+    <script src="admin-users-helpers.js"></script>
     <script src="admin-dashboard.js"></script>
     <script src="admin-users.js"></script>
-    <script src="admin-users-helpers.js"></script>
     <script src="admin-subscriptions.js"></script>
     <script src="admin-pieces.js"></script>
+    <script src="admin-payments.js"></script>
+    <script src="admin-inventory.js"></script>
     <script src="admin-charts.js"></script>
     <script src="admin-main.js"></script>
 </body>
