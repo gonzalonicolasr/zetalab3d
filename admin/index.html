@@ -92,6 +92,18 @@
                     <span class="nav-count" id="pieceCount">0</span>
                 </button>
                 
+                <button class="nav-item" data-section="payments">
+                    <span class="nav-icon">💳</span>
+                    <span class="nav-text">Pagos</span>
+                    <span class="nav-count" id="paymentCount">0</span>
+                </button>
+                
+                <button class="nav-item" data-section="inventory">
+                    <span class="nav-icon">🧵</span>
+                    <span class="nav-text">Inventario</span>
+                    <span class="nav-count" id="inventoryCount">0</span>
+                </button>
+                
                 <button class="nav-item" data-section="system">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-text">Sistema</span>
@@ -190,6 +202,63 @@
                             <div class="stat-number" id="totalCalculations">0</div>
                             <div class="stat-label">Cálculos Totales</div>
                             <div class="stat-change">Piece versions</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprehensive Analytics Row -->
+                <div class="stats-grid tertiary">
+                    <div class="stat-card">
+                        <div class="stat-icon">✉️</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="emailConfirmedUsers">0</div>
+                            <div class="stat-label">Emails Confirmados</div>
+                            <div class="stat-change" id="emailConfirmationRate">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💤</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="dormantUsers">0</div>
+                            <div class="stat-label">Usuarios Inactivos</div>
+                            <div class="stat-change">90+ días</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🧵</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalFilaments">0</div>
+                            <div class="stat-label">Filamentos Registrados</div>
+                            <div class="stat-change" id="totalFilamentWeight">0kg</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⚙️</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="configProfiles">0</div>
+                            <div class="stat-label">Perfiles de Config</div>
+                            <div class="stat-change">Guardados</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="monthlyUsage">0</div>
+                            <div class="stat-label">Uso Mensual</div>
+                            <div class="stat-change">Cálculos + Exports</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💸</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="pendingPayments">0</div>
+                            <div class="stat-label">Pagos Pendientes</div>
+                            <div class="stat-change" id="estimatedMRR">$0 MRR</div>
                         </div>
                     </div>
                 </div>
