@@ -77,31 +77,45 @@ class AdminDashboard {
 
   async loadUsersStats() {
     try {
-      // Get total users count
-      const { count: totalUsers, error: usersError } = await supabaseAdmin
-        .from('auth.users')
-        .select('*', { count: 'exact', head: true });
+      // Use pieces table to count unique users (more reliable than auth.users)
+      const { data: piecesUsers, error } = await supabaseAdmin
+        .from('pieces')
+        .select('user_id, created_at')
+        .not('user_id', 'is', null);
 
-      if (usersError) {
-        console.error('Error loading users stats:', usersError);
-        // Fallback: try to get from a view or custom query
+      if (error) {
+        console.error('Error loading users from pieces:', error);
         return await this.loadUsersStatsFallback();
       }
 
-      this.stats.totalUsers = totalUsers || 0;
+      // Count unique users
+      const uniqueUsers = new Set(piecesUsers.map(p => p.user_id));
+      this.stats.totalUsers = uniqueUsers.size;
 
-      // Get users growth (last 7 days)
+      // Get active users (users with recent activity - pieces created in last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const activeUsers = new Set(
+        piecesUsers
+          .filter(p => new Date(p.created_at) > thirtyDaysAgo)
+          .map(p => p.user_id)
+      );
+      this.stats.activeUsers = activeUsers.size;
+
+      // Get user growth (last 7 days)
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const { count: weeklyGrowth, error: growthError } = await supabaseAdmin
-        .from('auth.users')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', weekAgo.toISOString());
+      const weeklyNewUsers = new Set(
+        piecesUsers
+          .filter(p => new Date(p.created_at) > weekAgo)
+          .map(p => p.user_id)
+      );
+      this.stats.userGrowth = weeklyNewUsers.size;
 
-      if (!growthError) {
-        this.stats.userGrowth = weeklyGrowth || 0;
-      }
+      // Additional user analytics
+      await this.loadUserAnalytics(piecesUsers);
 
       return this.stats.totalUsers;
     } catch (error) {
@@ -136,41 +150,73 @@ class AdminDashboard {
 
   async loadSubscriptionsStats() {
     try {
-      // Note: This assumes you have a subscriptions table
-      // If not, this will be estimated from user metadata or other sources
-      
-      const { data, error } = await supabaseAdmin
+      // Load from user_subscriptions (main subscription table)
+      const { data: userSubs, error: userSubsError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .select(`
+          id, status, trial_started_at, trial_ends_at, 
+          current_period_start, current_period_end, 
+          canceled_at, created_at,
+          subscription_plans (name, slug, price_ars)
+        `);
+
+      // Load from simple subscriptions table (backup/legacy)
+      const { data: simpleSubs, error: simpleSubsError } = await supabaseAdmin
         .from('subscriptions')
-        .select('status, type, created_at, expires_at');
+        .select('id, plan_type, active, expires_at, created_at, amount');
 
-      if (error && error.code !== 'PGRST101') { // Table doesn't exist
-        console.error('Error loading subscriptions:', error);
-        // Fallback: estimate from user count
-        this.stats.activeSubscriptions = Math.floor(this.stats.totalUsers * 0.1); // Estimate 10% conversion
-        return this.stats.activeSubscriptions;
-      }
+      const now = new Date();
+      
+      // Process user_subscriptions
+      if (!userSubsError && userSubs) {
+        const activeSubs = userSubs.filter(sub => {
+          return sub.status === 'active' && 
+                 (!sub.canceled_at) &&
+                 (!sub.current_period_end || new Date(sub.current_period_end) > now);
+        });
+        
+        const trialSubs = userSubs.filter(sub => {
+          return sub.status === 'trial' &&
+                 (!sub.trial_ends_at || new Date(sub.trial_ends_at) > now);
+        });
 
-      if (data) {
-        // Count active subscriptions
-        const now = new Date();
-        this.stats.activeSubscriptions = data.filter(sub => 
-          sub.status === 'active' && 
-          (!sub.expires_at || new Date(sub.expires_at) > now)
-        ).length;
+        this.stats.activeSubscriptions = activeSubs.length;
+        this.stats.trialSubscriptions = trialSubs.length;
+        this.stats.totalSubscriptions = userSubs.length;
+        
+        // Calculate subscription distribution
+        this.stats.subscriptionsByPlan = {};
+        userSubs.forEach(sub => {
+          const planName = sub.subscription_plans?.name || 'Unknown';
+          this.stats.subscriptionsByPlan[planName] = 
+            (this.stats.subscriptionsByPlan[planName] || 0) + 1;
+        });
 
-        // Count monthly growth
+        // Monthly subscription growth
         const monthAgo = new Date();
         monthAgo.setMonth(monthAgo.getMonth() - 1);
-        
-        this.stats.subscriptionGrowth = data.filter(sub => 
+        this.stats.subscriptionGrowth = userSubs.filter(sub => 
           new Date(sub.created_at) > monthAgo
         ).length;
       }
+      
+      // Add simple subscriptions if available
+      if (!simpleSubsError && simpleSubs) {
+        const activeSimpleSubs = simpleSubs.filter(sub => 
+          sub.active && (!sub.expires_at || new Date(sub.expires_at) > now)
+        );
+        this.stats.activeSubscriptions += activeSimpleSubs.length;
+        this.stats.totalSubscriptions += simpleSubs.length;
+      }
 
+      // Calculate free users
+      this.stats.freeUsers = Math.max(0, this.stats.totalUsers - this.stats.totalSubscriptions);
+      
       return this.stats.activeSubscriptions;
     } catch (error) {
       console.error('Error loading subscription stats:', error);
       this.stats.activeSubscriptions = 0;
+      this.stats.freeUsers = this.stats.totalUsers;
       return 0;
     }
   }
@@ -210,12 +256,64 @@ class AdminDashboard {
 
   async loadRevenueStats() {
     try {
-      // This is a placeholder - implement based on your billing system
-      // Could integrate with Stripe, MercadoPago, etc.
-      
-      // For now, estimate based on subscriptions
-      const estimatedMonthlyRevenue = this.stats.activeSubscriptions * 2000; // $2000 ARS per subscription
-      this.stats.monthlyRevenue = estimatedMonthlyRevenue;
+      // Load actual payment transactions
+      const { data: payments, error: paymentsError } = await supabaseAdmin
+        .from('payment_transactions')
+        .select('amount, currency, status, processed_at, created_at');
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      if (!paymentsError && payments) {
+        // Calculate monthly revenue from successful payments
+        const successfulPayments = payments.filter(p => 
+          p.status === 'approved' || p.status === 'completed'
+        );
+        
+        const monthlyRevenue = successfulPayments
+          .filter(p => {
+            const paymentDate = new Date(p.processed_at || p.created_at);
+            return paymentDate.getMonth() === currentMonth && 
+                   paymentDate.getFullYear() === currentYear;
+          })
+          .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+        this.stats.monthlyRevenue = monthlyRevenue;
+        this.stats.totalRevenue = successfulPayments
+          .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+        // Last month comparison
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        
+        const lastMonthRevenue = successfulPayments
+          .filter(p => {
+            const paymentDate = new Date(p.processed_at || p.created_at);
+            return paymentDate.getMonth() === lastMonth && 
+                   paymentDate.getFullYear() === lastMonthYear;
+          })
+          .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+        this.stats.revenueGrowth = monthlyRevenue - lastMonthRevenue;
+        this.stats.revenueGrowthPercent = lastMonthRevenue > 0 ? 
+          ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(1) : 0;
+
+        // Daily revenue for charts
+        this.stats.dailyRevenue = this.calculateDailyRevenue(successfulPayments);
+      } else {
+        // Fallback: estimate based on subscriptions and plans
+        const { data: plans, error: plansError } = await supabaseAdmin
+          .from('subscription_plans')
+          .select('price_ars');
+
+        if (!plansError && plans) {
+          const avgPrice = plans.reduce((sum, p) => sum + (p.price_ars || 0), 0) / plans.length;
+          this.stats.monthlyRevenue = this.stats.activeSubscriptions * avgPrice;
+        } else {
+          this.stats.monthlyRevenue = this.stats.activeSubscriptions * 2000; // Default estimate
+        }
+      }
 
       return this.stats.monthlyRevenue;
     } catch (error) {
@@ -224,47 +322,166 @@ class AdminDashboard {
     }
   }
 
+  // Helper method for user analytics
+  async loadUserAnalytics(piecesData) {
+    try {
+      // Load config profiles for user activity analysis
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from('config_profiles')
+        .select('user_id, created_at');
+
+      // Load user usage data
+      const { data: usage, error: usageError } = await supabaseAdmin
+        .from('user_usage')
+        .select('user_id, calculations_used, pieces_created, month_year');
+
+      // Calculate power user metrics (users with high activity)
+      if (piecesData && !profilesError && profiles) {
+        const userPieceCount = {};
+        piecesData.forEach(piece => {
+          userPieceCount[piece.user_id] = (userPieceCount[piece.user_id] || 0) + 1;
+        });
+
+        // Users with 5+ pieces are considered "power users"
+        this.stats.powerUsers = Object.values(userPieceCount).filter(count => count >= 5).length;
+        this.stats.avgPiecesPerUser = Object.values(userPieceCount).reduce((sum, count) => sum + count, 0) / Object.keys(userPieceCount).length;
+      }
+
+      // Calculate retention based on recent vs old user activity
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const recentActivity = piecesData.filter(p => new Date(p.created_at) > thirtyDaysAgo);
+      const oldUserActivity = piecesData.filter(p => new Date(p.created_at) < ninetyDaysAgo);
+
+      const recentUsers = new Set(recentActivity.map(p => p.user_id));
+      const oldUsers = new Set(oldUserActivity.map(p => p.user_id));
+      const retainedUsers = [...recentUsers].filter(u => oldUsers.has(u));
+
+      this.stats.retentionRate = oldUsers.size > 0 ? 
+        ((retainedUsers.length / oldUsers.size) * 100).toFixed(1) : 0;
+
+    } catch (error) {
+      console.error('Error loading user analytics:', error);
+    }
+  }
+
+  // Helper method to calculate daily revenue
+  calculateDailyRevenue(payments) {
+    const dailyRevenue = {};
+    const now = new Date();
+    
+    // Initialize last 30 days with 0
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      dailyRevenue[dateStr] = 0;
+    }
+
+    // Add actual revenue data
+    payments.forEach(payment => {
+      const paymentDate = new Date(payment.processed_at || payment.created_at);
+      const dateStr = paymentDate.toISOString().split('T')[0];
+      if (dailyRevenue.hasOwnProperty(dateStr)) {
+        dailyRevenue[dateStr] += parseFloat(payment.amount) || 0;
+      }
+    });
+
+    return dailyRevenue;
+  }
+
   updateStatsCards() {
-    // Update total users
+    // Primary stats - Total users
     const totalUsersEl = document.getElementById('totalUsers');
     if (totalUsersEl) {
       totalUsersEl.textContent = AdminUtils.formatNumber(this.stats.totalUsers);
     }
 
-    // Update user growth
+    // User growth and activity
     const userGrowthEl = document.getElementById('userGrowth');
     if (userGrowthEl && this.stats.userGrowth !== undefined) {
       userGrowthEl.textContent = `+${this.stats.userGrowth} esta semana`;
     }
 
-    // Update active subscriptions
+    const activeUsersEl = document.getElementById('activeUsers');
+    if (activeUsersEl && this.stats.activeUsers !== undefined) {
+      activeUsersEl.textContent = `${AdminUtils.formatNumber(this.stats.activeUsers)} activos`;
+    }
+
+    const retentionRateEl = document.getElementById('retentionRate');
+    if (retentionRateEl && this.stats.retentionRate !== undefined) {
+      retentionRateEl.textContent = `${this.stats.retentionRate}% retención`;
+    }
+
+    // Subscription stats
     const activeSubsEl = document.getElementById('activeSubscriptions');
     if (activeSubsEl) {
       activeSubsEl.textContent = AdminUtils.formatNumber(this.stats.activeSubscriptions);
     }
 
-    // Update subscription growth
+    const trialSubsEl = document.getElementById('trialSubscriptions');
+    if (trialSubsEl && this.stats.trialSubscriptions !== undefined) {
+      trialSubsEl.textContent = `${AdminUtils.formatNumber(this.stats.trialSubscriptions)} en prueba`;
+    }
+
+    const freeUsersEl = document.getElementById('freeUsers');
+    if (freeUsersEl && this.stats.freeUsers !== undefined) {
+      freeUsersEl.textContent = `${AdminUtils.formatNumber(this.stats.freeUsers)} usuarios gratuitos`;
+    }
+
     const subGrowthEl = document.getElementById('subGrowth');
     if (subGrowthEl && this.stats.subscriptionGrowth !== undefined) {
       subGrowthEl.textContent = `+${this.stats.subscriptionGrowth} este mes`;
     }
 
-    // Update total pieces
+    // Pieces and usage stats
     const totalPiecesEl = document.getElementById('totalPieces');
     if (totalPiecesEl) {
       totalPiecesEl.textContent = AdminUtils.formatNumber(this.stats.totalPieces);
     }
 
-    // Update pieces today
     const pieceGrowthEl = document.getElementById('pieceGrowth');
     if (pieceGrowthEl && this.stats.piecesToday !== undefined) {
       pieceGrowthEl.textContent = `+${this.stats.piecesToday} hoy`;
     }
 
-    // Update monthly revenue
+    const avgPiecesEl = document.getElementById('avgPiecesPerUser');
+    if (avgPiecesEl && this.stats.avgPiecesPerUser !== undefined) {
+      avgPiecesEl.textContent = `${this.stats.avgPiecesPerUser.toFixed(1)} piezas/usuario`;
+    }
+
+    const powerUsersEl = document.getElementById('powerUsers');
+    if (powerUsersEl && this.stats.powerUsers !== undefined) {
+      powerUsersEl.textContent = `${this.stats.powerUsers} usuarios avanzados`;
+    }
+
+    // Revenue stats
     const monthlyRevenueEl = document.getElementById('monthlyRevenue');
     if (monthlyRevenueEl) {
       monthlyRevenueEl.textContent = AdminUtils.formatCurrency(this.stats.monthlyRevenue);
+    }
+
+    const totalRevenueEl = document.getElementById('totalRevenue');
+    if (totalRevenueEl && this.stats.totalRevenue !== undefined) {
+      totalRevenueEl.textContent = AdminUtils.formatCurrency(this.stats.totalRevenue);
+    }
+
+    const revenueGrowthEl = document.getElementById('revenueGrowth');
+    if (revenueGrowthEl && this.stats.revenueGrowth !== undefined) {
+      const growthText = this.stats.revenueGrowth >= 0 ? 
+        `+${AdminUtils.formatCurrency(this.stats.revenueGrowth)}` : 
+        `-${AdminUtils.formatCurrency(Math.abs(this.stats.revenueGrowth))}`;
+      revenueGrowthEl.textContent = `${growthText} vs mes anterior`;
+    }
+
+    const revenueGrowthPercentEl = document.getElementById('revenueGrowthPercent');
+    if (revenueGrowthPercentEl && this.stats.revenueGrowthPercent !== undefined) {
+      const isPositive = parseFloat(this.stats.revenueGrowthPercent) >= 0;
+      revenueGrowthPercentEl.textContent = `${isPositive ? '+' : ''}${this.stats.revenueGrowthPercent}%`;
+      revenueGrowthPercentEl.className = isPositive ? 'growth-positive' : 'growth-negative';
     }
   }
 
