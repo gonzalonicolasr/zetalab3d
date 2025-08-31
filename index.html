@@ -234,6 +234,24 @@
           }
         }
         
+        // Check if we should show welcome popup for new users
+        if (isOAuthCallback && window.subscriptionService) {
+          try {
+            const isEligible = await window.subscriptionService.isEligibleForTrial(session.user.id);
+            if (isEligible) {
+              console.log('🎁 Mostrando popup de bienvenida para nuevo usuario...');
+              // Store welcome popup data for showing after redirect
+              sessionStorage.setItem('showWelcomePopup', JSON.stringify({
+                isNewUser: true,
+                authProvider: 'oauth',
+                userEmail: session.user.email
+              }));
+            }
+          } catch (error) {
+            console.warn('⚠️ Error verificando elegibilidad para welcome popup:', error);
+          }
+        }
+        
         // Redirect to calculator
         console.log('🚀 Redirigiendo a calculadora...');
         location.href = 'calculadora.html';
@@ -323,6 +341,13 @@
             await window.subscriptionService.activateTrialForNewUser(session.user.id);
             console.log('🎉 Trial automático activado para nuevo usuario email');
             msg.textContent = '¡Perfecto! Cuenta creada con 7 días de acceso premium gratuito.';
+            
+            // Store welcome popup data for showing after redirect
+            sessionStorage.setItem('showWelcomePopup', JSON.stringify({
+              isNewUser: true,
+              authProvider: 'email',
+              userEmail: session.user.email
+            }));
           }
         } catch (trialError) {
           console.warn('⚠️ Error activando trial automático:', trialError);

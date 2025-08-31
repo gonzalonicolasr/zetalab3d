@@ -150,35 +150,10 @@ const ensureSupabase = async () => {
                   `¡Perfecto! Te conectaste exitosamente con ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)} y hemos activado automáticamente tu <strong>prueba gratuita de 7 días</strong> con acceso completo a todas las funciones premium.` :
                   '�Perfecto! Hemos activado automáticamente tu <strong>prueba gratuita de 7 días</strong> con acceso completo a todas las funciones premium.';
                 
-                // Mostrar notificación de bienvenida
+                // Mostrar popup de bienvenida con estructura de modal mejorada
                 setTimeout(() => {
-                  const welcomeModal = document.createElement('div');
-                  welcomeModal.className = 'subscription-modal';
-                  welcomeModal.innerHTML = `
-                    <div class="modal-overlay"></div>
-                    <div class="modal-content" style="max-width: 400px; text-align: center;">
-                      <h2 style="color: var(--terminal-green); margin-bottom: 20px;">${welcomeTitle}</h2>
-                      <p style="margin-bottom: 20px; line-height: 1.6;">
-                        ${welcomeText}
-                      </p>
-                      <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-                        <p style="margin: 0; color: var(--terminal-green); font-weight: 600;">
-                          ✅ Guardado ilimitado de piezas<br>
-                          ✅ Generación de presupuestos<br>
-                          ✅ Perfiles personalizados<br>
-                          ✅ Autocompletado desde URLs<br>
-                        </p>
-                      </div>
-                      <button onclick="this.closest('.subscription-modal').remove(); window.location.reload();" 
-                              style="padding: 12px 24px; background: var(--terminal-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                        🚀 ¡Empezar a usar ZETALAB!
-                      </button>
-                    </div>
-                  `;
-                  
-                  document.body.appendChild(welcomeModal);
-                  setTimeout(() => welcomeModal.classList.add('show'), 10);
-                }, 1000);
+                  window.showWelcomePopup && window.showWelcomePopup(authProvider, true);
+                }, 500);
               }
             } catch (error) {
               console.log(`ℹ️  No se pudo activar trial automático para usuario ${authProvider}, usuario puede activarlo manualmente:`, error.message);

@@ -421,7 +421,7 @@ class SubscriptionService {
         will-change: backdrop-filter;
       }
       .modal-content {
-        position: relative;
+        position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
@@ -436,6 +436,8 @@ class SubscriptionService {
         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
         z-index: 200001;
         color: var(--text-primary);
+        /* Center alignment fix */
+        margin: 0;
         /* Disable backdrop filter on modal content to prevent blur conflicts */
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
@@ -445,6 +447,17 @@ class SubscriptionService {
         justify-content: space-between;
         align-items: center;
         margin-bottom: 24px;
+      }
+      .modal-title-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .modal-logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        flex-shrink: 0;
       }
       .modal-header h2 {
         margin: 0;
@@ -1014,7 +1027,10 @@ class SubscriptionService {
       <div class="modal-overlay"></div>
       <div class="modal-content">
         <div class="modal-header">
-          <h2>🎛️ Mi Suscripción</h2>
+          <div class="modal-title-section">
+            <img src="logo.png" alt="ZetaLab" class="modal-logo" onerror="this.style.display='none'">
+            <h2>Mi Suscripción</h2>
+          </div>
           <button class="modal-close" onclick="this.closest('.subscription-modal').remove()">✕</button>
         </div>
         
@@ -1088,6 +1104,88 @@ class SubscriptionService {
     // CSS específico para el modal de gestión
     const style = document.createElement('style');
     style.textContent = `
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .modal-title-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .modal-logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+      .modal-header h2 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1.8em;
+      }
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 28px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px;
+      }
+      .modal-close:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-radius: 4px;
+      }
+      .subscription-modal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 200000 !important;
+        opacity: 0 !important;
+        transition: opacity 0.3s ease !important;
+        pointer-events: all !important;
+        display: block !important;
+      }
+      .subscription-modal.show {
+        opacity: 1 !important;
+      }
+      .modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        z-index: 200000;
+        will-change: backdrop-filter;
+      }
+      .modal-content {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 20px;
+        padding: 32px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+        z-index: 200001;
+        color: var(--text-primary);
+        margin: 0;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
       .subscription-management {
         text-align: center;
       }

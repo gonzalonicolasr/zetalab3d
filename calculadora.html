@@ -303,6 +303,221 @@
 <!-- Sistema de suscripciones -->
 <script src="subscription-service.js"></script>
 
+<!-- Sistema de bienvenida para nuevos usuarios -->
+<script>
+// Global welcome popup function
+window.showWelcomePopup = function(authProvider = 'email', isInAuthGuard = false) {
+  console.log('🎉 Showing welcome popup for new user via', authProvider);
+  
+  // Remove any existing modal
+  const existingModal = document.querySelector('.subscription-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  const isOAuthUser = authProvider && authProvider !== 'email';
+  const welcomeTitle = isOAuthUser ? 
+    `🎉 ¡Bienvenido via ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}!` : 
+    '🎉 ¡Bienvenido a ZETALAB!';
+    
+  const welcomeText = isOAuthUser ?
+    `¡Perfecto! Te conectaste exitosamente con ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)} y hemos activado automáticamente tu <strong>prueba gratuita de 7 días</strong> con acceso completo a todas las funciones premium.` :
+    '¡Perfecto! Hemos activado automáticamente tu <strong>prueba gratuita de 7 días</strong> con acceso completo a todas las funciones premium.';
+
+  const modal = document.createElement('div');
+  modal.className = 'subscription-modal';
+  modal.innerHTML = `
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-section">
+          <img src="logo.png" alt="ZetaLab" class="modal-logo" onerror="this.style.display='none'">
+          <h2>${welcomeTitle}</h2>
+        </div>
+        <button class="modal-close" onclick="this.closest('.subscription-modal').remove()">✕</button>
+      </div>
+      
+      <div class="welcome-content">
+        <div class="welcome-message">
+          <p style="margin-bottom: 20px; line-height: 1.6; color: var(--text-primary);">
+            ${welcomeText}
+          </p>
+        </div>
+        
+        <div class="trial-features" style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border-primary);">
+          <h4 style="color: var(--terminal-green); margin-bottom: 16px; text-align: center;">✨ Acceso completo incluye:</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--terminal-green);">✅</span>
+              <span style="font-size: 0.9rem;">Guardado ilimitado de piezas</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--terminal-green);">✅</span>
+              <span style="font-size: 0.9rem;">Generación de presupuestos</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--terminal-green);">✅</span>
+              <span style="font-size: 0.9rem;">Perfiles personalizados</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--terminal-green);">✅</span>
+              <span style="font-size: 0.9rem;">Autocompletado desde URLs</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--terminal-green);">✅</span>
+              <span style="font-size: 0.9rem;">Historial de versiones</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--terminal-green);">✅</span>
+              <span style="font-size: 0.9rem;">Soporte técnico prioritario</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="trial-timer" style="background: linear-gradient(135deg, var(--terminal-green), var(--terminal-emerald)); padding: 16px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+          <div style="color: white; font-weight: 600;">⏰ Tu prueba gratuita vence en 7 días</div>
+          <div style="color: rgba(255,255,255,0.9); font-size: 0.85rem; margin-top: 4px;">Aprovecha todas las funciones sin restricciones</div>
+        </div>
+        
+        <button onclick="this.closest('.subscription-modal').remove();" 
+                style="width: 100%; padding: 16px; background: var(--terminal-green); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: all 0.3s ease;">
+          🚀 ¡Empezar a usar ZETALAB!
+        </button>
+        
+        <div style="text-align: center; margin-top: 12px; font-size: 0.85rem; color: var(--text-secondary);">
+          Podrás gestionar tu suscripción desde el botón "Suscripciones" en la parte superior
+        </div>
+      </div>
+    </div>
+    
+    <style>
+    .subscription-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 200000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .subscription-modal.show {
+      opacity: 1;
+    }
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(3px);
+    }
+    .modal-content {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
+      border-radius: 20px;
+      padding: 0;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+      z-index: 200001;
+      color: var(--text-primary);
+      backdrop-filter: none;
+    }
+    .modal-header {
+      padding: 24px 24px 16px 24px;
+      border-bottom: 1px solid var(--border-primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+    .modal-header h2 {
+      margin: 0;
+      color: var(--terminal-green);
+      font-size: 1.25rem;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    .modal-close:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    .welcome-content {
+      padding: 20px 24px 24px 24px;
+    }
+    @media (max-width: 600px) {
+      .modal-content {
+        width: 95%;
+        max-height: 95vh;
+        border-radius: 16px;
+      }
+      .trial-features > div {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    </style>
+  `;
+
+  document.body.appendChild(modal);
+  
+  // Trigger show animation
+  setTimeout(() => {
+    modal.classList.add('show');
+  }, 10);
+  
+  console.log('✅ Welcome popup displayed successfully');
+};
+
+// Check for welcome popup trigger on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Check if we should show welcome popup
+  const welcomeData = sessionStorage.getItem('showWelcomePopup');
+  if (welcomeData) {
+    try {
+      const data = JSON.parse(welcomeData);
+      if (data.isNewUser) {
+        console.log('🎁 Detected new user - showing welcome popup');
+        // Clear the trigger so it doesn't show again
+        sessionStorage.removeItem('showWelcomePopup');
+        
+        // Show popup after a brief delay to ensure page is fully loaded
+        setTimeout(() => {
+          window.showWelcomePopup(data.authProvider, false);
+        }, 1500);
+      }
+    } catch (error) {
+      console.warn('⚠️ Error parsing welcome popup data:', error);
+      sessionStorage.removeItem('showWelcomePopup');
+    }
+  }
+});
+</script>
+
 <!-- Sistema de control de acceso -->
 <script src="access-control.js"></script>
 
