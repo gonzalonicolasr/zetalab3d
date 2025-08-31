@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Test - Subscription Fixes</title>
+  
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #0e1b17;
+      color: #e8efe9;
+      line-height: 1.6;
+    }
+    
+    .test-section {
+      background: #13251f;
+      border: 1px solid #385f4d;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    
+    .test-button {
+      background: #4f9a65;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      font-weight: 600;
+    }
+    
+    .test-button:hover {
+      background: #10b981;
+    }
+    
+    .test-results {
+      background: #1a2f26;
+      border: 1px solid #4f9a65;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    
+    .success { color: #10b981; }
+    .error { color: #ef4444; }
+    .warning { color: #f59e0b; }
+    .info { color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test - Subscription System Fixes</h1>
+  
+  <div class="test-section">
+    <h2>🔧 Setup de Pruebas</h2>
+    <p>Antes de probar las funcionalidades, necesitas estar autenticado.</p>
+    
+    <button class="test-button" onclick="setupTest()">🔗 Configurar Cliente Supabase</button>
+    <button class="test-button" onclick="checkAuthStatus()">👤 Verificar Usuario Actual</button>
+    
+    <div id="setupResults" class="test-results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>🎯 Fix 1: Subscription Button for Existing Subscribers</h2>
+    <p>Prueba que el botón de suscripciones muestre el modal de gestión para usuarios con suscripción activa.</p>
+    
+    <button class="test-button" onclick="testSubscriptionButton()">💳 Probar Botón de Suscripciones</button>
+    <button class="test-button" onclick="checkCurrentSubscription()">📊 Ver Suscripción Actual</button>
+    <button class="test-button" onclick="simulateActiveSubscription()">✅ Simular Suscripción Activa</button>
+    
+    <div id="fix1Results" class="test-results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>🎁 Fix 2: 7-Day Trial System</h2>
+    <p>Prueba que nuevos usuarios reciban un trial automático de 7 días.</p>
+    
+    <button class="test-button" onclick="checkTrialEligibility()">🔍 Verificar Elegibilidad para Trial</button>
+    <button class="test-button" onclick="activateTrialManually()">🚀 Activar Trial Manualmente</button>
+    <button class="test-button" onclick="showTrialModal()">🎯 Mostrar Modal de Trial</button>
+    
+    <div id="fix2Results" class="test-results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>🗑️ Cleanup de Pruebas</h2>
+    <p>Herramientas para limpiar datos de prueba.</p>
+    
+    <button class="test-button" onclick="deactivateAllSubscriptions()" style="background: #ef4444;">❌ Desactivar Todas las Suscripciones</button>
+    <button class="test-button" onclick="viewAllSubscriptions()">📋 Ver Todas las Suscripciones</button>
+    
+    <div id="cleanupResults" class="test-results" style="display: none;"></div>
+  </div>
+
+  <!-- Cargar servicios necesarios -->
+  <script src="subscription-service.js"></script>
+  
+  <script>
+    let testUser = null;
+    let supa = null;
+
+    // Función para mostrar resultados
+    function showResults(containerId, message, type = 'info') {
+      const container = document.getElementById(containerId);
+      container.style.display = 'block';
+      const timestamp = new Date().toLocaleTimeString();
+      container.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>\n`;
+    }
+
+    // Setup inicial
+    async function setupTest() {
+      try {
+        showResults('setupResults', '🔧 Configurando cliente Supabase...', 'info');
+        
+        // Configurar Supabase
+        const SUPABASE_URL = "https://fwmyiovamcxvinoxnput.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc";
+        
+        supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.supa = supa;
+        
+        showResults('setupResults', '✅ Cliente Supabase configurado exitosamente', 'success');
+        
+        // Obtener sesión actual
+        const { data: { session }, error } = await supa.auth.getSession();
+        if (error) throw error;
+        
+        if (session) {
+          testUser = session.user;
+          window.currentUser = testUser;
+          showResults('setupResults', `👤 Usuario autenticado: ${testUser.email}`, 'success');
+        } else {
+          showResults('setupResults', '⚠️ No hay usuario autenticado. Ve a index.html para autenticarte.', 'warning');
+        }
+        
+      } catch (error) {
+        showResults('setupResults', `❌ Error en setup: ${error.message}`, 'error');
+      }
+    }
+
+    async function checkAuthStatus() {
+      if (!supa) {
+        showResults('setupResults', '❌ Cliente Supabase no configurado', 'error');
+        return;
+      }
+      
+      try {
+        const { data: { session } } = await supa.auth.getSession();
+        if (session) {
+          showResults('setupResults', `✅ Usuario autenticado: ${session.user.email} (ID: ${session.user.id})`, 'success');
+        } else {
+          showResults('setupResults', '❌ No hay usuario autenticado', 'error');
+        }
+      } catch (error) {
+        showResults('setupResults', `❌ Error verificando autenticación: ${error.message}`, 'error');
+      }
+    }
+
+    // Fix 1: Subscription Button Tests
+    async function testSubscriptionButton() {
+      if (!window.subscriptionService) {
+        showResults('fix1Results', '❌ SubscriptionService no disponible', 'error');
+        return;
+      }
+      
+      if (!window.currentUser) {
+        showResults('fix1Results', '❌ Usuario no autenticado', 'error');
+        return;
+      }
+      
+      try {
+        showResults('fix1Results', '🔍 Probando botón de suscripciones...', 'info');
+        await window.subscriptionService.showSubscriptionModal();
+        showResults('fix1Results', '✅ Modal mostrado correctamente', 'success');
+      } catch (error) {
+        showResults('fix1Results', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function checkCurrentSubscription() {
+      if (!window.subscriptionService || !window.currentUser) {
+        showResults('fix1Results', '❌ Servicios no disponibles', 'error');
+        return;
+      }
+      
+      try {
+        const subscription = await window.subscriptionService.getCurrentSubscription(window.currentUser.id);
+        const hasActive = await window.subscriptionService.hasActiveSubscription(window.currentUser.id);
+        
+        showResults('fix1Results', `📊 Suscripción actual: ${JSON.stringify(subscription, null, 2)}`, 'info');
+        showResults('fix1Results', `✅ ¿Tiene activa?: ${hasActive}`, hasActive ? 'success' : 'warning');
+      } catch (error) {
+        showResults('fix1Results', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function simulateActiveSubscription() {
+      if (!window.subscriptionService || !window.currentUser) {
+        showResults('fix1Results', '❌ Servicios no disponibles', 'error');
+        return;
+      }
+      
+      try {
+        showResults('fix1Results', '🔧 Simulando suscripción activa...', 'info');
+        await window.subscriptionService.activateSubscription(window.currentUser.id, 'monthly', 'test-payment-123');
+        showResults('fix1Results', '✅ Suscripción mensual simulada activada', 'success');
+      } catch (error) {
+        showResults('fix1Results', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Fix 2: Trial System Tests
+    async function checkTrialEligibility() {
+      if (!window.subscriptionService || !window.currentUser) {
+        showResults('fix2Results', '❌ Servicios no disponibles', 'error');
+        return;
+      }
+      
+      try {
+        const isEligible = await window.subscriptionService.isEligibleForTrial(window.currentUser.id);
+        showResults('fix2Results', `🎁 Elegible para trial: ${isEligible}`, isEligible ? 'success' : 'warning');
+      } catch (error) {
+        showResults('fix2Results', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function activateTrialManually() {
+      if (!window.subscriptionService || !window.currentUser) {
+        showResults('fix2Results', '❌ Servicios no disponibles', 'error');
+        return;
+      }
+      
+      try {
+        showResults('fix2Results', '🚀 Activando trial manual...', 'info');
+        const trial = await window.subscriptionService.activateTrialForNewUser(window.currentUser.id);
+        
+        if (trial) {
+          showResults('fix2Results', '✅ Trial activado exitosamente', 'success');
+          showResults('fix2Results', `📅 Expira: ${trial.expires_at}`, 'info');
+        } else {
+          showResults('fix2Results', '⚠️ No se pudo activar trial (ya tiene suscripciones)', 'warning');
+        }
+      } catch (error) {
+        showResults('fix2Results', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function showTrialModal() {
+      if (!window.subscriptionService || !window.currentUser) {
+        showResults('fix2Results', '❌ Servicios no disponibles', 'error');
+        return;
+      }
+      
+      try {
+        showResults('fix2Results', '🎯 Mostrando modal de trial y suscripción...', 'info');
+        const modal = window.subscriptionService.createTrialAndSubscriptionModal();
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('show'), 10);
+        showResults('fix2Results', '✅ Modal de trial mostrado', 'success');
+      } catch (error) {
+        showResults('fix2Results', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Cleanup functions
+    async function deactivateAllSubscriptions() {
+      if (!supa || !window.currentUser) {
+        showResults('cleanupResults', '❌ Servicios no disponibles', 'error');
+        return;
+      }
+      
+      const confirmed = confirm('⚠️ ¿Estás seguro? Esto desactivará TODAS tus suscripciones.');
+      if (!confirmed) return;
+      
+      try {
+        showResults('cleanupResults', '🗑️ Desactivando todas las suscripciones...', 'info');
+        
+        const { error } = await supa
+          .from('subscriptions')
+          .update({ active: false })
+          .eq('user_id', window.currentUser.id);
+          
+        if (error) throw error;
+        
+        showResults('cleanupResults', '✅ Todas las suscripciones desactivadas', 'success');
+      } catch (error) {
+        showResults('cleanupResults', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function viewAllSubscriptions() {
+      if (!supa || !window.currentUser) {
+        showResults('cleanupResults', '❌ Servicios no disponibles', 'error');
+        return;
+      }
+      
+      try {
+        const { data, error } = await supa
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', window.currentUser.id)
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        showResults('cleanupResults', `📋 Suscripciones encontradas (${data.length}):`, 'info');
+        data.forEach((sub, index) => {
+          showResults('cleanupResults', `${index + 1}. Plan: ${sub.plan_type}, Activa: ${sub.active}, Expira: ${sub.expires_at}`, 'info');
+        });
+      } catch (error) {
+        showResults('cleanupResults', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Auto-setup al cargar
+    window.addEventListener('load', () => {
+      setTimeout(setupTest, 1000);
+    });
+  </script>
+</body>
+</html>
