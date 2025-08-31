@@ -80,6 +80,32 @@
     .link{color:var(--text);text-decoration:underline;cursor:pointer}
     .msg{margin-top:10px;min-height:20px}
     .center{text-align:center}
+    /* Social login buttons styling */
+    .social-section{
+      margin:16px 0;position:relative;
+    }
+    .divider{
+      display:flex;align-items:center;margin:14px 0;color:var(--muted);font-size:.85rem;
+    }
+    .divider::before,.divider::after{
+      content:'';flex:1;height:1px;background:var(--border);
+    }
+    .divider span{margin:0 12px}
+    .social-buttons{display:flex;gap:8px}
+    .social-btn{
+      flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+      padding:10px;border-radius:10px;border:1px solid var(--border);
+      background:var(--panel2);color:var(--text);text-decoration:none;
+      cursor:pointer;transition:all 0.3s var(--ease-in-out);font-size:.9rem;
+    }
+    .social-btn:hover{
+      background:var(--panel);border-color:var(--accent);transform:translateY(-1px);
+      box-shadow:0 4px 12px rgba(79,154,101,0.2);
+    }
+    .social-btn:active{transform:translateY(0) scale(0.98)}
+    .social-btn svg{width:18px;height:18px;flex-shrink:0}
+    .google-btn:hover{border-color:#4285f4}
+    .facebook-btn:hover{border-color:#1877f2}
   </style>
 </head>
 <body>
@@ -89,6 +115,30 @@
     <div class="tabs">
       <div id="tab-login" class="tab active">Iniciar sesión</div>
       <div id="tab-register" class="tab">Crear cuenta</div>
+    </div>
+
+    <!-- Social Login Section -->
+    <div class="social-section">
+      <div class="social-buttons">
+        <button id="google-login" class="social-btn google-btn">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Google
+        </button>
+        <button id="facebook-login" class="social-btn facebook-btn">
+          <svg viewBox="0 0 24 24" fill="#1877F2" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+          Facebook
+        </button>
+      </div>
+      <div class="divider">
+        <span>o continúa con email</span>
+      </div>
     </div>
 
     <!-- Login -->
@@ -218,11 +268,57 @@
   document.getElementById('btn-reset').onclick = async () => {
     const email = (document.getElementById('login-email').value || '').trim();
     const msg = document.getElementById('login-msg');
-    if (!email) { msg.textContent = 'Poné tu email arriba y tocá “Restablecer”.'; return; }
+    if (!email) { msg.textContent = 'Poné tu email arriba y tocá "Restablecer".'; return; }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.href // desde el mail volverá aquí y podés mostrar un form para nueva pass
     });
     msg.textContent = error ? error.message : 'Te enviamos un email para cambiar la contraseña.';
+  };
+
+  /*** OAuth Login Functions ***/
+  const handleSocialLogin = async (provider) => {
+    const currentTabIsRegister = document.getElementById('tab-register').classList.contains('active');
+    const msg = currentTabIsRegister ? 
+      document.getElementById('reg-msg') : 
+      document.getElementById('login-msg');
+    
+    msg.textContent = `Conectando con ${provider}...`;
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+          redirectTo: `${window.location.origin}/calculadora.html`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      
+      if (error) {
+        console.error(`Error en login con ${provider}:`, error);
+        msg.textContent = `Error conectando con ${provider}: ${error.message}`;
+        return;
+      }
+      
+      // OAuth success - the redirect will happen automatically
+      msg.textContent = `Redirigiendo...`;
+      
+    } catch (err) {
+      console.error(`Error inesperado con ${provider}:`, err);
+      msg.textContent = `Error de conexión con ${provider}. Intentá de nuevo.`;
+    }
+  };
+
+  /*** Google Login ***/
+  document.getElementById('google-login').onclick = async () => {
+    await handleSocialLogin('google');
+  };
+
+  /*** Facebook Login ***/
+  document.getElementById('facebook-login').onclick = async () => {
+    await handleSocialLogin('facebook');
   };
   
   // Inicializar sistemas de mejoras si están disponibles

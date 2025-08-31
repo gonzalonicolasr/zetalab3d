@@ -1832,7 +1832,7 @@ button.loading::after {
    Modal de Suscripción Simplificado
    ============================================================================ */
 
-/* Modal overlay y base */
+/* Modal overlay y base - Fixed z-index and backdrop blur conflicts */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1840,11 +1840,14 @@ button.loading::after {
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(5px);
-  z-index: 10000;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 100000; /* Higher z-index to avoid conflicts */
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Prevent backdrop blur from affecting modal content */
+  will-change: backdrop-filter;
 }
 
 .mercadopago-modal {
@@ -1858,6 +1861,12 @@ button.loading::after {
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
   animation: modalSlideIn 0.3s ease-out;
+  /* Ensure modal content is above backdrop blur */
+  position: relative;
+  z-index: 100001;
+  /* Disable backdrop filter on modal content */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 @keyframes modalSlideIn {
@@ -3110,32 +3119,7 @@ small strong {
    MercadoPago Modal Styles
    ============================================================================ */
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  animation: modalFadeIn 0.3s ease-out;
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(5px);
-  }
-}
-
+/* Merge with above modal styles - use single definition */
 .modal-content {
   background: var(--bg-primary);
   border-radius: 16px;
@@ -3146,6 +3130,25 @@ small strong {
   max-height: 90vh;
   overflow: auto;
   animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Ensure modal content is above backdrop blur */
+  position: relative;
+  z-index: 100001;
+  /* Disable backdrop filter on modal content */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
 }
 
 @keyframes modalSlideIn {

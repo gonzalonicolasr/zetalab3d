@@ -115,21 +115,40 @@ const ensureSupabase = async () => {
     console.log('✅ Sistema de autenticación cargado - solo botón Suscripciones');
     
     // Verificar si es la primera vez que el usuario se loguea y activar trial automático
+    // Esto funciona tanto para usuarios OAuth como para usuarios de email/password
     setTimeout(async () => {
       if (window.subscriptionService && session.user) {
         console.log('🔍 Verificando elegibilidad para trial automático...');
+        
+        // Detectar si viene de OAuth basándose en los metadata del usuario
+        const isOAuthUser = session.user.app_metadata?.provider && 
+                           session.user.app_metadata.provider !== 'email';
+        const authProvider = session.user.app_metadata?.provider || 'email';
+        
+        if (isOAuthUser) {
+          console.log(`🔗 Usuario autenticado via OAuth (${authProvider})`);
+        }
         
         try {
           const isEligible = await window.subscriptionService.isEligibleForTrial(session.user.id);
           
           if (isEligible) {
-            console.log('🎁 Usuario elegible para trial, activando automáticamente...');
+            console.log(`🎁 Usuario elegible para trial (${authProvider}), activando automáticamente...`);
             
             try {
               const trial = await window.subscriptionService.activateTrialForNewUser(session.user.id);
               
               if (trial) {
-                console.log('✅ Trial activado automáticamente para nuevo usuario');
+                console.log(`✅ Trial activado automáticamente para nuevo usuario (${authProvider})`);
+                
+                // Personalizar mensaje de bienvenida según el método de autenticación
+                const welcomeTitle = isOAuthUser ? 
+                  `🎉 ¡Bienvenido via ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}!` : 
+                  '🎉 ¡Bienvenido a ZETALAB!';
+                
+                const welcomeText = isOAuthUser ?
+                  `¡Perfecto! Te conectaste exitosamente con ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)} y hemos activado automáticamente tu <strong>prueba gratuita de 7 días</strong> con acceso completo a todas las funciones premium.` :
+                  '�Perfecto! Hemos activado automáticamente tu <strong>prueba gratuita de 7 días</strong> con acceso completo a todas las funciones premium.';
                 
                 // Mostrar notificación de bienvenida
                 setTimeout(() => {
@@ -138,9 +157,9 @@ const ensureSupabase = async () => {
                   welcomeModal.innerHTML = `
                     <div class="modal-overlay"></div>
                     <div class="modal-content" style="max-width: 400px; text-align: center;">
-                      <h2 style="color: var(--terminal-green); margin-bottom: 20px;">🎉 ¡Bienvenido a ZETALAB!</h2>
+                      <h2 style="color: var(--terminal-green); margin-bottom: 20px;">${welcomeTitle}</h2>
                       <p style="margin-bottom: 20px; line-height: 1.6;">
-                        ¡Perfecto! Hemos activado automáticamente tu <strong>prueba gratuita de 7 días</strong> con acceso completo a todas las funciones premium.
+                        ${welcomeText}
                       </p>
                       <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
                         <p style="margin: 0; color: var(--terminal-green); font-weight: 600;">
@@ -162,13 +181,13 @@ const ensureSupabase = async () => {
                 }, 1000);
               }
             } catch (error) {
-              console.log('ℹ️  No se pudo activar trial automático, usuario puede activarlo manualmente:', error.message);
+              console.log(`ℹ️  No se pudo activar trial automático para usuario ${authProvider}, usuario puede activarlo manualmente:`, error.message);
             }
           } else {
-            console.log('ℹ️  Usuario no elegible para trial automático');
+            console.log(`ℹ️  Usuario ${authProvider} no elegible para trial automático`);
           }
         } catch (error) {
-          console.log('ℹ️  Error verificando elegibilidad para trial:', error.message);
+          console.log(`ℹ️  Error verificando elegibilidad para trial (${authProvider}):`, error.message);
         }
       }
     }, 2000); // Delay para asegurar que los servicios estén cargados

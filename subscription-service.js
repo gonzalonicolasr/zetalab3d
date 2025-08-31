@@ -389,7 +389,7 @@ class SubscriptionService {
       </div>
     `;
 
-    // CSS del modal simplificado - Fixed z-index and visibility
+    // CSS del modal simplificado - Fixed backdrop blur issues
     const style = document.createElement('style');
     style.id = 'subscription-modal-styles';
     style.textContent = `
@@ -399,7 +399,7 @@ class SubscriptionService {
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        z-index: 99999 !important;
+        z-index: 200000 !important;
         opacity: 0 !important;
         transition: opacity 0.3s ease !important;
         pointer-events: all !important;
@@ -414,9 +414,11 @@ class SubscriptionService {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(5px);
-        z-index: 1;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        z-index: 200000;
+        will-change: backdrop-filter;
       }
       .modal-content {
         position: relative;
@@ -432,8 +434,11 @@ class SubscriptionService {
         max-height: 90vh;
         overflow-y: auto;
         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
-        z-index: 2;
+        z-index: 200001;
         color: var(--text-primary);
+        /* Disable backdrop filter on modal content to prevent blur conflicts */
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
       .modal-header {
         display: flex;
