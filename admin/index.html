@@ -376,14 +376,75 @@
                 </div>
             </div>
 
-            <!-- Other sections will be implemented similarly -->
+            <!-- Subscriptions Section -->
             <section id="subscriptions" class="admin-section">
                 <div class="section-header">
                     <h2>Gestión de Suscripciones</h2>
+                    <div class="section-actions">
+                        <input type="text" id="subSearch" placeholder="Buscar suscripciones..." class="search-input">
+                        <button id="exportSubscriptions" class="btn-secondary">Exportar</button>
+                        <button id="refreshSubscriptions" class="btn-primary">Actualizar</button>
+                    </div>
                 </div>
-                <div class="coming-soon">
-                    <h3>Próximamente</h3>
-                    <p>Panel de gestión de suscripciones en desarrollo</p>
+                
+                <!-- Subscription Stats Cards -->
+                <div class="stats-grid secondary">
+                    <div class="stat-card">
+                        <div class="stat-icon">💳</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalSubsCount">0</div>
+                            <div class="stat-label">Total Suscripciones</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="activeSubsCount">0</div>
+                            <div class="stat-label">Activas</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏰</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="expiredSubsCount">0</div>
+                            <div class="stat-label">Expiradas</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="subRevenue">$0</div>
+                            <div class="stat-label">Ingresos Mensuales</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscriptions Table -->
+                <div class="table-container">
+                    <table id="subscriptionsTable" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Plan</th>
+                                <th>Estado</th>
+                                <th>Creada</th>
+                                <th>Expira</th>
+                                <th>Monto</th>
+                                <th>Método de Pago</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subscriptionsTableBody">
+                            <!-- Subscriptions will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button id="subsPrevPage" class="page-btn">Anterior</button>
+                    <span id="subsPageInfo">Página 1 de 1</span>
+                    <button id="subsNextPage" class="page-btn">Siguiente</button>
                 </div>
             </section>
 
@@ -397,13 +458,82 @@
                 </div>
             </section>
 
+            <!-- Pieces Section -->
             <section id="pieces" class="admin-section">
                 <div class="section-header">
                     <h2>Gestión de Piezas</h2>
+                    <div class="section-actions">
+                        <input type="text" id="pieceSearch" placeholder="Buscar piezas..." class="search-input">
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="">Todas las categorías</option>
+                            <option value="functional">Funcional</option>
+                            <option value="decorative">Decorativo</option>
+                            <option value="prototype">Prototipo</option>
+                            <option value="art">Arte</option>
+                        </select>
+                        <button id="exportPieces" class="btn-secondary">Exportar</button>
+                        <button id="refreshPieces" class="btn-primary">Actualizar</button>
+                    </div>
                 </div>
-                <div class="coming-soon">
-                    <h3>Próximamente</h3>
-                    <p>Panel de gestión de piezas en desarrollo</p>
+                
+                <!-- Pieces Stats Cards -->
+                <div class="stats-grid secondary">
+                    <div class="stat-card">
+                        <div class="stat-icon">🔧</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalPiecesCount">0</div>
+                            <div class="stat-label">Total Piezas</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalVersionsCount">0</div>
+                            <div class="stat-label">Versiones Totales</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="avgVersionsPerPiece">0</div>
+                            <div class="stat-label">Versiones/Pieza</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalEstimatedValue">$0</div>
+                            <div class="stat-label">Valor Estimado Total</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pieces Table -->
+                <div class="table-container">
+                    <table id="piecesTable" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Pieza</th>
+                                <th>Usuario</th>
+                                <th>Categoría</th>
+                                <th>Precio Estimado</th>
+                                <th>Versiones</th>
+                                <th>Creada</th>
+                                <th>Última Versión</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="piecesTableBody">
+                            <!-- Pieces will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button id="piecesPrevPage" class="page-btn">Anterior</button>
+                    <span id="piecesPageInfo">Página 1 de 1</span>
+                    <button id="piecesNextPage" class="page-btn">Siguiente</button>
                 </div>
             </section>
 
@@ -434,6 +564,7 @@
     <script src="admin-auth.js"></script>
     <script src="admin-dashboard.js"></script>
     <script src="admin-users.js"></script>
+    <script src="admin-users-helpers.js"></script>
     <script src="admin-charts.js"></script>
     <script src="admin-main.js"></script>
 </body>
