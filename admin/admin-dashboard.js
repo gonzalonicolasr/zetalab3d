@@ -77,49 +77,33 @@ class AdminDashboard {
 
   async loadUsersStats() {
     try {
-      // Use pieces table to count unique users (more reliable than auth.users)
-      const { data: piecesUsers, error } = await supabaseAdmin
-        .from('pieces')
-        .select('user_id, created_at')
-        .not('user_id', 'is', null);
+      console.log('📊 Loading comprehensive user statistics from ALL tables...');
+      
+      // Use the comprehensive stats function for accurate data
+      const { data: comprehensiveStats, error: statsError } = await supabaseAdmin
+        .rpc('get_comprehensive_admin_stats');
 
-      if (error) {
-        console.error('Error loading users from pieces:', error);
+      if (!statsError && comprehensiveStats) {
+        // Extract user statistics from comprehensive data
+        const userStats = comprehensiveStats.users;
+        this.stats.totalUsers = userStats.total_registered; // Real count from auth.users
+        this.stats.activeUsers = userStats.active_30d;
+        this.stats.userGrowth = userStats.active_7d;
+        this.stats.usersWithPieces = userStats.with_pieces;
+        this.stats.emailConfirmedUsers = userStats.email_confirmed;
+        this.stats.neverLoggedIn = userStats.never_logged_in;
+        this.stats.dormantUsers = userStats.dormant_90d;
+        this.stats.adminUsers = userStats.admins;
+
+        console.log('✅ Comprehensive user stats loaded:', userStats);
+        return this.stats.totalUsers;
+      } else {
+        console.warn('⚠️ Comprehensive stats not available, using fallback method');
         return await this.loadUsersStatsFallback();
       }
 
-      // Count unique users
-      const uniqueUsers = new Set(piecesUsers.map(p => p.user_id));
-      this.stats.totalUsers = uniqueUsers.size;
-
-      // Get active users (users with recent activity - pieces created in last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const activeUsers = new Set(
-        piecesUsers
-          .filter(p => new Date(p.created_at) > thirtyDaysAgo)
-          .map(p => p.user_id)
-      );
-      this.stats.activeUsers = activeUsers.size;
-
-      // Get user growth (last 7 days)
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      
-      const weeklyNewUsers = new Set(
-        piecesUsers
-          .filter(p => new Date(p.created_at) > weekAgo)
-          .map(p => p.user_id)
-      );
-      this.stats.userGrowth = weeklyNewUsers.size;
-
-      // Additional user analytics
-      await this.loadUserAnalytics(piecesUsers);
-
-      return this.stats.totalUsers;
     } catch (error) {
-      console.error('Error loading users stats:', error);
+      console.error('❌ Error loading comprehensive user stats:', error);
       return await this.loadUsersStatsFallback();
     }
   }
@@ -150,48 +134,95 @@ class AdminDashboard {
 
   async loadSubscriptionsStats() {
     try {
-      // Load from subscriptions table (using actual schema)
-      const { data: userSubs, error: userSubsError } = await supabaseAdmin
-        .from('subscriptions')
-        .select(`
-          id, user_id, plan_type, active, expires_at, 
-          created_at, payment_id, amount, payment_status
-        `);
+      console.log('💳 Loading comprehensive subscription statistics...');
 
-      const now = new Date();
-      
-      // Process subscriptions (using actual schema)
-      if (!userSubsError && userSubs) {
-        const activeSubs = userSubs.filter(sub => {
-          return sub.active === true && 
-                 (!sub.expires_at || new Date(sub.expires_at) > now);
-        });
+      // Use comprehensive stats function
+      const { data: comprehensiveStats, error: statsError } = await supabaseAdmin
+        .rpc('get_comprehensive_admin_stats');
 
-        this.stats.activeSubscriptions = activeSubs.length;
-        this.stats.totalSubscriptions = userSubs.length;
-        
-        // Calculate subscription distribution by plan_type
-        this.stats.subscriptionsByPlan = {};
-        userSubs.forEach(sub => {
-          const planName = sub.plan_type || 'Free';
-          this.stats.subscriptionsByPlan[planName] = 
-            (this.stats.subscriptionsByPlan[planName] || 0) + 1;
-        });
+      if (!statsError && comprehensiveStats) {
+        const subStats = comprehensiveStats.subscriptions;
+        this.stats.activeSubscriptions = subStats.total_active;
+        this.stats.trialSubscriptions = subStats.total_trial;
+        this.stats.totalSubscriptions = subStats.total_active + subStats.total_trial + subStats.total_canceled;
+        this.stats.subscriptionGrowth = subStats.new_this_month;
+        this.stats.expiringSubscriptions = subStats.expiring_soon;
+        this.stats.estimatedMRR = subStats.estimated_mrr;
 
-        // Monthly subscription growth
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        this.stats.subscriptionGrowth = userSubs.filter(sub => 
-          new Date(sub.created_at) > monthAgo
-        ).length;
+        // Load subscription revenue analytics
+        const { data: revenueAnalytics, error: revenueError } = await supabaseAdmin
+          .from('admin_subscription_revenue_analytics')
+          .select('*');
+
+        if (!revenueError && revenueAnalytics) {
+          this.stats.subscriptionsByPlan = {};
+          revenueAnalytics.forEach(plan => {
+            this.stats.subscriptionsByPlan[plan.plan_name] = plan.currently_active;
+          });
+          this.stats.subscriptionRevenueBreakdown = revenueAnalytics;
+        }
+
+        // Calculate free users (total registered - users with subscriptions)
+        this.stats.freeUsers = Math.max(0, this.stats.totalUsers - comprehensiveStats.users.with_subscriptions);
+
+        console.log('✅ Comprehensive subscription stats loaded:', subStats);
+        return this.stats.activeSubscriptions;
+      } else {
+        console.warn('⚠️ Using fallback subscription loading');
+        return await this.loadSubscriptionsStatsFallback();
       }
 
-      // Calculate free users
-      this.stats.freeUsers = Math.max(0, this.stats.totalUsers - this.stats.totalSubscriptions);
-      
+    } catch (error) {
+      console.error('❌ Error loading comprehensive subscription stats:', error);
+      return await this.loadSubscriptionsStatsFallback();
+    }
+  }
+
+  async loadSubscriptionsStatsFallback() {
+    try {
+      // Load from both subscription tables for comprehensive data
+      const [userSubsResult, legacySubsResult] = await Promise.all([
+        supabaseAdmin.from('user_subscriptions').select('*'),
+        supabaseAdmin.from('subscriptions').select('*')
+      ]);
+
+      const now = new Date();
+      let activeSubs = 0, trialSubs = 0, totalSubs = 0;
+
+      // Process user_subscriptions (primary table)
+      if (!userSubsResult.error && userSubsResult.data) {
+        const userSubs = userSubsResult.data;
+        activeSubs = userSubs.filter(sub => 
+          sub.status === 'active' && 
+          (!sub.current_period_end || new Date(sub.current_period_end) > now)
+        ).length;
+        
+        trialSubs = userSubs.filter(sub => 
+          sub.status === 'trial' && 
+          (!sub.trial_ends_at || new Date(sub.trial_ends_at) > now)
+        ).length;
+        
+        totalSubs = userSubs.length;
+      }
+
+      // Add legacy subscriptions if user_subscriptions is empty
+      if (totalSubs === 0 && !legacySubsResult.error && legacySubsResult.data) {
+        const legacySubs = legacySubsResult.data;
+        activeSubs = legacySubs.filter(sub => 
+          sub.active === true && 
+          (!sub.expires_at || new Date(sub.expires_at) > now)
+        ).length;
+        totalSubs = legacySubs.length;
+      }
+
+      this.stats.activeSubscriptions = activeSubs;
+      this.stats.trialSubscriptions = trialSubs;
+      this.stats.totalSubscriptions = totalSubs;
+      this.stats.freeUsers = Math.max(0, this.stats.totalUsers - totalSubs);
+
       return this.stats.activeSubscriptions;
     } catch (error) {
-      console.error('Error loading subscription stats:', error);
+      console.error('Fallback subscription stats error:', error);
       this.stats.activeSubscriptions = 0;
       this.stats.freeUsers = this.stats.totalUsers;
       return 0;
@@ -199,6 +230,37 @@ class AdminDashboard {
   }
 
   async loadPiecesStats() {
+    try {
+      console.log('🔧 Loading comprehensive pieces and content statistics...');
+
+      // Use comprehensive stats function
+      const { data: comprehensiveStats, error: statsError } = await supabaseAdmin
+        .rpc('get_comprehensive_admin_stats');
+
+      if (!statsError && comprehensiveStats) {
+        const contentStats = comprehensiveStats.content;
+        this.stats.totalPieces = contentStats.total_pieces;
+        this.stats.piecesToday = contentStats.pieces_today;
+        this.stats.piecesThisWeek = contentStats.pieces_this_week;
+        this.stats.piecesThisMonth = contentStats.pieces_this_month;
+        this.stats.totalCalculations = contentStats.total_calculations;
+        this.stats.calculationsToday = contentStats.calculations_today;
+        this.stats.avgPiecesPerUser = contentStats.avg_pieces_per_user;
+
+        console.log('✅ Comprehensive content stats loaded:', contentStats);
+        return this.stats.totalPieces;
+      } else {
+        console.warn('⚠️ Using fallback pieces loading');
+        return await this.loadPiecesStatsFallback();
+      }
+
+    } catch (error) {
+      console.error('❌ Error loading comprehensive pieces stats:', error);
+      return await this.loadPiecesStatsFallback();
+    }
+  }
+
+  async loadPiecesStatsFallback() {
     try {
       // Get total pieces count
       const { count: totalPieces, error } = await supabaseAdmin
@@ -242,6 +304,65 @@ class AdminDashboard {
   }
 
   async loadRevenueStats() {
+    try {
+      console.log('💰 Loading comprehensive financial and revenue statistics...');
+
+      // Use comprehensive stats function for financial data
+      const { data: comprehensiveStats, error: statsError } = await supabaseAdmin
+        .rpc('get_comprehensive_admin_stats');
+
+      if (!statsError && comprehensiveStats) {
+        const financeStats = comprehensiveStats.finance;
+        this.stats.totalRevenue = financeStats.total_revenue;
+        this.stats.monthlyRevenue = financeStats.monthly_revenue;
+        this.stats.lastMonthRevenue = financeStats.last_month_revenue;
+        this.stats.successfulTransactions = financeStats.successful_transactions;
+        this.stats.avgTransactionAmount = financeStats.avg_transaction;
+        this.stats.paymentsToday = financeStats.payments_today;
+        this.stats.pendingPayments = financeStats.pending_payments;
+
+        // Calculate revenue growth
+        if (this.stats.lastMonthRevenue > 0) {
+          this.stats.revenueGrowth = this.stats.monthlyRevenue - this.stats.lastMonthRevenue;
+          this.stats.revenueGrowthPercent = 
+            ((this.stats.revenueGrowth / this.stats.lastMonthRevenue) * 100).toFixed(1);
+        } else {
+          this.stats.revenueGrowth = this.stats.monthlyRevenue;
+          this.stats.revenueGrowthPercent = this.stats.monthlyRevenue > 0 ? 100 : 0;
+        }
+
+        // Load daily revenue data for charts
+        const { data: dailyData, error: dailyError } = await supabaseAdmin
+          .from('admin_daily_activity')
+          .select('activity_date, daily_revenue, pieces_created')
+          .order('activity_date', { ascending: true })
+          .limit(30);
+
+        if (!dailyError && dailyData) {
+          this.stats.dailyRevenue = {};
+          this.stats.dailyPieces = {};
+          
+          dailyData.forEach(day => {
+            const dateStr = day.activity_date;
+            this.stats.dailyRevenue[dateStr] = day.daily_revenue || 0;
+            this.stats.dailyPieces[dateStr] = day.pieces_created || 0;
+          });
+        }
+
+        console.log('✅ Comprehensive financial stats loaded:', financeStats);
+        return this.stats.monthlyRevenue;
+      } else {
+        console.warn('⚠️ Using fallback revenue loading');
+        return await this.loadRevenueStatsFallback();
+      }
+
+    } catch (error) {
+      console.error('❌ Error loading comprehensive revenue stats:', error);
+      return await this.loadRevenueStatsFallback();
+    }
+  }
+
+  async loadRevenueStatsFallback() {
     try {
       // Load actual payment transactions
       const { data: payments, error: paymentsError } = await supabaseAdmin
@@ -291,12 +412,13 @@ class AdminDashboard {
       } else {
         // Fallback: estimate based on subscriptions amounts
         const { data: subs, error: subsError } = await supabaseAdmin
-          .from('subscriptions')
-          .select('amount');
+          .from('user_subscriptions')
+          .select('plan_id, subscription_plans(price_ars)')
+          .eq('status', 'active');
 
         if (!subsError && subs && subs.length > 0) {
-          const avgPrice = subs.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0) / subs.length;
-          this.stats.monthlyRevenue = this.stats.activeSubscriptions * avgPrice;
+          const totalMRR = subs.reduce((sum, s) => sum + (s.subscription_plans?.price_ars || 0), 0);
+          this.stats.monthlyRevenue = totalMRR;
         } else {
           this.stats.monthlyRevenue = this.stats.activeSubscriptions * 2000; // Default estimate
         }
@@ -497,12 +619,45 @@ class AdminDashboard {
 
   async loadRecentActivity() {
     try {
+      console.log('📈 Loading comprehensive recent activity from ALL tables...');
+
+      // Use the comprehensive recent activity function
+      const { data: activities, error: activitiesError } = await supabaseAdmin
+        .rpc('get_recent_admin_activity', { limit_count: 20 });
+
+      if (!activitiesError && activities) {
+        // Transform the function result to match our UI format
+        const transformedActivities = activities.map(activity => ({
+          type: activity.type,
+          title: activity.title,
+          description: activity.description,
+          detail: activity.details ? JSON.stringify(activity.details) : '',
+          time: activity.created_at,
+          icon: activity.icon
+        }));
+
+        console.log('✅ Comprehensive activity loaded:', transformedActivities.length, 'items');
+        this.renderRecentActivity(transformedActivities);
+        return;
+      } else {
+        console.warn('⚠️ Using fallback activity loading');
+        return await this.loadRecentActivityFallback();
+      }
+
+    } catch (error) {
+      console.error('❌ Error loading comprehensive activity:', error);
+      return await this.loadRecentActivityFallback();
+    }
+  }
+
+  async loadRecentActivityFallback() {
+    try {
       const activities = [];
 
       // Get recent pieces created
       const { data: recentPieces, error: piecesError } = await supabaseAdmin
         .from('pieces')
-        .select('title, created_at, user_id, category')
+        .select('title, created_at, user_id, category, est_price_ars')
         .order('created_at', { ascending: false })
         .limit(8);
 
@@ -512,7 +667,7 @@ class AdminDashboard {
             type: 'piece_created',
             title: 'Nueva pieza creada',
             description: piece.title || 'Sin nombre',
-            detail: piece.category || 'Sin categoría',
+            detail: `${piece.category || 'Sin categoría'} - $${piece.est_price_ars || 0}`,
             time: piece.created_at,
             icon: '🔧'
           });
@@ -542,20 +697,23 @@ class AdminDashboard {
         });
       }
 
-      // Get recent subscriptions
-      const { data: recentSubs, error: subsError } = await supabaseAdmin
-        .from('subscriptions')
-        .select('created_at, plan_type, active')
+      // Get recent user subscriptions (main table)
+      const { data: recentUserSubs, error: userSubsError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .select(`
+          created_at, status,
+          subscription_plans (name, price_ars)
+        `)
         .order('created_at', { ascending: false })
         .limit(5);
 
-      if (!subsError && recentSubs) {
-        recentSubs.forEach(sub => {
+      if (!userSubsError && recentUserSubs) {
+        recentUserSubs.forEach(sub => {
           activities.push({
             type: 'subscription',
             title: 'Nueva suscripción',
-            description: sub.plan_type || 'Plan desconocido',
-            detail: `Estado: ${sub.active ? 'Activa' : 'Inactiva'}`,
+            description: sub.subscription_plans?.name || 'Plan desconocido',
+            detail: `Estado: ${sub.status} - $${sub.subscription_plans?.price_ars || 0}`,
             time: sub.created_at,
             icon: '📈'
           });
@@ -565,7 +723,7 @@ class AdminDashboard {
       // Get recent payments
       const { data: recentPayments, error: paymentsError } = await supabaseAdmin
         .from('payment_transactions')
-        .select('created_at, amount, status, mp_payment_type')
+        .select('created_at, amount, status, mp_payment_type, processed_at')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -582,26 +740,45 @@ class AdminDashboard {
         });
       }
 
-      // Skip config profiles for now - focus on main activity
-      // const { data: recentProfiles, error: profilesError } = await supabaseAdmin
-      //   .from('config_profiles')
-      //   .select('created_at, name, user_id')
-      //   .order('created_at', { ascending: false })
-      //   .limit(5);
+      // Get recent config profiles
+      const { data: recentProfiles, error: profilesError } = await supabaseAdmin
+        .from('config_profiles')
+        .select('created_at, name, user_id')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      // Skip profile activities for now
-      // if (!profilesError && recentProfiles) {
-      //   recentProfiles.forEach(profile => {
-      //     activities.push({
-      //       type: 'profile_created',
-      //       title: 'Nuevo perfil de configuración',
-      //       description: profile.name || 'Sin nombre',
-      //       detail: 'Perfil personalizado',
-      //       time: profile.created_at,
-      //       icon: '⚙️'
-      //     });
-      //   });
-      // }
+      if (!profilesError && recentProfiles) {
+        recentProfiles.forEach(profile => {
+          activities.push({
+            type: 'profile_created',
+            title: 'Nuevo perfil de configuración',
+            description: profile.name || 'Sin nombre',
+            detail: 'Configuración personalizada guardada',
+            time: profile.created_at,
+            icon: '⚙️'
+          });
+        });
+      }
+
+      // Get recent filament additions
+      const { data: recentFilaments, error: filamentsError } = await supabaseAdmin
+        .from('filaments')
+        .select('created_at, brand, material, color, weight_grams')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!filamentsError && recentFilaments) {
+        recentFilaments.forEach(filament => {
+          activities.push({
+            type: 'filament_added',
+            title: 'Nuevo filamento añadido',
+            description: `${filament.brand || 'Sin marca'} ${filament.material || ''}`,
+            detail: `${filament.color || 'Sin color'} - ${filament.weight_grams || 0}g`,
+            time: filament.created_at,
+            icon: '🧵'
+          });
+        });
+      }
 
       // Sort by time and take latest 15
       activities.sort((a, b) => new Date(b.time) - new Date(a.time));
@@ -610,7 +787,7 @@ class AdminDashboard {
       this.renderRecentActivity(latestActivities);
 
     } catch (error) {
-      console.error('Error loading recent activity:', error);
+      console.error('Error loading recent activity fallback:', error);
       this.renderRecentActivity([]);
     }
   }
@@ -912,6 +1089,10 @@ class AdminDashboard {
     // Initialize section-specific functionality
     if (sectionName === 'users' && window.AdminUsers) {
       window.AdminUsers.init();
+    } else if (sectionName === 'subscriptions' && window.AdminSubscriptions) {
+      window.AdminSubscriptions.init();
+    } else if (sectionName === 'pieces' && window.AdminPieces) {
+      window.AdminPieces.init();
     }
   }
 

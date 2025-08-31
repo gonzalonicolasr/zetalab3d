@@ -1502,3 +1502,559 @@ body {
   align-items: center;
   gap: 4px;
 }
+
+/* ============================================================================
+   Subscriptions Management Styles
+   ============================================================================ */
+
+.plan-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.plan-badge.premium {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--text-success);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.plan-badge.trial {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--text-warning);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.plan-badge.basic {
+  background: rgba(79, 154, 101, 0.2);
+  color: var(--text-accent);
+  border-color: rgba(79, 154, 101, 0.3);
+}
+
+.plan-badge.monthly,
+.plan-badge.yearly {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.expiry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-main {
+  font-weight: 500;
+}
+
+.date-relative {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.date-relative.expired {
+  color: var(--text-error);
+  font-weight: 500;
+}
+
+.date-relative.active {
+  color: var(--text-success);
+}
+
+.no-expiry {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.amount-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.amount-main {
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.total-paid {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.payment-method {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.payment-status.approved {
+  color: var(--text-success);
+}
+
+.payment-status.pending {
+  color: var(--text-warning);
+}
+
+.payment-status.rejected {
+  color: var(--text-error);
+}
+
+/* Subscription Detail Modal */
+.subscription-detail-modal .modal-content {
+  max-width: 700px;
+}
+
+.subscription-info {
+  margin-bottom: 2rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.payment-history {
+  margin-top: 1.5rem;
+}
+
+.payments-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.payment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(79,154,101,.1);
+}
+
+.payment-item:last-child {
+  border-bottom: none;
+}
+
+.payment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-amount {
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.payment-status-date {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.payment-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ============================================================================
+   Pieces Management Styles
+   ============================================================================ */
+
+.piece-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.piece-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.piece-id {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.piece-description {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.category-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.price-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.estimated-price {
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.latest-calculation {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.versions-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.version-count {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-accent);
+}
+
+.version-detail {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.last-version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.no-versions {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Piece Detail Modal */
+.piece-detail-modal .modal-content.large {
+  max-width: 900px;
+  width: 95%;
+}
+
+.piece-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.piece-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.description-section {
+  margin-top: 1rem;
+}
+
+.piece-description-full {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+  padding: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.external-link {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+
+.external-link:hover {
+  text-decoration: underline;
+}
+
+.versions-section {
+  border-left: 2px solid var(--border-primary);
+  padding-left: 1rem;
+}
+
+.versions-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.version-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+}
+
+.version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.version-id {
+  font-weight: 600;
+  font-family: monospace;
+  color: var(--text-accent);
+}
+
+.version-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.version-prices {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.version-total {
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.version-ml {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Versions Modal */
+.versions-modal .modal-content.large {
+  max-width: 1000px;
+  width: 95%;
+}
+
+.versions-table-container {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+}
+
+.versions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.versions-table th,
+.versions-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.versions-table th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  color: var(--text-accent);
+  position: sticky;
+  top: 0;
+}
+
+.versions-table .price-cell {
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.version-datetime {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.action-btn.small {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+/* Enhanced user management for new sections */
+.user-stats-mini {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.user-email-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.revenue-info {
+  font-size: 0.7rem;
+  color: var(--text-accent);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.subscription-info-enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subscription-detail {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.subscription-detail.expired {
+  color: var(--text-error);
+}
+
+.subscription-detail.warning {
+  color: var(--text-warning);
+}
+
+.subscription-detail.active {
+  color: var(--text-success);
+}
+
+.status-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.usage-stats-detailed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.usage-primary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.last-creation {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.no-activity {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.action-buttons-enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.action-dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  min-width: 150px;
+  box-shadow: var(--shadow-md);
+  z-index: 1000;
+  display: none;
+}
+
+.dropdown-toggle:hover + .dropdown-menu,
+.dropdown-menu:hover {
+  display: block;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast);
+}
+
+.dropdown-menu button:hover {
+  background: var(--bg-hover);
+}
+
+.dropdown-menu button.text-danger {
+  color: var(--text-error);
+}
+
+.placeholder-email {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .piece-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons-enhanced {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .versions-table {
+    font-size: 0.8rem;
+  }
+  
+  .versions-table th,
+  .versions-table td {
+    padding: 0.5rem;
+  }
+}
