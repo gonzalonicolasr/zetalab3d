@@ -1,489 +1,635 @@
 // ============================================
-// SAFE ADMIN DASHBOARD FUNCTIONS FOR ZETALAB
-// Handles missing tables/views gracefully with fallbacks
+// SAFE ADMIN FUNCTIONS FOR ZETALAB
+// Uses ONLY real database schema columns
 // ============================================
 
-// Safe Supabase client initialization (reuse existing from main page)
-// const { createClient } = supabase;
-// const supabaseUrl = 'https://fwmyiovamcxvinoxnput.supabase.co';  
-// const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmluYXhucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTM4NTA5ODIsImV4cCI6MjAwOTQyNjk4Mn0.1qzT8K6i5CXVzehc1RYg6ZdGPFe26Ycbj6m2zxdOKnc';
-// const supabase = createClient(supabaseUrl, supabaseKey);
+// Global state management
+const AdminState = {
+    currentSection: 'dashboard',
+    selectedItems: {
+        subscriptions: new Set(),
+        payments: new Set(),
+        pieces: new Set()
+    },
+    data: {
+        metrics: null,
+        subscriptions: [],
+        payments: [],
+        pieces: []
+    },
+    filters: {
+        subscriptions: { search: '', plan: '', active: '' },
+        payments: { search: '', status: '', dateFrom: '', dateTo: '' },
+        pieces: { search: '' }
+    }
+};
 
-// Utility function to safely execute Supabase queries
-async function safeSupabaseQuery(tableName, queryFn, fallbackData = null) {
-    try {
-        const result = await queryFn();
-        return result;
-    } catch (error) {
-        console.warn(`⚠️ Table/View '${tableName}' not available:`, error.message);
-        return { data: fallbackData, error: null };
+// ============================================
+// INITIALIZATION AND NAVIGATION
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing ZETALAB Safe Admin Dashboard');
+    
+    initializeNavigation();
+    initializeEventListeners();
+    loadInitialData();
+});
+
+function initializeNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Remove active class from all links
+            navLinks.forEach(l => l.classList.remove('active'));
+            
+            // Add active class to clicked link
+            link.classList.add('active');
+            
+            // Get target section
+            const targetSection = link.dataset.section;
+            showSection(targetSection);
+        });
+    });
+}
+
+function showSection(sectionId) {
+    // Hide all sections
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => section.classList.remove('active'));
+    
+    // Show target section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        AdminState.currentSection = sectionId;
+        
+        // Load section-specific data
+        loadSectionData(sectionId);
     }
 }
 
-// ============================================
-// SAFE STATISTICS LOADING
-// ============================================
-
-async function loadStatsSafe() {
-    try {
-        console.log('🔄 Loading dashboard statistics safely...');
-        
-        // Try to get total users count (most reliable)
-        const totalUsers = await getAllUsersCountSafe();
-        
-        // Count pieces and active users (safer approach)
-        const { data: pieces, error: piecesError } = await safeSupabaseQuery('pieces',
-            () => supabase.from('pieces').select('user_id, created_at')
-        );
-        
-        const totalPieces = pieces?.length || 0;
-        const activeUsers = new Set(pieces?.map(p => p.user_id)).size;
-        
-        // Count piece versions (calculations)
-        const { data: versions, error: versionsError } = await safeSupabaseQuery('piece_versions',
-            () => supabase.from('piece_versions').select('id, created_at')
-        );
-        
-        const totalCalculations = versions?.length || 0;
-        
-        // Try subscription stats (with fallback)
-        let totalSubscriptions = 0;
-        let activeSubscriptions = 0;
-        
-        const { data: subscriptions } = await safeSupabaseQuery('subscriptions',
-            () => supabase.from('subscriptions').select('status')
-        );
-        
-        if (subscriptions) {
-            totalSubscriptions = subscriptions.length;
-            activeSubscriptions = subscriptions.filter(s => s.status === 'active').length;
-        }
-        
-        // Update dashboard metrics
-        updateMetricValue('totalUsers', totalUsers);
-        updateMetricValue('totalPieces', totalPieces); 
-        updateMetricValue('totalCalculations', totalCalculations);
-        updateMetricValue('activeUsers', activeUsers);
-        updateMetricValue('totalSubscriptions', totalSubscriptions);
-        updateMetricValue('activeSubscriptions', activeSubscriptions);
-        
-        console.log('✅ Statistics loaded successfully');
-        
-    } catch (error) {
-        console.error('❌ Error loading statistics:', error);
-        showNotification('Error cargando estadísticas', 'error');
-    }
-}
-
-async function getAllUsersCountSafe() {
-    try {
-        // First try the admin view if it exists
-        const { data: adminUsers, error: adminError } = await safeSupabaseQuery('admin_user_activity',
-            () => supabase.from('admin_user_activity').select('user_id', { count: 'exact' })
-        );
-        
-        if (adminUsers) {
-            return adminUsers.length;
-        }
-        
-        // Fallback: count unique user_ids from pieces table
-        const { data: pieces, error: piecesError } = await supabase
-            .from('pieces')
-            .select('user_id');
-            
-        if (pieces) {
-            return new Set(pieces.map(p => p.user_id)).size;
-        }
-        
-        return 0;
-        
-    } catch (error) {
-        console.warn('Cannot determine user count:', error);
-        return 0;
-    }
+function initializeEventListeners() {
+    // Search filters
+    document.getElementById('subscriptionSearch')?.addEventListener('input', debounce(filterSubscriptions, 300));
+    document.getElementById('subscriptionPlanFilter')?.addEventListener('change', filterSubscriptions);
+    document.getElementById('subscriptionActiveFilter')?.addEventListener('change', filterSubscriptions);
+    
+    document.getElementById('paymentSearch')?.addEventListener('input', debounce(filterPayments, 300));
+    document.getElementById('paymentStatusFilter')?.addEventListener('change', filterPayments);
+    document.getElementById('paymentDateFrom')?.addEventListener('change', filterPayments);
+    document.getElementById('paymentDateTo')?.addEventListener('change', filterPayments);
+    
+    document.getElementById('pieceSearch')?.addEventListener('input', debounce(filterPieces, 300));
 }
 
 // ============================================
-// SAFE USER LOADING
+// DATA LOADING FUNCTIONS
 // ============================================
 
-async function loadUsersSafe() {
+async function loadInitialData() {
     try {
-        console.log('🔄 Loading users data safely...');
+        showGlobalLoading(true);
+        console.log('📊 Loading initial dashboard data...');
         
-        // Try admin view first
-        let { data: usersData, error: usersError } = await safeSupabaseQuery('admin_user_activity',
-            () => supabase.from('admin_user_activity').select('*').order('registered_at', { ascending: false }).limit(10)
-        );
+        // Load dashboard metrics
+        await loadDashboardMetrics();
         
-        if (!usersData || usersData.length === 0) {
-            // Fallback: get users from pieces table
-            console.log('📋 Using fallback user data from pieces table...');
-            const { data: pieces } = await supabase
-                .from('pieces')
-                .select('user_id, created_at, name')
-                .order('created_at', { ascending: false })
-                .limit(10);
-                
-            // Create user-like objects from pieces data
-            usersData = pieces?.map(piece => ({
-                user_id: piece.user_id,
-                email: `user-${piece.user_id.substring(0, 8)}@example.com`,
-                registered_at: piece.created_at,
-                total_pieces: 1,
-                total_calculations: 0,
-                activity_level: 'active',
-                last_piece_created: piece.created_at
-            })) || [];
-        }
-        
-        // Update users table
-        const usersTable = document.getElementById('usersTable');
-        if (usersTable) {
-            let html = '';
-            
-            if (usersData && usersData.length > 0) {
-                usersData.forEach(user => {
-                    html += `
-                        <tr onclick="openUserDetail('${user.user_id}')">
-                            <td>${user.email || 'N/A'}</td>
-                            <td>${formatDate(user.registered_at || user.created_at)}</td>
-                            <td>
-                                <span class="activity-badge ${user.activity_level || 'unknown'}">
-                                    ${user.activity_level || 'Unknown'}
-                                </span>
-                            </td>
-                            <td>${user.total_pieces || 0}</td>
-                            <td>${user.total_calculations || 0}</td>
-                            <td>${formatDate(user.last_piece_created || user.last_calculation_date)}</td>
-                        </tr>
-                    `;
-                });
-            } else {
-                html = `
-                    <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-secondary);">
-                            No hay datos de usuarios disponibles
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            usersTable.innerHTML = html;
-        }
-        
-        console.log('✅ Users loaded successfully');
-        
-    } catch (error) {
-        console.error('❌ Error loading users:', error);
-        const usersTable = document.getElementById('usersTable');
-        if (usersTable) {
-            usersTable.innerHTML = `
-                <tr>
-                    <td colspan="6" style="text-align: center; color: var(--error);">
-                        Error cargando usuarios: ${error.message}
-                    </td>
-                </tr>
-            `;
-        }
-        showNotification('Error cargando usuarios', 'error');
-    }
-}
-
-// ============================================
-// SAFE SUBSCRIPTION LOADING
-// ============================================
-
-async function loadSubscriptionsSafe() {
-    try {
-        console.log('🔄 Loading subscriptions data safely...');
-        
-        // Try to load from admin view first
-        let { data: subscriptions, error } = await safeSupabaseQuery('admin_subscriptions_safe',
-            () => supabase.from('admin_subscriptions_safe').select('*').order('created_at', { ascending: false }).limit(10)
-        );
-        
-        if (!subscriptions) {
-            // Fallback: try basic subscriptions table
-            console.log('📋 Using fallback subscription data...');
-            const { data: basicSubs } = await safeSupabaseQuery('subscriptions',
-                () => supabase.from('subscriptions').select('*').order('created_at', { ascending: false }).limit(10)
-            );
-            
-            subscriptions = basicSubs?.map(sub => ({
-                subscription_id: sub.id,
-                user_id: sub.user_id,
-                user_email: `user-${sub.user_id.substring(0, 8)}@example.com`,
-                status: sub.status || 'unknown',
-                type: sub.type || 'unknown',
-                plan_name: 'Unknown Plan',
-                plan_price: sub.amount || 0,
-                created_at: sub.created_at,
-                updated_at: sub.updated_at
-            })) || [];
-        }
-        
-        // Update subscriptions table
-        const subscriptionsTable = document.getElementById('subscriptionsTable');
-        if (subscriptionsTable) {
-            let html = '';
-            
-            if (subscriptions && subscriptions.length > 0) {
-                subscriptions.forEach(sub => {
-                    html += `
-                        <tr onclick="openSubscriptionDetail('${sub.subscription_id}')">
-                            <td>${sub.user_email || 'N/A'}</td>
-                            <td>
-                                <span class="plan-badge">${sub.plan_name || 'N/A'}</span>
-                            </td>
-                            <td>
-                                <span class="status-badge ${sub.status}">
-                                    ${sub.status || 'Unknown'}
-                                </span>
-                            </td>
-                            <td>$${sub.plan_price || 0}</td>
-                            <td>${sub.type || 'N/A'}</td>
-                            <td>${formatDate(sub.created_at)}</td>
-                            <td>
-                                <button onclick="editSubscription('${sub.subscription_id}')" 
-                                        class="action-btn">
-                                    Editar
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                html = `
-                    <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-secondary);">
-                            No hay suscripciones disponibles
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            subscriptionsTable.innerHTML = html;
-        }
-        
-        console.log('✅ Subscriptions loaded successfully');
-        
-    } catch (error) {
-        console.error('❌ Error loading subscriptions:', error);
-        const subscriptionsTable = document.getElementById('subscriptionsTable');
-        if (subscriptionsTable) {
-            subscriptionsTable.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; color: var(--error);">
-                        Error cargando suscripciones: ${error.message}
-                    </td>
-                </tr>
-            `;
-        }
-        showNotification('Error cargando suscripciones', 'error');
-    }
-}
-
-// ============================================
-// SAFE PAYMENT LOADING
-// ============================================
-
-async function loadPaymentsSafe() {
-    try {
-        console.log('🔄 Loading payments data safely...');
-        
-        // Try admin payments view first
-        let { data: payments, error } = await safeSupabaseQuery('admin_payments_view',
-            () => supabase.from('admin_payments_view').select('*').order('payment_date', { ascending: false }).limit(10)
-        );
-        
-        if (!payments) {
-            // Fallback: try basic payment_transactions table
-            console.log('📋 Using fallback payment data...');
-            const { data: basicPayments } = await safeSupabaseQuery('payment_transactions',
-                () => supabase.from('payment_transactions').select('*').order('created_at', { ascending: false }).limit(10)
-            );
-            
-            payments = basicPayments?.map(payment => ({
-                payment_id: payment.id,
-                user_id: payment.user_id,
-                user_email: `user-${payment.user_id.substring(0, 8)}@example.com`,
-                amount: payment.amount || 0,
-                status: payment.status || 'unknown',
-                payment_method: payment.payment_method || 'N/A',
-                payment_provider: payment.payment_provider || 'N/A',
-                payment_date: payment.created_at,
-                provider_fee: payment.provider_fee || 0,
-                net_amount: payment.net_amount || payment.amount || 0
-            })) || [];
-        }
-        
-        // Update payments table
-        const paymentsTable = document.getElementById('paymentsTable');
-        if (paymentsTable) {
-            let html = '';
-            
-            if (payments && payments.length > 0) {
-                payments.forEach(payment => {
-                    html += `
-                        <tr onclick="openPaymentDetail('${payment.payment_id}')">
-                            <td>
-                                <input type="checkbox" class="payment-checkbox" 
-                                       value="${payment.payment_id}" 
-                                       onchange="togglePaymentSelection('${payment.payment_id}')" 
-                                       onclick="event.stopPropagation()">
-                            </td>
-                            <td>${payment.user_email || 'N/A'}</td>
-                            <td>$${payment.amount || 0}</td>
-                            <td>
-                                <span class="status-badge ${payment.status}">
-                                    ${payment.status || 'Unknown'}
-                                </span>
-                            </td>
-                            <td>${payment.payment_method || 'N/A'}</td>
-                            <td>${payment.payment_provider || 'N/A'}</td>
-                            <td>${formatDate(payment.payment_date)}</td>
-                            <td>$${payment.provider_fee || 0}</td>
-                            <td>$${payment.net_amount || 0}</td>
-                            <td>
-                                <button onclick="processRefund('${payment.payment_id}')" 
-                                        class="action-btn ${payment.status === 'completed' ? '' : 'disabled'}"
-                                        ${payment.status !== 'completed' ? 'disabled' : ''}>
-                                    Reembolso
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                html = `
-                    <tr>
-                        <td colspan="10" style="text-align: center; color: var(--text-secondary);">
-                            No hay transacciones de pago disponibles
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            paymentsTable.innerHTML = html;
-        }
-        
-        console.log('✅ Payments loaded successfully');
-        
-    } catch (error) {
-        console.error('❌ Error loading payments:', error);
-        const paymentsTable = document.getElementById('paymentsTable');
-        if (paymentsTable) {
-            paymentsTable.innerHTML = `
-                <tr>
-                    <td colspan="10" style="text-align: center; color: var(--error);">
-                        Error cargando pagos: ${error.message}
-                    </td>
-                </tr>
-            `;
-        }
-        showNotification('Error cargando pagos', 'error');
-    }
-}
-
-// ============================================
-// SAFE PIECES LOADING
-// ============================================
-
-async function loadPiecesSafe() {
-    try {
-        console.log('🔄 Loading pieces data safely...');
-        
-        // This should work as pieces is a core table
-        const { data: pieces, error } = await supabase
-            .from('pieces')
-            .select('id, name, user_id, created_at, updated_at')
-            .order('created_at', { ascending: false })
-            .limit(10);
-        
-        if (error) throw error;
-        
-        // Update pieces table
-        const piecesTable = document.getElementById('piecesTable');
-        if (piecesTable) {
-            let html = '';
-            
-            if (pieces && pieces.length > 0) {
-                pieces.forEach(piece => {
-                    html += `
-                        <tr onclick="openPieceDetail('${piece.id}')">
-                            <td>${piece.name || 'Sin nombre'}</td>
-                            <td>user-${piece.user_id.substring(0, 8)}@example.com</td>
-                            <td>${formatDate(piece.created_at)}</td>
-                            <td>$0</td>
-                            <td>
-                                <button onclick="viewPieceVersions('${piece.id}')" 
-                                        class="action-btn">
-                                    Ver Versiones
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                html = `
-                    <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-secondary);">
-                            No hay piezas disponibles
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            piecesTable.innerHTML = html;
-        }
-        
-        console.log('✅ Pieces loaded successfully');
-        
-    } catch (error) {
-        console.error('❌ Error loading pieces:', error);
-        const piecesTable = document.getElementById('piecesTable');
-        if (piecesTable) {
-            piecesTable.innerHTML = `
-                <tr>
-                    <td colspan="5" style="text-align: center; color: var(--error);">
-                        Error cargando piezas: ${error.message}
-                    </td>
-                </tr>
-            `;
-        }
-        showNotification('Error cargando piezas', 'error');
-    }
-}
-
-// ============================================
-// SAFE MAIN DATA LOADING FUNCTION
-// ============================================
-
-async function loadAllDataSafe() {
-    try {
-        console.log('🔄 Loading all dashboard data safely...');
-        
-        // Show loading indicators
-        showGlobalLoadingState();
-        
-        // Load data in parallel with error isolation
-        await Promise.allSettled([
-            loadStatsSafe(),
-            loadUsersSafe(), 
-            loadSubscriptionsSafe(),
-            loadPiecesSafe(),
-            loadPaymentsSafe()
-        ]);
-        
-        hideGlobalLoadingState();
-        console.log('✅ All dashboard data loaded');
+        showGlobalLoading(false);
         showNotification('Dashboard cargado correctamente', 'success');
         
     } catch (error) {
-        console.error('❌ Critical error loading dashboard:', error);
-        hideGlobalLoadingState();
-        showNotification('Error crítico cargando dashboard', 'error');
+        console.error('❌ Error loading initial data:', error);
+        showGlobalLoading(false);
+        showNotification('Error cargando el dashboard', 'error');
+    }
+}
+
+async function loadSectionData(sectionId) {
+    switch(sectionId) {
+        case 'subscriptions':
+            await loadSubscriptionsData();
+            break;
+        case 'payments':
+            await loadPaymentsData();
+            break;
+        case 'pieces':
+            await loadPiecesData();
+            break;
+        default:
+            break;
+    }
+}
+
+// ============================================
+// DASHBOARD METRICS
+// ============================================
+
+async function loadDashboardMetrics() {
+    try {
+        console.log('📊 Loading dashboard metrics...');
+        
+        const metrics = await calculateRealMetrics();
+        
+        // Update metric cards
+        updateMetricCard('totalPieces', metrics.total_pieces || 0);
+        updateMetricCard('totalCalculations', metrics.total_calculations || 0);
+        updateMetricCard('activeSubscriptions', metrics.active_subscriptions || 0);
+        updateMetricCard('totalRevenue', formatCurrency(metrics.total_revenue || 0));
+        
+        AdminState.data.metrics = metrics;
+        console.log('✅ Dashboard metrics loaded');
+        
+    } catch (error) {
+        console.error('❌ Error loading dashboard metrics:', error);
+        showNotification('Error cargando métricas del dashboard', 'error');
+    }
+}
+
+async function calculateRealMetrics() {
+    try {
+        console.log('🔄 Calculating real metrics from actual tables...');
+        
+        // Count pieces (usar solo columnas que existen)
+        const { count: totalPieces, error: piecesError } = await supabase
+            .from('pieces')
+            .select('*', { count: 'exact', head: true });
+        
+        if (piecesError) {
+            console.error('Error counting pieces:', piecesError);
+        }
+        
+        // Count calculations (piece_versions)
+        const { count: totalCalculations, error: versionsError } = await supabase
+            .from('piece_versions')
+            .select('*', { count: 'exact', head: true });
+            
+        if (versionsError) {
+            console.error('Error counting versions:', versionsError);
+        }
+        
+        // Count active subscriptions (usar solo active=true)
+        const { count: activeSubscriptions, error: subsError } = await supabase
+            .from('subscriptions')
+            .select('*', { count: 'exact', head: true })
+            .eq('active', true);
+            
+        if (subsError) {
+            console.error('Error counting subscriptions:', subsError);
+        }
+        
+        // Calculate revenue from payment_transactions (usar solo amount)
+        const { data: payments, error: paymentsError } = await supabase
+            .from('payment_transactions')
+            .select('amount')
+            .eq('status', 'approved');
+        
+        if (paymentsError) {
+            console.error('Error fetching payments:', paymentsError);
+        }
+        
+        const totalRevenue = payments?.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0) || 0;
+        
+        return {
+            total_pieces: totalPieces || 0,
+            total_calculations: totalCalculations || 0,
+            active_subscriptions: activeSubscriptions || 0,
+            total_revenue: totalRevenue
+        };
+        
+    } catch (error) {
+        console.error('❌ Error calculating real metrics:', error);
+        return {
+            total_pieces: 0,
+            total_calculations: 0,
+            active_subscriptions: 0,
+            total_revenue: 0
+        };
+    }
+}
+
+function updateMetricCard(metricId, value) {
+    const element = document.getElementById(metricId);
+    if (element) {
+        element.textContent = value;
+        
+        // Add animation
+        element.classList.add('metric-updated');
+        setTimeout(() => {
+            element.classList.remove('metric-updated');
+        }, 500);
+    }
+}
+
+// ============================================
+// SUBSCRIPTIONS MANAGEMENT
+// ============================================
+
+async function loadSubscriptionsData() {
+    try {
+        showTableLoading('subscriptionsTable');
+        console.log('💳 Loading subscriptions data...');
+        
+        // Usar solo columnas reales: id, user_id, plan_type, active, created_at, expires_at, payment_id, amount, payment_status
+        const { data: subscriptions, error } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        
+        if (error) {
+            console.error('❌ Error loading subscriptions:', error);
+            throw error;
+        }
+        
+        AdminState.data.subscriptions = subscriptions || [];
+        renderSubscriptionsTable(AdminState.data.subscriptions);
+        
+        console.log(`✅ Loaded ${subscriptions?.length || 0} subscriptions`);
+        
+    } catch (error) {
+        console.error('❌ Error loading subscriptions:', error);
+        showTableError('subscriptionsTable', 'Error cargando suscripciones');
+    }
+}
+
+function renderSubscriptionsTable(subscriptions) {
+    const tbody = document.getElementById('subscriptionsTable');
+    if (!tbody) return;
+    
+    if (!subscriptions || subscriptions.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-muted">
+                    No hay suscripciones disponibles
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = subscriptions.map(sub => {
+        // Calcular días hasta expiración
+        const daysUntilExpiration = sub.expires_at ? 
+            Math.ceil((new Date(sub.expires_at) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+            
+        return `
+        <tr onclick="openSubscriptionDetail('${sub.id}')" style="cursor: pointer;">
+            <td onclick="event.stopPropagation()">
+                <input type="checkbox" 
+                       value="${sub.id}" 
+                       onchange="toggleSubscriptionSelection('${sub.id}')">
+            </td>
+            <td>user-${sub.user_id.substring(0, 8)}</td>
+            <td>
+                <span class="plan-badge">
+                    ${getPlanLabel(sub.plan_type)}
+                </span>
+            </td>
+            <td>
+                <span class="status-badge ${sub.active ? 'active' : 'inactive'}">
+                    ${sub.active ? 'Activa' : 'Inactiva'}
+                </span>
+            </td>
+            <td>${formatCurrency(sub.amount || 0)}</td>
+            <td>${formatDate(sub.created_at)}</td>
+            <td>${sub.expires_at ? formatDate(sub.expires_at) : 'Sin vencimiento'}</td>
+            <td>${daysUntilExpiration !== null ? 
+                (daysUntilExpiration > 0 ? `${daysUntilExpiration}d` : 'Vencida') : 
+                '-'}</td>
+            <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" onclick="editSubscription('${sub.id}')">
+                    Editar
+                </button>
+            </td>
+        </tr>
+    `;
+    }).join('');
+    
+    // Update bulk actions visibility
+    updateBulkActionsVisibility('subscription');
+}
+
+// ============================================
+// PAYMENTS MANAGEMENT
+// ============================================
+
+async function loadPaymentsData() {
+    try {
+        showTableLoading('paymentsTable');
+        console.log('💰 Loading payments data...');
+        
+        // Usar solo columnas reales de payment_transactions
+        const { data: payments, error } = await supabase
+            .from('payment_transactions')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        
+        if (error) {
+            console.error('❌ Error loading payments:', error);
+            throw error;
+        }
+        
+        AdminState.data.payments = payments || [];
+        renderPaymentsTable(AdminState.data.payments);
+        
+        console.log(`✅ Loaded ${payments?.length || 0} payments`);
+        
+    } catch (error) {
+        console.error('❌ Error loading payments:', error);
+        showTableError('paymentsTable', 'Error cargando pagos');
+    }
+}
+
+function renderPaymentsTable(payments) {
+    const tbody = document.getElementById('paymentsTable');
+    if (!tbody) return;
+    
+    if (!payments || payments.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    No hay transacciones de pago disponibles
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = payments.map(payment => `
+        <tr onclick="openPaymentDetail('${payment.id}')" style="cursor: pointer;">
+            <td onclick="event.stopPropagation()">
+                <input type="checkbox" 
+                       value="${payment.id}" 
+                       onchange="togglePaymentSelection('${payment.id}')">
+            </td>
+            <td>user-${payment.user_id.substring(0, 8)}</td>
+            <td>${formatCurrency(payment.amount || 0)}</td>
+            <td>
+                <span class="status-badge ${normalizePaymentStatus(payment.status)}">
+                    ${getPaymentStatusLabel(payment.status)}
+                </span>
+            </td>
+            <td>${payment.mp_payment_id || 'N/A'}</td>
+            <td>${formatDate(payment.created_at)}</td>
+            <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-danger" 
+                        onclick="processRefund('${payment.id}')"
+                        ${payment.status !== 'approved' ? 'disabled' : ''}>
+                    Reembolso
+                </button>
+            </td>
+        </tr>
+    `).join('');
+    
+    // Update bulk actions visibility
+    updateBulkActionsVisibility('payment');
+}
+
+// ============================================
+// PIECES MANAGEMENT
+// ============================================
+
+async function loadPiecesData() {
+    try {
+        showTableLoading('piecesTable');
+        console.log('🔧 Loading pieces data...');
+        
+        // Usar solo columnas reales de pieces
+        const { data: pieces, error } = await supabase
+            .from('pieces')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        
+        if (error) {
+            console.error('❌ Error loading pieces:', error);
+            throw error;
+        }
+        
+        AdminState.data.pieces = pieces || [];
+        renderPiecesTable(AdminState.data.pieces);
+        
+        console.log(`✅ Loaded ${pieces?.length || 0} pieces`);
+        
+    } catch (error) {
+        console.error('❌ Error loading pieces:', error);
+        showTableError('piecesTable', 'Error cargando piezas');
+    }
+}
+
+function renderPiecesTable(pieces) {
+    const tbody = document.getElementById('piecesTable');
+    if (!tbody) return;
+    
+    if (!pieces || pieces.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    No hay piezas disponibles
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = pieces.map(piece => `
+        <tr onclick="openPieceDetail('${piece.id}')" style="cursor: pointer;">
+            <td>${piece.title || 'Sin título'}</td>
+            <td>user-${piece.user_id.substring(0, 8)}</td>
+            <td>${formatDate(piece.created_at)}</td>
+            <td>${formatCurrency(piece.est_price_ars || 0)}</td>
+            <td>${(piece.est_weight_grams || 0)}g</td>
+            <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" onclick="viewPieceVersions('${piece.id}')">
+                    Ver Versiones
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// ============================================
+// ACTION HANDLERS
+// ============================================
+
+async function editSubscription(subscriptionId) {
+    console.log('✏️ Editing subscription:', subscriptionId);
+    
+    const subscription = AdminState.data.subscriptions.find(s => s.id === subscriptionId);
+    if (!subscription) return;
+    
+    const modalBody = `
+        <div class="form-group">
+            <label class="form-label">Plan (plan_type)</label>
+            <select class="form-input" id="editSubscriptionPlan">
+                <option value="trial" ${subscription.plan_type === 'trial' ? 'selected' : ''}>Trial</option>
+                <option value="monthly" ${subscription.plan_type === 'monthly' ? 'selected' : ''}>Monthly</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Activa</label>
+            <select class="form-input" id="editSubscriptionActive">
+                <option value="true" ${subscription.active ? 'selected' : ''}>Sí</option>
+                <option value="false" ${!subscription.active ? 'selected' : ''}>No</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Fecha de Vencimiento (expires_at)</label>
+            <input type="datetime-local" class="form-input" id="editSubscriptionExpiry" 
+                   value="${subscription.expires_at ? new Date(subscription.expires_at).toISOString().slice(0, -1) : ''}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Monto</label>
+            <input type="number" class="form-input" id="editSubscriptionAmount" 
+                   value="${subscription.amount || 0}" step="0.01">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Estado de Pago (payment_status)</label>
+            <input type="text" class="form-input" id="editSubscriptionPaymentStatus" 
+                   value="${subscription.payment_status || ''}">
+        </div>
+    `;
+    
+    showEditModal('Editar Suscripción', modalBody, () => saveSubscriptionEdit(subscriptionId));
+}
+
+async function saveSubscriptionEdit(subscriptionId) {
+    try {
+        const planType = document.getElementById('editSubscriptionPlan').value;
+        const active = document.getElementById('editSubscriptionActive').value === 'true';
+        const expiresAt = document.getElementById('editSubscriptionExpiry').value;
+        const amount = parseFloat(document.getElementById('editSubscriptionAmount').value) || 0;
+        const paymentStatus = document.getElementById('editSubscriptionPaymentStatus').value;
+        
+        console.log('💾 Saving subscription edit:', { subscriptionId, planType, active, expiresAt, amount, paymentStatus });
+        
+        // Actualizar usando solo columnas reales
+        const { error } = await supabase
+            .from('subscriptions')
+            .update({
+                plan_type: planType,
+                active: active,
+                expires_at: expiresAt || null,
+                amount: amount,
+                payment_status: paymentStatus
+            })
+            .eq('id', subscriptionId);
+        
+        if (error) throw error;
+        
+        // Refresh subscriptions data
+        await loadSubscriptionsData();
+        
+        closeEditModal();
+        showNotification('Suscripción actualizada correctamente', 'success');
+        
+    } catch (error) {
+        console.error('❌ Error saving subscription edit:', error);
+        showNotification('Error actualizando suscripción: ' + error.message, 'error');
+    }
+}
+
+async function processRefund(paymentId) {
+    if (!confirm('¿Está seguro de que desea procesar este reembolso?')) return;
+    
+    try {
+        console.log('💸 Processing refund for payment:', paymentId);
+        
+        // Actualizar el estado del pago
+        const { error } = await supabase
+            .from('payment_transactions')
+            .update({
+                status: 'refunded',
+                description: (await supabase.from('payment_transactions').select('description').eq('id', paymentId).single()).data?.description + ' [REEMBOLSADO]'
+            })
+            .eq('id', paymentId);
+        
+        if (error) throw error;
+        
+        // Refresh payments data
+        await loadPaymentsData();
+        
+        showNotification('Reembolso procesado correctamente', 'success');
+        
+    } catch (error) {
+        console.error('❌ Error processing refund:', error);
+        showNotification('Error procesando reembolso: ' + error.message, 'error');
+    }
+}
+
+// Bulk operations
+function toggleSubscriptionSelection(subscriptionId) {
+    if (AdminState.selectedItems.subscriptions.has(subscriptionId)) {
+        AdminState.selectedItems.subscriptions.delete(subscriptionId);
+    } else {
+        AdminState.selectedItems.subscriptions.add(subscriptionId);
+    }
+    
+    updateBulkActionsVisibility('subscription');
+}
+
+function togglePaymentSelection(paymentId) {
+    if (AdminState.selectedItems.payments.has(paymentId)) {
+        AdminState.selectedItems.payments.delete(paymentId);
+    } else {
+        AdminState.selectedItems.payments.add(paymentId);
+    }
+    
+    updateBulkActionsVisibility('payment');
+}
+
+function updateBulkActionsVisibility(type) {
+    const selectedCount = AdminState.selectedItems[type + 's'].size;
+    const bulkActions = document.getElementById(type + 'BulkActions');
+    const bulkCount = document.getElementById(type + 'BulkCount');
+    
+    if (bulkActions && bulkCount) {
+        if (selectedCount > 0) {
+            bulkActions.classList.add('show');
+            bulkCount.textContent = `${selectedCount} seleccionada${selectedCount > 1 ? 's' : ''}`;
+        } else {
+            bulkActions.classList.remove('show');
+        }
+    }
+}
+
+async function bulkExtendSubscriptions() {
+    const selectedIds = Array.from(AdminState.selectedItems.subscriptions);
+    if (selectedIds.length === 0) return;
+    
+    const days = prompt('¿Por cuántos días extender las suscripciones?', '30');
+    if (!days || isNaN(days)) return;
+    
+    try {
+        console.log(`📅 Extending ${selectedIds.length} subscriptions by ${days} days`);
+        
+        for (const id of selectedIds) {
+            const subscription = AdminState.data.subscriptions.find(s => s.id === id);
+            if (subscription) {
+                const currentExpiry = new Date(subscription.expires_at || Date.now());
+                const newExpiry = new Date(currentExpiry.getTime() + (parseInt(days) * 24 * 60 * 60 * 1000));
+                
+                await supabase
+                    .from('subscriptions')
+                    .update({ expires_at: newExpiry.toISOString() })
+                    .eq('id', id);
+            }
+        }
+        
+        // Clear selections and refresh
+        AdminState.selectedItems.subscriptions.clear();
+        await loadSubscriptionsData();
+        
+        showNotification(`${selectedIds.length} suscripciones extendidas`, 'success');
+        
+    } catch (error) {
+        console.error('❌ Error extending subscriptions:', error);
+        showNotification('Error extendiendo suscripciones: ' + error.message, 'error');
     }
 }
 
@@ -491,47 +637,322 @@ async function loadAllDataSafe() {
 // UTILITY FUNCTIONS
 // ============================================
 
-function showGlobalLoadingState() {
-    // Add loading class to main container
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined) return '$0';
+    return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        minimumFractionDigits: 0
+    }).format(amount);
+}
+
+function getPlanLabel(planType) {
+    const labels = {
+        'trial': 'Trial',
+        'monthly': 'Mensual'
+    };
+    return labels[planType] || planType;
+}
+
+function getPaymentStatusLabel(status) {
+    const labels = {
+        'approved': 'Aprobado',
+        'pending': 'Pendiente',
+        'cancelled': 'Cancelado',
+        'rejected': 'Rechazado',
+        'refunded': 'Reembolsado'
+    };
+    return labels[status] || status;
+}
+
+function normalizePaymentStatus(status) {
+    const mapping = {
+        'approved': 'success',
+        'pending': 'warning',
+        'cancelled': 'danger',
+        'rejected': 'danger',
+        'refunded': 'info'
+    };
+    return mapping[status] || 'secondary';
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// UI Helper Functions
+function showGlobalLoading(show) {
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
-        mainContent.classList.add('loading');
+        if (show) {
+            mainContent.style.opacity = '0.6';
+            mainContent.style.pointerEvents = 'none';
+        } else {
+            mainContent.style.opacity = '1';
+            mainContent.style.pointerEvents = 'auto';
+        }
     }
 }
 
-function hideGlobalLoadingState() {
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        mainContent.classList.remove('loading');
-    }
-}
-
-function showLoadingState(tableId) {
+function showTableLoading(tableId) {
     const table = document.getElementById(tableId);
     if (table) {
         table.innerHTML = `
-            <tr>
+            <tr class="table-loading">
                 <td colspan="10" style="text-align: center; padding: 40px;">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                        <div class="loading-spinner"></div>
-                        Cargando datos...
-                    </div>
+                    <div class="loading-spinner"></div>
+                    <div style="margin-top: 10px;">Cargando datos...</div>
                 </td>
             </tr>
         `;
     }
 }
 
-// ============================================
-// EXPORT FUNCTIONS FOR GLOBAL USE
-// ============================================
+function showTableError(tableId, message) {
+    const table = document.getElementById(tableId);
+    if (table) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="10" style="text-align: center; padding: 40px; color: var(--error);">
+                    ❌ ${message}
+                </td>
+            </tr>
+        `;
+    }
+}
 
-// Replace the original functions with safe versions
-window.loadStats = loadStatsSafe;
-window.loadUsers = loadUsersSafe;
-window.loadSubscriptions = loadSubscriptionsSafe;
-window.loadPieces = loadPiecesSafe;
-window.loadPayments = loadPaymentsSafe;
-window.loadAllData = loadAllDataSafe;
+function showEditModal(title, body, saveCallback) {
+    const modal = document.getElementById('editModal');
+    const modalTitle = document.getElementById('editModalTitle');
+    const modalBody = document.getElementById('editModalBody');
+    const saveButton = document.getElementById('saveEditButton');
+    
+    if (modal && modalTitle && modalBody && saveButton) {
+        modalTitle.textContent = title;
+        modalBody.innerHTML = body;
+        
+        saveButton.onclick = saveCallback;
+        
+        modal.classList.add('active');
+    }
+}
 
-console.log('✅ Safe admin functions loaded and ready');
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('notificationContainer');
+    if (!container) {
+        console.log(`${type.toUpperCase()}: ${message}`);
+        return;
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    container.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // Hide and remove notification
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (container.contains(notification)) {
+                container.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Filter functions
+function filterSubscriptions() {
+    const search = document.getElementById('subscriptionSearch')?.value.toLowerCase() || '';
+    const plan = document.getElementById('subscriptionPlanFilter')?.value || '';
+    const active = document.getElementById('subscriptionActiveFilter')?.value || '';
+    
+    let filtered = AdminState.data.subscriptions;
+    
+    if (search) {
+        filtered = filtered.filter(sub => 
+            sub.user_id.toLowerCase().includes(search) ||
+            (sub.payment_id && sub.payment_id.toLowerCase().includes(search))
+        );
+    }
+    
+    if (plan) {
+        filtered = filtered.filter(sub => sub.plan_type === plan);
+    }
+    
+    if (active !== '') {
+        filtered = filtered.filter(sub => sub.active === (active === 'true'));
+    }
+    
+    renderSubscriptionsTable(filtered);
+}
+
+function filterPayments() {
+    const search = document.getElementById('paymentSearch')?.value.toLowerCase() || '';
+    const status = document.getElementById('paymentStatusFilter')?.value || '';
+    const dateFrom = document.getElementById('paymentDateFrom')?.value || '';
+    const dateTo = document.getElementById('paymentDateTo')?.value || '';
+    
+    let filtered = AdminState.data.payments;
+    
+    if (search) {
+        filtered = filtered.filter(payment => 
+            payment.user_id.toLowerCase().includes(search) ||
+            (payment.mp_payment_id && payment.mp_payment_id.toLowerCase().includes(search))
+        );
+    }
+    
+    if (status) {
+        filtered = filtered.filter(payment => payment.status === status);
+    }
+    
+    if (dateFrom) {
+        filtered = filtered.filter(payment => 
+            new Date(payment.created_at) >= new Date(dateFrom)
+        );
+    }
+    
+    if (dateTo) {
+        filtered = filtered.filter(payment => 
+            new Date(payment.created_at) <= new Date(dateTo + 'T23:59:59')
+        );
+    }
+    
+    renderPaymentsTable(filtered);
+}
+
+function filterPieces() {
+    const search = document.getElementById('pieceSearch')?.value.toLowerCase() || '';
+    
+    let filtered = AdminState.data.pieces;
+    
+    if (search) {
+        filtered = filtered.filter(piece => 
+            (piece.title && piece.title.toLowerCase().includes(search)) ||
+            piece.user_id.toLowerCase().includes(search)
+        );
+    }
+    
+    renderPiecesTable(filtered);
+}
+
+// Refresh functions
+async function refreshSubscriptions() {
+    await loadSubscriptionsData();
+    showNotification('Suscripciones actualizadas', 'success');
+}
+
+async function refreshPayments() {
+    await loadPaymentsData();
+    showNotification('Pagos actualizados', 'success');
+}
+
+async function refreshPieces() {
+    await loadPiecesData();
+    showNotification('Piezas actualizadas', 'success');
+}
+
+// Export functions
+function exportSubscriptions() {
+    exportToCSV(AdminState.data.subscriptions, 'subscriptions', [
+        'user_id', 'plan_type', 'active', 'amount', 
+        'created_at', 'expires_at', 'payment_status'
+    ]);
+}
+
+function exportPayments() {
+    exportToCSV(AdminState.data.payments, 'payments', [
+        'user_id', 'amount', 'status', 'mp_payment_id', 
+        'created_at', 'description'
+    ]);
+}
+
+function exportPieces() {
+    exportToCSV(AdminState.data.pieces, 'pieces', [
+        'title', 'user_id', 'created_at', 'est_price_ars', 
+        'est_weight_grams', 'updated_at'
+    ]);
+}
+
+function exportToCSV(data, filename, columns) {
+    if (!data || data.length === 0) {
+        showNotification('No hay datos para exportar', 'warning');
+        return;
+    }
+    
+    // Create CSV content
+    const headers = columns.join(',');
+    const rows = data.map(item => 
+        columns.map(col => {
+            let value = item[col];
+            if (value === null || value === undefined) value = '';
+            if (typeof value === 'string' && value.includes(',')) {
+                value = `"${value}"`;
+            }
+            return value;
+        }).join(',')
+    ).join('\n');
+    
+    const csv = headers + '\n' + rows;
+    
+    // Create and download file
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `zetalab-${filename}-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    
+    showNotification(`Archivo ${filename}.csv descargado`, 'success');
+}
+
+// Detail view functions (placeholders)
+function openSubscriptionDetail(subscriptionId) {
+    console.log('💳 Opening subscription detail:', subscriptionId);
+    showNotification(`Ver detalles de suscripción: ${subscriptionId}`, 'info');
+}
+
+function openPaymentDetail(paymentId) {
+    console.log('💰 Opening payment detail:', paymentId);
+    showNotification(`Ver detalles de pago: ${paymentId}`, 'info');
+}
+
+function openPieceDetail(pieceId) {
+    console.log('🔧 Opening piece detail:', pieceId);
+    showNotification(`Ver detalles de pieza: ${pieceId}`, 'info');
+}
+
+function viewPieceVersions(pieceId) {
+    console.log('📋 Viewing piece versions:', pieceId);
+    showNotification(`Ver versiones de pieza: ${pieceId}`, 'info');
+}
+
+console.log('✅ ZETALAB Safe Admin Dashboard functions loaded');

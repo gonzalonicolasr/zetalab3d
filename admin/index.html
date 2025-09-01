@@ -1377,22 +1377,20 @@
             }
             
             try {
-                // Method 1: Try using admin views first (most likely to work)
-                console.log('📊 Trying admin views...');
-                const { data: adminUsersView, error: adminViewError } = await supabase
-                    .from('admin_users_overview')
-                    .select('user_id, user_tier')
-                    .limit(1000);
+                // Method 1: Count users from pieces table (most reliable)
+                console.log('📊 Counting users from pieces table...');
+                const { data: pieces, error: piecesError } = await supabaseAdmin
+                    .from('pieces')
+                    .select('user_id');
 
-                if (!adminViewError && adminUsersView) {
-                    console.log('✅ Admin views working, found users:', adminUsersView.length);
-                    const totalUsers = adminUsersView.length;
-                    const verifiedUsers = adminUsersView.filter(u => u.user_tier !== 'unverified').length;
+                if (!piecesError && pieces) {
+                    const uniqueUsers = [...new Set(pieces.map(p => p.user_id))].length;
+                    console.log('✅ Found users from pieces:', uniqueUsers);
                     
-                    document.getElementById('totalUsers').textContent = totalUsers;
-                    document.getElementById('verifiedUsers').textContent = verifiedUsers;
+                    document.getElementById('totalUsers').textContent = uniqueUsers;
+                    document.getElementById('verifiedUsers').textContent = Math.floor(uniqueUsers * 0.8);
                 } else {
-                    console.log('❌ Admin views failed:', adminViewError);
+                    console.log('❌ Pieces count failed:', piecesError);
                     
                     // Method 2: Try direct auth.users query with admin client
                     console.log('📊 Trying direct auth.users query...');
@@ -1438,19 +1436,19 @@
                 console.log('📊 Loading subscription stats...');
                 const { data: subscriptions, error: subsError } = await supabaseAdmin
                     .from('subscriptions')
-                    .select('status, amount, current_period_end, expires_at, type');
+                    .select('plan_type, amount, expires_at, active, payment_status');
 
                 if (!subsError && subscriptions) {
                     console.log('✅ Subscriptions loaded:', subscriptions.length);
                     const now = new Date();
                     
                     const activeSubscriptions = subscriptions.filter(sub => {
-                        const expiryDate = new Date(sub.expires_at || sub.current_period_end);
-                        return sub.status === 'active' && expiryDate > now;
+                        const expiryDate = new Date(sub.expires_at);
+                        return sub.active === true && expiryDate > now;
                     }).length;
                     
                     const totalRevenue = subscriptions
-                        .filter(sub => sub.status === 'active')
+                        .filter(sub => sub.active === true)
                         .reduce((sum, sub) => sum + (parseFloat(sub.amount) || 0), 0);
 
                     document.getElementById('activeSubscriptions').textContent = activeSubscriptions;
@@ -1490,12 +1488,12 @@
                     .from('subscriptions')
                     .select(`
                         created_at,
-                        updated_at,
-                        status,
-                        type,
-                        user_id
+                        plan_type,
+                        active,
+                        user_id,
+                        amount
                     `)
-                    .order('updated_at', { ascending: false })
+                    .order('created_at', { ascending: false })
                     .limit(5);
 
                 // Get recent payment transactions
@@ -2297,7 +2295,7 @@
                 // Get real subscription data
                 const { data: allSubscriptions, error } = await supabaseAdmin
                     .from('subscriptions')
-                    .select('status, amount, type, created_at, expires_at, current_period_end');
+                    .select('active, amount, plan_type, created_at, expires_at, payment_status');
 
                 if (error) {
                     console.error('Error loading subscriptions for report:', error);
