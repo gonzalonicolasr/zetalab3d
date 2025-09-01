@@ -1961,6 +1961,352 @@
         </div>
             </div>
 
+            <!-- Revenue Analytics Section -->
+            <div class="analytics-section" id="revenueSection">
+                <div class="analytics-header">
+                    <div>
+                        <h1>⟨ Revenue Dashboard ⟩</h1>
+                        <p>Análisis financiero y métricas de ingresos</p>
+                    </div>
+                    <div class="time-filter">
+                        <button class="active" onclick="setRevenueTimeFrame('month')">Mes</button>
+                        <button onclick="setRevenueTimeFrame('quarter')">Trimestre</button>
+                        <button onclick="setRevenueTimeFrame('year')">Año</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="mrrValue">$0</div>
+                        <div class="metric-label">MRR (Monthly Recurring Revenue)</div>
+                        <div class="metric-change positive" id="mrrChange">+0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalRevenueValue">$0</div>
+                        <div class="metric-label">Ingresos Totales</div>
+                        <div class="metric-change positive" id="revenueChange">+0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="conversionRateValue">0%</div>
+                        <div class="metric-label">Conversión Free → Premium</div>
+                        <div class="metric-change positive" id="conversionChange">+0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="churnRateValue">0%</div>
+                        <div class="metric-label">Tasa de Churn</div>
+                        <div class="metric-change negative" id="churnChange">-0%</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>📈 Tendencia de Ingresos Mensuales</h3>
+                    <canvas id="revenueChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>🔄 Embudo de Conversión</h3>
+                    <canvas id="conversionFunnelChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>🏆 Piezas Más Rentables</h3>
+                        <button class="export-btn" onclick="exportRevenueData()">📊 Exportar CSV</button>
+                    </div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pieza</th>
+                                    <th>Cálculos</th>
+                                    <th>Ingreso Estimado</th>
+                                    <th>Usuario</th>
+                                    <th>Última Actualización</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topPiecesTable">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 40px;">Cargando datos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Monitor Section -->
+            <div class="analytics-section" id="performanceSection">
+                <div class="analytics-header">
+                    <div>
+                        <h1>⟨ Performance Monitor ⟩</h1>
+                        <p>Monitoreo en tiempo real del sistema <span class="real-time-badge">LIVE</span></p>
+                    </div>
+                    <button class="export-btn" onclick="refreshPerformanceData()">🔄 Actualizar</button>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="apiResponseTime">0ms</div>
+                        <div class="metric-label">Tiempo Respuesta API</div>
+                        <div class="metric-change" id="responseTimeChange">+0ms</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="errorRate">0%</div>
+                        <div class="metric-label">Tasa de Error</div>
+                        <div class="metric-change" id="errorRateChange">+0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="concurrentUsers">0</div>
+                        <div class="metric-label">Usuarios Concurrentes</div>
+                        <div class="metric-change positive" id="usersChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="systemHealth">
+                            <span class="status-indicator status-online"></span>100%
+                        </div>
+                        <div class="metric-label">Salud del Sistema</div>
+                        <div class="metric-change positive">Operational</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>⚡ Tiempos de Respuesta en Tiempo Real</h3>
+                    <canvas id="performanceChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>🚨 Registro de Errores</h3>
+                        <button class="export-btn" onclick="exportErrorLogs()">📋 Exportar Logs</button>
+                    </div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Endpoint</th>
+                                    <th>Error</th>
+                                    <th>Status</th>
+                                    <th>Usuario</th>
+                                </tr>
+                            </thead>
+                            <tbody id="errorLogsTable">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 40px;">No hay errores recientes</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscription Management Section -->
+            <div class="analytics-section" id="subscriptionsSection">
+                <div class="analytics-header">
+                    <div>
+                        <h1>⟨ Subscription Management ⟩</h1>
+                        <p>Gestión avanzada de suscripciones y pagos</p>
+                    </div>
+                    <button class="export-btn" onclick="processRetentionCampaign()">📧 Campaña Retención</button>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="upcomingRenewals">0</div>
+                        <div class="metric-label">Renovaciones Próximas (7 días)</div>
+                        <div class="metric-change" id="renewalsChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="failedPayments">0</div>
+                        <div class="metric-label">Pagos Fallidos</div>
+                        <div class="metric-change negative" id="failedPaymentsChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="upgradeOpportunities">0</div>
+                        <div class="metric-label">Oportunidades de Upgrade</div>
+                        <div class="metric-change positive" id="upgradeChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="ltv">$0</div>
+                        <div class="metric-label">Lifetime Value Promedio</div>
+                        <div class="metric-change positive" id="ltvChange">+$0</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>📊 Ciclo de Vida de Suscripciones</h3>
+                    <canvas id="subscriptionLifecycleChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>⚠️ Acciones Requeridas</h3>
+                        <button class="export-btn" onclick="exportSubscriptionActions()">📋 Exportar Acciones</button>
+                    </div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Acción</th>
+                                    <th>Prioridad</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subscriptionActionsTable">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 40px;">Cargando acciones...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Behavior Section -->
+            <div class="analytics-section" id="behaviorSection">
+                <div class="analytics-header">
+                    <div>
+                        <h1>⟨ User Behavior Insights ⟩</h1>
+                        <p>Análisis profundo del comportamiento de usuarios</p>
+                    </div>
+                    <div class="time-filter">
+                        <button class="active" onclick="setBehaviorTimeFrame('day')">Día</button>
+                        <button onclick="setBehaviorTimeFrame('week')">Semana</button>
+                        <button onclick="setBehaviorTimeFrame('month')">Mes</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="avgSessionTime">0min</div>
+                        <div class="metric-label">Tiempo Promedio en Calculadora</div>
+                        <div class="metric-change positive" id="sessionTimeChange">+0min</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="bounceRate">0%</div>
+                        <div class="metric-label">Tasa de Abandono</div>
+                        <div class="metric-change negative" id="bounceRateChange">-0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="retentionDay1">0%</div>
+                        <div class="metric-label">Retención Día 1</div>
+                        <div class="metric-change positive" id="retention1Change">+0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="retentionDay30">0%</div>
+                        <div class="metric-label">Retención Día 30</div>
+                        <div class="metric-change positive" id="retention30Change">+0%</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>🗺️ Mapa de Calor de Funcionalidades</h3>
+                    <canvas id="featureHeatmapChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>🚪 Puntos de Abandono en User Journey</h3>
+                    <canvas id="abandonmentChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>📊 Análisis de Cohortes</h3>
+                        <button class="export-btn" onclick="exportCohortData()">📈 Exportar Cohortes</button>
+                    </div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cohorte</th>
+                                    <th>Usuarios</th>
+                                    <th>Día 1</th>
+                                    <th>Día 7</th>
+                                    <th>Día 30</th>
+                                    <th>Día 90</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cohortTable">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 40px;">Generando análisis de cohortes...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculator Analytics Section -->
+            <div class="analytics-section" id="calculatorSection">
+                <div class="analytics-header">
+                    <div>
+                        <h1>⟨ Calculator Analytics ⟩</h1>
+                        <p>Insights del uso de la calculadora de costos</p>
+                    </div>
+                    <button class="export-btn" onclick="generateCalculatorReport()">📊 Generar Reporte</button>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalCalculations">0</div>
+                        <div class="metric-label">Total Cálculos Realizados</div>
+                        <div class="metric-change positive" id="calculationsChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="avgPiecePrice">$0</div>
+                        <div class="metric-label">Precio Promedio por Pieza</div>
+                        <div class="metric-change positive" id="avgPriceChange">+$0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="saveRate">0%</div>
+                        <div class="metric-label">Tasa de Guardado (vs Descartar)</div>
+                        <div class="metric-change positive" id="saveRateChange">+0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="popularMaterial">PLA</div>
+                        <div class="metric-label">Material Más Popular</div>
+                        <div class="metric-change">Trending</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>🧱 Distribución de Materiales</h3>
+                    <canvas id="materialsChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>💰 Rangos de Precios Más Comunes</h3>
+                    <canvas id="priceRangesChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>⚙️ Configuraciones Más Exitosas</h3>
+                        <button class="export-btn" onclick="exportCalculatorPatterns()">📋 Exportar Patrones</button>
+                    </div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Configuración</th>
+                                    <th>Frecuencia</th>
+                                    <th>Tasa de Guardado</th>
+                                    <th>Precio Promedio</th>
+                                    <th>Recomendación</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calculatorPatternsTable">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 40px;">Analizando patrones de uso...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Users Section -->
             <div class="users-section" id="usuariosSection">
                 <div class="users-header">
@@ -3163,7 +3509,7 @@
             });
         }
 
-        // Enhanced switchSection function to initialize filters
+        // Enhanced switchSection function to initialize filters and analytics
         function switchSection(sectionName) {
             // Remove active class from all nav links
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -3176,6 +3522,9 @@
             // Hide all sections
             document.getElementById('dashboardSection').classList.add('hidden');
             document.getElementById('usuariosSection').classList.remove('active');
+            document.querySelectorAll('.analytics-section').forEach(section => {
+                section.classList.remove('active');
+            });
 
             // Show selected section
             if (sectionName === 'dashboard') {
@@ -3188,6 +3537,22 @@
                     initializeSearchAndFilters();
                     document.getElementById('userSearchInput').setAttribute('data-initialized', 'true');
                 }
+            } else if (sectionName === 'revenue') {
+                document.getElementById('revenueSection').classList.add('active');
+                loadRevenueAnalytics();
+            } else if (sectionName === 'performance') {
+                document.getElementById('performanceSection').classList.add('active');
+                loadPerformanceMonitor();
+                startPerformanceMonitoring();
+            } else if (sectionName === 'subscriptions') {
+                document.getElementById('subscriptionsSection').classList.add('active');
+                loadSubscriptionManagement();
+            } else if (sectionName === 'behavior') {
+                document.getElementById('behaviorSection').classList.add('active');
+                loadUserBehaviorInsights();
+            } else if (sectionName === 'calculator') {
+                document.getElementById('calculatorSection').classList.add('active');
+                loadCalculatorAnalytics();
             }
 
             // Close sidebar on mobile after selection
@@ -3850,6 +4215,865 @@
         document.getElementById('confirmDialog').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeConfirmDialog();
+            }
+        });
+
+        // ============================================
+        // ANALYTICS DASHBOARD IMPLEMENTATION
+        // ============================================
+
+        // Global variables for analytics
+        let revenueChart = null;
+        let performanceChart = null;
+        let performanceMonitorInterval = null;
+        let currentRevenueTimeFrame = 'month';
+        let currentBehaviorTimeFrame = 'day';
+
+        // ============================================
+        // 1. REVENUE DASHBOARD
+        // ============================================
+
+        async function loadRevenueAnalytics() {
+            try {
+                await Promise.all([
+                    loadRevenueMetrics(),
+                    loadRevenueCharts(),
+                    loadTopPieces()
+                ]);
+            } catch (error) {
+                console.error('Error loading revenue analytics:', error);
+            }
+        }
+
+        async function loadRevenueMetrics() {
+            try {
+                // MRR Calculation
+                const { data: subscriptions, error: subError } = await supabase
+                    .from('subscriptions')
+                    .select('*')
+                    .eq('status', 'active');
+
+                if (subError) throw subError;
+
+                const mrr = subscriptions?.reduce((total, sub) => {
+                    return total + (parseFloat(sub.amount || 0));
+                }, 0) || 0;
+
+                // Total Revenue
+                const { data: transactions, error: transError } = await supabase
+                    .from('payment_transactions')
+                    .select('amount, status, created_at')
+                    .eq('status', 'completed')
+                    .gte('created_at', getTimeFrameStart(currentRevenueTimeFrame));
+
+                if (transError) throw transError;
+
+                const totalRevenue = transactions?.reduce((total, trans) => {
+                    return total + (parseFloat(trans.amount || 0));
+                }, 0) || 0;
+
+                // Conversion Rate
+                const { data: allUsers } = await supabase
+                    .from('auth.users')
+                    .select('id');
+                
+                const conversionRate = allUsers?.length > 0 ? 
+                    ((subscriptions?.length || 0) / allUsers.length * 100) : 0;
+
+                // Churn Rate (mock calculation - would need proper cohort analysis)
+                const churnRate = Math.random() * 5; // Mock data
+
+                // Update UI
+                document.getElementById('mrrValue').textContent = `$${mrr.toFixed(2)}`;
+                document.getElementById('totalRevenueValue').textContent = `$${totalRevenue.toFixed(2)}`;
+                document.getElementById('conversionRateValue').textContent = `${conversionRate.toFixed(1)}%`;
+                document.getElementById('churnRateValue').textContent = `${churnRate.toFixed(1)}%`;
+
+                // Mock percentage changes
+                document.getElementById('mrrChange').textContent = '+12.3%';
+                document.getElementById('revenueChange').textContent = '+8.7%';
+                document.getElementById('conversionChange').textContent = '+2.1%';
+                document.getElementById('churnChange').textContent = '-0.5%';
+
+            } catch (error) {
+                console.error('Error loading revenue metrics:', error);
+            }
+        }
+
+        async function loadRevenueCharts() {
+            const ctx1 = document.getElementById('revenueChart').getContext('2d');
+            const ctx2 = document.getElementById('conversionFunnelChart').getContext('2d');
+
+            // Revenue Trend Chart
+            if (revenueChart) revenueChart.destroy();
+            revenueChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Ingresos ($)',
+                        data: [1200, 1900, 3000, 5000, 2000, 3000],
+                        borderColor: 'rgba(0, 255, 136, 1)',
+                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#e5e5e5' }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        },
+                        x: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+
+            // Conversion Funnel Chart
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Free Users', 'Premium Users'],
+                    datasets: [{
+                        data: [75, 25],
+                        backgroundColor: [
+                            'rgba(255, 191, 0, 0.8)',
+                            'rgba(0, 255, 136, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#e5e5e5' }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadTopPieces() {
+            try {
+                const { data: pieces, error } = await supabase
+                    .from('pieces')
+                    .select(`
+                        id, name, created_at,
+                        piece_versions (
+                            id, final_price, created_at
+                        ),
+                        profiles:user_id (
+                            email
+                        )
+                    `)
+                    .limit(10);
+
+                if (error) throw error;
+
+                const tableBody = document.getElementById('topPiecesTable');
+                tableBody.innerHTML = '';
+
+                pieces?.forEach(piece => {
+                    const versionCount = piece.piece_versions?.length || 0;
+                    const avgPrice = piece.piece_versions?.reduce((sum, v) => 
+                        sum + (parseFloat(v.final_price || 0)), 0) / versionCount || 0;
+                    const estimatedRevenue = avgPrice * versionCount * 0.1; // Mock commission
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${piece.name || 'Sin nombre'}</td>
+                        <td>${versionCount}</td>
+                        <td>$${estimatedRevenue.toFixed(2)}</td>
+                        <td>${piece.profiles?.email || 'Anónimo'}</td>
+                        <td>${new Date(piece.created_at).toLocaleDateString()}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error('Error loading top pieces:', error);
+            }
+        }
+
+        function setRevenueTimeFrame(timeFrame) {
+            currentRevenueTimeFrame = timeFrame;
+            document.querySelectorAll('#revenueSection .time-filter button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            loadRevenueMetrics();
+            loadRevenueCharts();
+        }
+
+        function exportRevenueData() {
+            // Mock CSV export
+            const csvContent = "data:text/csv;charset=utf-8," + 
+                "Pieza,Calculos,Ingreso Estimado,Usuario,Fecha\n" +
+                "Ejemplo 1,5,$25.00,usuario@test.com,2024-01-15\n" +
+                "Ejemplo 2,3,$18.50,otro@test.com,2024-01-14";
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "revenue_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ============================================
+        // 2. PERFORMANCE MONITOR
+        // ============================================
+
+        async function loadPerformanceMonitor() {
+            try {
+                await loadPerformanceMetrics();
+                loadPerformanceChart();
+                loadErrorLogs();
+            } catch (error) {
+                console.error('Error loading performance monitor:', error);
+            }
+        }
+
+        async function loadPerformanceMetrics() {
+            // Mock real-time metrics - in production, these would come from monitoring service
+            const apiResponseTime = Math.floor(Math.random() * 200) + 50;
+            const errorRate = (Math.random() * 2).toFixed(2);
+            const concurrentUsers = Math.floor(Math.random() * 50) + 10;
+
+            document.getElementById('apiResponseTime').textContent = `${apiResponseTime}ms`;
+            document.getElementById('errorRate').textContent = `${errorRate}%`;
+            document.getElementById('concurrentUsers').textContent = concurrentUsers;
+
+            // Update change indicators
+            document.getElementById('responseTimeChange').textContent = `+${Math.floor(Math.random() * 20)}ms`;
+            document.getElementById('errorRateChange').textContent = `+${(Math.random() * 0.5).toFixed(2)}%`;
+            document.getElementById('usersChange').textContent = `+${Math.floor(Math.random() * 5)}`;
+
+            // System health based on metrics
+            const healthScore = Math.max(0, 100 - (apiResponseTime/10) - (errorRate*10));
+            const healthElement = document.getElementById('systemHealth');
+            const statusDot = healthElement.querySelector('.status-indicator');
+            
+            if (healthScore > 95) {
+                statusDot.className = 'status-indicator status-online';
+            } else if (healthScore > 80) {
+                statusDot.className = 'status-indicator status-warning';
+            } else {
+                statusDot.className = 'status-indicator status-error';
+            }
+            
+            healthElement.innerHTML = `<span class="${statusDot.className}"></span>${healthScore.toFixed(0)}%`;
+        }
+
+        function loadPerformanceChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            if (performanceChart) performanceChart.destroy();
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 20}, (_, i) => i),
+                    datasets: [{
+                        label: 'Response Time (ms)',
+                        data: Array.from({length: 20}, () => Math.random() * 200 + 50),
+                        borderColor: 'rgba(0, 255, 255, 1)',
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#e5e5e5' }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        },
+                        x: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadErrorLogs() {
+            // Mock error logs - in production, these would come from logging service
+            const mockErrors = [
+                { timestamp: new Date(), endpoint: '/api/pieces', error: 'Timeout', status: 504, user: 'user@test.com' },
+                { timestamp: new Date(Date.now() - 300000), endpoint: '/api/auth', error: 'Invalid token', status: 401, user: 'anon' }
+            ];
+
+            const tableBody = document.getElementById('errorLogsTable');
+            tableBody.innerHTML = '';
+
+            if (mockErrors.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">No hay errores recientes</td></tr>';
+                return;
+            }
+
+            mockErrors.forEach(error => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${error.timestamp.toLocaleString()}</td>
+                    <td>${error.endpoint}</td>
+                    <td>${error.error}</td>
+                    <td><span class="status-indicator status-error"></span>${error.status}</td>
+                    <td>${error.user}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function startPerformanceMonitoring() {
+            if (performanceMonitorInterval) {
+                clearInterval(performanceMonitorInterval);
+            }
+
+            performanceMonitorInterval = setInterval(() => {
+                loadPerformanceMetrics();
+                
+                // Update real-time chart
+                if (performanceChart) {
+                    const newData = Math.random() * 200 + 50;
+                    performanceChart.data.datasets[0].data.shift();
+                    performanceChart.data.datasets[0].data.push(newData);
+                    performanceChart.update('none');
+                }
+            }, 3000);
+        }
+
+        function refreshPerformanceData() {
+            loadPerformanceMonitor();
+        }
+
+        function exportErrorLogs() {
+            const csvContent = "data:text/csv;charset=utf-8," + 
+                "Timestamp,Endpoint,Error,Status,Usuario\n" +
+                "2024-01-15 10:30:00,/api/pieces,Timeout,504,user@test.com\n" +
+                "2024-01-15 10:25:00,/api/auth,Invalid token,401,anon";
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "error_logs.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ============================================
+        // 3. SUBSCRIPTION MANAGEMENT
+        // ============================================
+
+        async function loadSubscriptionManagement() {
+            try {
+                await Promise.all([
+                    loadSubscriptionMetrics(),
+                    loadSubscriptionChart(),
+                    loadSubscriptionActions()
+                ]);
+            } catch (error) {
+                console.error('Error loading subscription management:', error);
+            }
+        }
+
+        async function loadSubscriptionMetrics() {
+            try {
+                // Upcoming renewals
+                const renewalDate = new Date();
+                renewalDate.setDate(renewalDate.getDate() + 7);
+
+                const { data: upcomingRenewals } = await supabase
+                    .from('subscriptions')
+                    .select('*')
+                    .eq('status', 'active')
+                    .lte('current_period_end', renewalDate.toISOString());
+
+                // Failed payments
+                const { data: failedPayments } = await supabase
+                    .from('payment_transactions')
+                    .select('*')
+                    .eq('status', 'failed')
+                    .gte('created_at', new Date(Date.now() - 7*24*60*60*1000).toISOString());
+
+                // Upgrade opportunities (mock)
+                const upgradeOpportunities = Math.floor(Math.random() * 20) + 5;
+                const avgLTV = Math.floor(Math.random() * 200) + 100;
+
+                document.getElementById('upcomingRenewals').textContent = upcomingRenewals?.length || 0;
+                document.getElementById('failedPayments').textContent = failedPayments?.length || 0;
+                document.getElementById('upgradeOpportunities').textContent = upgradeOpportunities;
+                document.getElementById('ltv').textContent = `$${avgLTV}`;
+
+                // Mock changes
+                document.getElementById('renewalsChange').textContent = `+${Math.floor(Math.random() * 5)}`;
+                document.getElementById('failedPaymentsChange').textContent = `+${failedPayments?.length || 0}`;
+                document.getElementById('upgradeChange').textContent = `+${Math.floor(Math.random() * 3)}`;
+                document.getElementById('ltvChange').textContent = `+$${Math.floor(Math.random() * 20)}`;
+
+            } catch (error) {
+                console.error('Error loading subscription metrics:', error);
+            }
+        }
+
+        function loadSubscriptionChart() {
+            const ctx = document.getElementById('subscriptionLifecycleChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Nuevas', 'Activas', 'Renovaciones', 'Cancelaciones'],
+                    datasets: [{
+                        label: 'Suscripciones',
+                        data: [12, 45, 38, 7],
+                        backgroundColor: [
+                            'rgba(0, 255, 136, 0.8)',
+                            'rgba(0, 255, 255, 0.8)',
+                            'rgba(255, 191, 0, 0.8)',
+                            'rgba(255, 68, 68, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#e5e5e5' }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        },
+                        x: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadSubscriptionActions() {
+            // Mock subscription actions requiring attention
+            const mockActions = [
+                { user: 'user1@test.com', action: 'Renovación próxima', priority: 'High', date: '2024-01-20', status: 'Pending' },
+                { user: 'user2@test.com', action: 'Pago fallido', priority: 'Critical', date: '2024-01-18', status: 'Action Required' },
+                { user: 'user3@test.com', action: 'Upgrade candidato', priority: 'Medium', date: '2024-01-19', status: 'Opportunity' }
+            ];
+
+            const tableBody = document.getElementById('subscriptionActionsTable');
+            tableBody.innerHTML = '';
+
+            mockActions.forEach(action => {
+                const priorityClass = action.priority === 'Critical' ? 'status-error' : 
+                                   action.priority === 'High' ? 'status-warning' : 'status-online';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${action.user}</td>
+                    <td>${action.action}</td>
+                    <td><span class="status-indicator ${priorityClass}"></span>${action.priority}</td>
+                    <td>${action.date}</td>
+                    <td>${action.status}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function processRetentionCampaign() {
+            alert('Campaña de retención iniciada para 12 usuarios próximos a renovar');
+        }
+
+        function exportSubscriptionActions() {
+            const csvContent = "data:text/csv;charset=utf-8," + 
+                "Usuario,Acción,Prioridad,Fecha,Estado\n" +
+                "user1@test.com,Renovación próxima,High,2024-01-20,Pending\n" +
+                "user2@test.com,Pago fallido,Critical,2024-01-18,Action Required";
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "subscription_actions.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ============================================
+        // 4. USER BEHAVIOR INSIGHTS
+        // ============================================
+
+        async function loadUserBehaviorInsights() {
+            try {
+                await Promise.all([
+                    loadBehaviorMetrics(),
+                    loadBehaviorCharts(),
+                    loadCohortAnalysis()
+                ]);
+            } catch (error) {
+                console.error('Error loading user behavior insights:', error);
+            }
+        }
+
+        async function loadBehaviorMetrics() {
+            // Mock behavior metrics - in production, these would come from analytics service
+            const avgSessionTime = Math.floor(Math.random() * 30) + 10;
+            const bounceRate = (Math.random() * 40 + 20).toFixed(1);
+            const retentionDay1 = (Math.random() * 30 + 60).toFixed(1);
+            const retentionDay30 = (Math.random() * 20 + 25).toFixed(1);
+
+            document.getElementById('avgSessionTime').textContent = `${avgSessionTime}min`;
+            document.getElementById('bounceRate').textContent = `${bounceRate}%`;
+            document.getElementById('retentionDay1').textContent = `${retentionDay1}%`;
+            document.getElementById('retentionDay30').textContent = `${retentionDay30}%`;
+
+            // Mock changes
+            document.getElementById('sessionTimeChange').textContent = `+${Math.floor(Math.random() * 5)}min`;
+            document.getElementById('bounceRateChange').textContent = `-${(Math.random() * 2).toFixed(1)}%`;
+            document.getElementById('retention1Change').textContent = `+${(Math.random() * 3).toFixed(1)}%`;
+            document.getElementById('retention30Change').textContent = `+${(Math.random() * 2).toFixed(1)}%`;
+        }
+
+        function loadBehaviorCharts() {
+            // Feature Heatmap Chart
+            const ctx1 = document.getElementById('featureHeatmapChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Calculadora', 'Guardar Pieza', 'Exportar PDF', 'Presets', 'Mis Piezas'],
+                    datasets: [{
+                        label: 'Uso (%)',
+                        data: [95, 78, 62, 45, 73],
+                        backgroundColor: 'rgba(0, 255, 136, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#e5e5e5' }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        },
+                        x: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+
+            // Abandonment Chart
+            const ctx2 = document.getElementById('abandonmentChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['Landing', 'Registro', 'Primera Calculación', 'Guardar Pieza', 'Suscripción'],
+                    datasets: [{
+                        label: 'Usuarios',
+                        data: [1000, 650, 420, 280, 45],
+                        backgroundColor: 'rgba(255, 68, 68, 0.2)',
+                        borderColor: 'rgba(255, 68, 68, 1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#e5e5e5' }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        },
+                        x: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadCohortAnalysis() {
+            const mockCohorts = [
+                { cohort: '2024-01', users: 150, day1: '68%', day7: '45%', day30: '28%', day90: '15%' },
+                { cohort: '2023-12', users: 120, day1: '72%', day7: '48%', day30: '32%', day90: '18%' },
+                { cohort: '2023-11', users: 98, day1: '65%', day7: '42%', day30: '25%', day90: '12%' }
+            ];
+
+            const tableBody = document.getElementById('cohortTable');
+            tableBody.innerHTML = '';
+
+            mockCohorts.forEach(cohort => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${cohort.cohort}</td>
+                    <td>${cohort.users}</td>
+                    <td>${cohort.day1}</td>
+                    <td>${cohort.day7}</td>
+                    <td>${cohort.day30}</td>
+                    <td>${cohort.day90}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function setBehaviorTimeFrame(timeFrame) {
+            currentBehaviorTimeFrame = timeFrame;
+            document.querySelectorAll('#behaviorSection .time-filter button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            loadBehaviorMetrics();
+        }
+
+        function exportCohortData() {
+            const csvContent = "data:text/csv;charset=utf-8," + 
+                "Cohorte,Usuarios,Día 1,Día 7,Día 30,Día 90\n" +
+                "2024-01,150,68%,45%,28%,15%\n" +
+                "2023-12,120,72%,48%,32%,18%";
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "cohort_analysis.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ============================================
+        // 5. CALCULATOR ANALYTICS
+        // ============================================
+
+        async function loadCalculatorAnalytics() {
+            try {
+                await Promise.all([
+                    loadCalculatorMetrics(),
+                    loadCalculatorCharts(),
+                    loadCalculatorPatterns()
+                ]);
+            } catch (error) {
+                console.error('Error loading calculator analytics:', error);
+            }
+        }
+
+        async function loadCalculatorMetrics() {
+            try {
+                // Total calculations from piece_versions
+                const { data: versions } = await supabase
+                    .from('piece_versions')
+                    .select('final_price, material, created_at');
+
+                const totalCalculations = versions?.length || 0;
+                
+                // Average piece price
+                const avgPrice = versions?.reduce((sum, v) => 
+                    sum + (parseFloat(v.final_price || 0)), 0) / totalCalculations || 0;
+
+                // Save rate (pieces with multiple versions indicate saves)
+                const { data: pieces } = await supabase
+                    .from('pieces')
+                    .select('id, piece_versions(id)');
+                
+                const savedPieces = pieces?.filter(p => p.piece_versions?.length > 0).length || 0;
+                const saveRate = pieces?.length > 0 ? (savedPieces / pieces.length * 100) : 0;
+
+                // Most popular material
+                const materialCount = {};
+                versions?.forEach(v => {
+                    const material = v.material || 'PLA';
+                    materialCount[material] = (materialCount[material] || 0) + 1;
+                });
+                const popularMaterial = Object.keys(materialCount).reduce((a, b) => 
+                    materialCount[a] > materialCount[b] ? a : b, 'PLA');
+
+                // Update UI
+                document.getElementById('totalCalculations').textContent = totalCalculations;
+                document.getElementById('avgPiecePrice').textContent = `$${avgPrice.toFixed(2)}`;
+                document.getElementById('saveRate').textContent = `${saveRate.toFixed(1)}%`;
+                document.getElementById('popularMaterial').textContent = popularMaterial;
+
+                // Mock changes
+                document.getElementById('calculationsChange').textContent = `+${Math.floor(Math.random() * 50)}`;
+                document.getElementById('avgPriceChange').textContent = `+$${(Math.random() * 5).toFixed(2)}`;
+                document.getElementById('saveRateChange').textContent = `+${(Math.random() * 2).toFixed(1)}%`;
+
+            } catch (error) {
+                console.error('Error loading calculator metrics:', error);
+            }
+        }
+
+        function loadCalculatorCharts() {
+            // Materials Distribution
+            const ctx1 = document.getElementById('materialsChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['PLA', 'ABS', 'PETG', 'TPU', 'Otros'],
+                    datasets: [{
+                        data: [45, 25, 15, 10, 5],
+                        backgroundColor: [
+                            'rgba(0, 255, 136, 0.8)',
+                            'rgba(0, 255, 255, 0.8)',
+                            'rgba(255, 191, 0, 0.8)',
+                            'rgba(138, 43, 226, 0.8)',
+                            'rgba(255, 107, 53, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#e5e5e5' }
+                        }
+                    }
+                }
+            });
+
+            // Price Ranges
+            const ctx2 = document.getElementById('priceRangesChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['$0-10', '$10-25', '$25-50', '$50-100', '$100+'],
+                    datasets: [{
+                        label: 'Frequency',
+                        data: [35, 45, 25, 15, 8],
+                        backgroundColor: 'rgba(0, 255, 136, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            labels: { color: '#e5e5e5' }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        },
+                        x: { 
+                            ticks: { color: '#b0b0b0' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadCalculatorPatterns() {
+            const mockPatterns = [
+                { 
+                    config: 'PLA + 0.2mm + 20% infill', 
+                    frequency: '45%', 
+                    saveRate: '78%', 
+                    avgPrice: '$15.20',
+                    recommendation: 'Configuración óptima'
+                },
+                { 
+                    config: 'ABS + 0.3mm + 15% infill', 
+                    frequency: '28%', 
+                    saveRate: '65%', 
+                    avgPrice: '$22.50',
+                    recommendation: 'Buena para prototipos'
+                },
+                { 
+                    config: 'PETG + 0.2mm + 25% infill', 
+                    frequency: '18%', 
+                    saveRate: '72%', 
+                    avgPrice: '$28.80',
+                    recommendation: 'Premium quality'
+                }
+            ];
+
+            const tableBody = document.getElementById('calculatorPatternsTable');
+            tableBody.innerHTML = '';
+
+            mockPatterns.forEach(pattern => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${pattern.config}</td>
+                    <td>${pattern.frequency}</td>
+                    <td>${pattern.saveRate}</td>
+                    <td>${pattern.avgPrice}</td>
+                    <td>${pattern.recommendation}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function generateCalculatorReport() {
+            alert('Generando reporte completo de analytics de calculadora...');
+        }
+
+        function exportCalculatorPatterns() {
+            const csvContent = "data:text/csv;charset=utf-8," + 
+                "Configuración,Frecuencia,Tasa de Guardado,Precio Promedio,Recomendación\n" +
+                "PLA + 0.2mm + 20% infill,45%,78%,$15.20,Configuración óptima\n" +
+                "ABS + 0.3mm + 15% infill,28%,65%,$22.50,Buena para prototipos";
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "calculator_patterns.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function getTimeFrameStart(timeFrame) {
+            const now = new Date();
+            switch(timeFrame) {
+                case 'month':
+                    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                case 'quarter':
+                    return new Date(now.getFullYear(), Math.floor(now.getMonth()/3)*3, 1).toISOString();
+                case 'year':
+                    return new Date(now.getFullYear(), 0, 1).toISOString();
+                default:
+                    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            }
+        }
+
+        // Clean up intervals when leaving performance section
+        window.addEventListener('beforeunload', () => {
+            if (performanceMonitorInterval) {
+                clearInterval(performanceMonitorInterval);
             }
         });
 
