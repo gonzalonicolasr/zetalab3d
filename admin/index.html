@@ -1310,47 +1310,60 @@
         // Load dashboard statistics
         async function loadDashboardStats() {
             try {
-                // Load user stats
-                const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
+                // Query all users using the actual auth.users table
+                const { data: usersResponse, error: usersError } = await supabase
+                    .rpc('get_user_stats');
                 
                 if (usersError) {
-                    console.log('Error loading users (auth admin not available):', usersError);
-                    // Fallback to profiles table
-                    const { data: profiles, error: profilesError } = await supabase
-                        .from('profiles')
-                        .select('id, email, created_at, last_login_at, email_verified');
+                    console.log('RPC not available, querying tables directly');
                     
-                    if (!profilesError && profiles) {
-                        const totalUsers = profiles.length;
-                        const verifiedUsers = profiles.filter(profile => profile.email_verified).length;
-                        
-                        document.getElementById('totalUsers').textContent = totalUsers;
-                        document.getElementById('verifiedUsers').textContent = verifiedUsers;
+                    // Count total users from auth.users (using the actual schema)
+                    const { count: totalUsers, error: countError } = await supabase
+                        .from('auth.users')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    // Count verified users
+                    const { count: verifiedUsers } = await supabase
+                        .from('auth.users')
+                        .select('*', { count: 'exact', head: true })
+                        .not('email_confirmed_at', 'is', null);
+                    
+                    if (!countError) {
+                        document.getElementById('totalUsers').textContent = totalUsers || 0;
+                        document.getElementById('verifiedUsers').textContent = verifiedUsers || 0;
                     }
-                } else {
-                    const totalUsers = users.users.length;
-                    const verifiedUsers = users.users.filter(user => user.email_confirmed_at).length;
-
-                    document.getElementById('totalUsers').textContent = totalUsers;
-                    document.getElementById('verifiedUsers').textContent = verifiedUsers;
                 }
 
-                // Load subscription stats
+                // Load real subscription stats from the subscriptions table
                 const { data: subscriptions, error: subsError } = await supabase
                     .from('subscriptions')
-                    .select('*');
+                    .select('status, amount, current_period_end, expires_at');
 
                 if (!subsError && subscriptions) {
-                    const activeSubscriptions = subscriptions.filter(sub => sub.status === 'active').length;
+                    const activeSubscriptions = subscriptions.filter(sub => {
+                        const now = new Date();
+                        const expiryDate = new Date(sub.expires_at || sub.current_period_end);
+                        return sub.status === 'active' && expiryDate > now;
+                    }).length;
+                    
                     const totalRevenue = subscriptions
                         .filter(sub => sub.status === 'active')
-                        .reduce((sum, sub) => sum + (sub.amount || 0), 0);
+                        .reduce((sum, sub) => sum + (parseFloat(sub.amount) || 0), 0);
 
                     document.getElementById('activeSubscriptions').textContent = activeSubscriptions;
                     document.getElementById('totalRevenue').textContent = `$${totalRevenue.toLocaleString()}`;
+                } else {
+                    console.log('No subscriptions found or error:', subsError);
+                    document.getElementById('activeSubscriptions').textContent = '0';
+                    document.getElementById('totalRevenue').textContent = '$0';
                 }
             } catch (error) {
                 console.error('Error loading dashboard stats:', error);
+                // Set fallback values
+                document.getElementById('totalUsers').textContent = '0';
+                document.getElementById('verifiedUsers').textContent = '0';
+                document.getElementById('activeSubscriptions').textContent = '0';
+                document.getElementById('totalRevenue').textContent = '$0';
             }
         }
 
@@ -1358,73 +1371,142 @@
         async function loadRecentActivity() {
             try {
                 const tbody = document.getElementById('recentActivity');
-                tbody.innerHTML = `
-                    <tr>
-                        <td>usuario@example.com</td>
-                        <td>Nueva suscripción</td>
-                        <td>Hace 2 horas</td>
-                        <td><span class="status-badge active">Completado</span></td>
-                    </tr>
-                    <tr>
-                        <td>otro@example.com</td>
-                        <td>Renovación</td>
-                        <td>Hace 5 horas</td>
-                        <td><span class="status-badge active">Completado</span></td>
-                    </tr>
-                    <tr>
-                        <td>test@example.com</td>
-                        <td>Cancelación</td>
-                        <td>Hace 1 día</td>
-                        <td><span class="status-badge canceled">Procesado</span></td>
-                    </tr>
-                `;
-            } catch (error) {
-                console.error('Error loading recent activity:', error);
-            }
-        }
-
-        // Users management functions
-        async function loadUsers() {
-            try {
-                // Try auth admin first, fallback to profiles table
-                let users = [];
-                let totalCount = 0;
                 
-                try {
-                    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-                    if (!authError && authUsers) {
-                        users = authUsers.users.map(user => ({
-                            id: user.id,
-                            email: user.email,
-                            email_confirmed_at: user.email_confirmed_at,
-                            created_at: user.created_at,
-                            last_sign_in_at: user.last_sign_in_at
-                        }));
-                        totalCount = users.length;
-                    }
-                } catch (authError) {
-                    console.log('Auth admin not available, using profiles table');
-                    // Fallback to profiles table
-                    const { data: profiles, error: profilesError } = await supabase
-                        .from('profiles')
-                        .select('id, email, created_at, last_login_at, email_verified');
-                    
-                    if (!profilesError && profiles) {
-                        users = profiles.map(profile => ({
-                            id: profile.id,
-                            email: profile.email,
-                            email_confirmed_at: profile.email_verified,
-                            created_at: profile.created_at,
-                            last_sign_in_at: profile.last_login_at
-                        }));
-                        totalCount = users.length;
+                // Get recent subscription activities
+                const { data: recentSubscriptions, error: subsError } = await supabase
+                    .from('subscriptions')
+                    .select(`
+                        created_at,
+                        updated_at,
+                        status,
+                        type,
+                        user_id
+                    `)
+                    .order('updated_at', { ascending: false })
+                    .limit(5);
+
+                // Get recent payment transactions
+                const { data: recentPayments, error: payError } = await supabase
+                    .from('payment_transactions')
+                    .select(`
+                        created_at,
+                        status,
+                        amount,
+                        user_id
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+
+                let activityRows = [];
+
+                // Process subscription activities
+                if (!subsError && recentSubscriptions) {
+                    for (const sub of recentSubscriptions.slice(0, 3)) {
+                        const timeAgo = getTimeAgo(new Date(sub.updated_at));
+                        const action = sub.status === 'active' ? 'Suscripción activada' : 
+                                     sub.status === 'cancelled' ? 'Suscripción cancelada' :
+                                     'Suscripción actualizada';
+                        const statusClass = sub.status === 'active' ? 'active' : 
+                                          sub.status === 'cancelled' ? 'canceled' : 'trial';
+                        
+                        activityRows.push(`
+                            <tr>
+                                <td>${sub.user_id.substring(0, 8)}...</td>
+                                <td>${action}</td>
+                                <td>${timeAgo}</td>
+                                <td><span class="status-badge ${statusClass}">${sub.status}</span></td>
+                            </tr>
+                        `);
                     }
                 }
 
+                // Process payment activities
+                if (!payError && recentPayments) {
+                    for (const payment of recentPayments.slice(0, 2)) {
+                        const timeAgo = getTimeAgo(new Date(payment.created_at));
+                        const action = `Pago $${payment.amount}`;
+                        const statusClass = payment.status === 'completed' ? 'active' : 
+                                          payment.status === 'failed' ? 'expired' : 'trial';
+                        
+                        activityRows.push(`
+                            <tr>
+                                <td>${payment.user_id.substring(0, 8)}...</td>
+                                <td>${action}</td>
+                                <td>${timeAgo}</td>
+                                <td><span class="status-badge ${statusClass}">${payment.status}</span></td>
+                            </tr>
+                        `);
+                    }
+                }
+
+                if (activityRows.length > 0) {
+                    tbody.innerHTML = activityRows.join('');
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px;">No hay actividad reciente</td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading recent activity:', error);
+                document.getElementById('recentActivity').innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 40px;">Error cargando actividad</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Helper function to calculate time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+            
+            if (diffInHours < 1) return 'Hace menos de 1 hora';
+            if (diffInHours < 24) return `Hace ${diffInHours} hora${diffInHours === 1 ? '' : 's'}`;
+            
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 30) return `Hace ${diffInDays} día${diffInDays === 1 ? '' : 's'}`;
+            
+            const diffInMonths = Math.floor(diffInDays / 30);
+            return `Hace ${diffInMonths} mes${diffInMonths === 1 ? '' : 'es'}`;
+        }
+
+        // Users management functions - RESTORED ORIGINAL WORKING VERSION
+        async function loadUsers() {
+            try {
+                // Query real users from auth.users table using the actual database schema
+                const { data: users, error } = await supabase
+                    .from('auth.users')
+                    .select(`
+                        id,
+                        email,
+                        email_confirmed_at,
+                        created_at,
+                        last_sign_in_at,
+                        raw_user_meta_data
+                    `)
+                    .order('created_at', { ascending: false });
+
                 const tbody = document.getElementById('usersTable');
+                
+                if (error) {
+                    console.error('Error loading users:', error);
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--error);">
+                                Error cargando usuarios: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                const totalCount = users ? users.length : 0;
                 document.getElementById('totalUsersCount').textContent = totalCount;
 
-                if (users.length === 0) {
+                if (totalCount === 0) {
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="6" style="text-align: center; padding: 40px;">No hay usuarios registrados</td>
@@ -1433,6 +1515,7 @@
                     return;
                 }
 
+                // Render users table with real data
                 tbody.innerHTML = users.map(user => `
                     <tr>
                         <td style="font-family: monospace; font-size: 0.8rem;">${user.id.substring(0, 8)}...</td>
@@ -1508,67 +1591,64 @@
             }
         }
 
-        // Subscription management functions
+        // Subscription management functions - REAL DATABASE QUERIES
         async function loadSubscriptions() {
             try {
+                // Query real subscriptions with user data using actual schema
                 const { data: subscriptions, error } = await supabase
                     .from('subscriptions')
                     .select(`
                         id,
                         user_id,
                         status,
-                        period_type,
+                        type,
                         amount,
-                        started_at,
+                        current_period_start,
+                        current_period_end,
                         expires_at,
                         created_at,
-                        profiles (
-                            email
-                        )
+                        plan_id,
+                        auto_renewal
                     `);
 
                 if (error) {
-                    console.log('Subscriptions table not found, using mock data');
-                    // Mock data for demonstration
-                    const mockSubscriptions = [
-                        {
-                            id: 'sub_001',
-                            user_id: 'user_001',
-                            status: 'active',
-                            period_type: 'monthly',
-                            amount: 19.99,
-                            started_at: '2024-01-15T00:00:00Z',
-                            expires_at: '2024-02-15T00:00:00Z',
-                            profiles: { email: 'usuario1@example.com' }
-                        },
-                        {
-                            id: 'sub_002',
-                            user_id: 'user_002',
-                            status: 'trial',
-                            period_type: 'monthly',
-                            amount: 0,
-                            started_at: '2024-01-20T00:00:00Z',
-                            expires_at: '2024-02-05T00:00:00Z',
-                            profiles: { email: 'usuario2@example.com' }
-                        },
-                        {
-                            id: 'sub_003',
-                            user_id: 'user_003',
-                            status: 'expired',
-                            period_type: 'yearly',
-                            amount: 199.99,
-                            started_at: '2023-01-15T00:00:00Z',
-                            expires_at: '2024-01-15T00:00:00Z',
-                            profiles: { email: 'usuario3@example.com' }
-                        }
-                    ];
-                    updateSubscriptionStats(mockSubscriptions);
-                    renderSubscriptionsTable(mockSubscriptions);
+                    console.error('Error loading subscriptions:', error);
+                    document.getElementById('subscriptionsTable').innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 40px; color: var(--error);">
+                                Error cargando suscripciones: ${error.message}
+                            </td>
+                        </tr>
+                    `;
                     return;
                 }
 
-                updateSubscriptionStats(subscriptions || []);
-                renderSubscriptionsTable(subscriptions || []);
+                // Get user emails for the subscriptions
+                const userIds = subscriptions ? subscriptions.map(sub => sub.user_id) : [];
+                let userEmails = {};
+                
+                if (userIds.length > 0) {
+                    const { data: users } = await supabase
+                        .from('auth.users')
+                        .select('id, email')
+                        .in('id', userIds);
+                    
+                    if (users) {
+                        userEmails = users.reduce((acc, user) => {
+                            acc[user.id] = user.email;
+                            return acc;
+                        }, {});
+                    }
+                }
+
+                // Enrich subscriptions with user emails
+                const enrichedSubscriptions = subscriptions ? subscriptions.map(sub => ({
+                    ...sub,
+                    user_email: userEmails[sub.user_id] || 'Email no disponible'
+                })) : [];
+
+                updateSubscriptionStats(enrichedSubscriptions);
+                renderSubscriptionsTable(enrichedSubscriptions);
 
             } catch (error) {
                 console.error('Error loading subscriptions:', error);
@@ -1612,22 +1692,33 @@
                 return;
             }
 
-            tbody.innerHTML = subscriptions.map(sub => `
-                <tr>
-                    <td style="font-family: monospace; font-size: 0.8rem;">${sub.id.substring(0, 8)}...</td>
-                    <td>${sub.profiles?.email || 'Email no disponible'}</td>
-                    <td><span class="status-badge ${sub.status}">${getStatusLabel(sub.status)}</span></td>
-                    <td>${getPeriodLabel(sub.period_type)}</td>
-                    <td>$${sub.amount ? sub.amount.toLocaleString() : 0}</td>
-                    <td>${new Date(sub.started_at).toLocaleDateString('es-ES')}</td>
-                    <td>${sub.expires_at ? new Date(sub.expires_at).toLocaleDateString('es-ES') : 'N/A'}</td>
-                    <td>
-                        <button class="table-action-btn" onclick="editSubscription('${sub.id}')">Editar</button>
-                        <button class="table-action-btn warning" onclick="cancelSubscription('${sub.id}')">Cancelar</button>
-                        <button class="table-action-btn danger" onclick="deleteSubscription('${sub.id}')">Eliminar</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = subscriptions.map(sub => {
+                // Calculate computed status based on actual schema
+                const now = new Date();
+                const expiryDate = new Date(sub.expires_at || sub.current_period_end);
+                let computedStatus = sub.status;
+                
+                if (sub.status === 'active' && expiryDate < now) {
+                    computedStatus = 'expired';
+                }
+
+                return `
+                    <tr>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${sub.id.substring(0, 8)}...</td>
+                        <td>${sub.user_email}</td>
+                        <td><span class="status-badge ${computedStatus}">${getStatusLabel(computedStatus)}</span></td>
+                        <td>${getPeriodLabel(sub.type)}</td>
+                        <td>$${sub.amount ? parseFloat(sub.amount).toLocaleString() : 0}</td>
+                        <td>${sub.current_period_start ? new Date(sub.current_period_start).toLocaleDateString('es-ES') : 'N/A'}</td>
+                        <td>${(sub.expires_at || sub.current_period_end) ? new Date(sub.expires_at || sub.current_period_end).toLocaleDateString('es-ES') : 'N/A'}</td>
+                        <td>
+                            <button class="table-action-btn" onclick="editSubscription('${sub.id}')">Editar</button>
+                            <button class="table-action-btn warning" onclick="cancelSubscription('${sub.id}')">Cancelar</button>
+                            <button class="table-action-btn danger" onclick="deleteSubscription('${sub.id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function getStatusLabel(status) {
@@ -1644,7 +1735,9 @@
         function getPeriodLabel(period) {
             const labels = {
                 'monthly': 'Mensual',
-                'yearly': 'Anual',
+                'yearly': 'Anual', 
+                'trial': 'Trial',
+                'lifetime': 'Lifetime',
                 'weekly': 'Semanal'
             };
             return labels[period] || period;
@@ -1708,16 +1801,24 @@
             try {
                 const { error } = await supabase
                     .from('subscriptions')
-                    .update({ status: newStatus })
+                    .update({ 
+                        status: newStatus,
+                        cancelled_at: newStatus === 'cancelled' ? new Date().toISOString() : null,
+                        updated_at: new Date().toISOString()
+                    })
                     .eq('id', subscriptionId);
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Error updating subscription status:', error);
+                    showNotification('Error actualizando suscripción: ' + error.message, 'error');
+                    return;
+                }
 
-                showNotification(`Suscripción ${newStatus === 'canceled' ? 'cancelada' : 'actualizada'} exitosamente`, 'success');
+                showNotification(`Suscripción ${newStatus === 'cancelled' ? 'cancelada' : 'actualizada'} exitosamente`, 'success');
                 loadSubscriptions();
             } catch (error) {
                 console.error('Error updating subscription:', error);
-                showNotification('Error actualizando suscripción', 'error');
+                showNotification('Error actualizando suscripción: ' + error.message, 'error');
             }
         }
 
@@ -1782,30 +1883,32 @@
 
         async function loadSubscriptionData(subscriptionId) {
             try {
+                // Get subscription data from real database
                 const { data: subscription, error } = await supabase
                     .from('subscriptions')
-                    .select(`
-                        *,
-                        profiles (email)
-                    `)
+                    .select('*')
                     .eq('id', subscriptionId)
                     .single();
 
                 if (error) {
-                    // Mock data for demo
-                    const mockData = {
-                        id: subscriptionId,
-                        status: 'active',
-                        period_type: 'monthly',
-                        amount: 19.99,
-                        expires_at: '2024-02-15',
-                        profiles: { email: 'usuario@example.com' }
-                    };
-                    populateSubscriptionForm(mockData);
+                    console.error('Error loading subscription:', error);
+                    showNotification('Error cargando datos de suscripción: ' + error.message, 'error');
                     return;
                 }
 
-                populateSubscriptionForm(subscription);
+                // Get user email for this subscription
+                const { data: user } = await supabase
+                    .from('auth.users')
+                    .select('email')
+                    .eq('id', subscription.user_id)
+                    .single();
+
+                const enrichedSubscription = {
+                    ...subscription,
+                    user_email: user?.email || 'Email no disponible'
+                };
+
+                populateSubscriptionForm(enrichedSubscription);
 
             } catch (error) {
                 console.error('Error loading subscription data:', error);
@@ -1814,9 +1917,9 @@
         }
 
         function populateSubscriptionForm(subscription) {
-            document.getElementById('userEmail').value = subscription.profiles?.email || '';
+            document.getElementById('userEmail').value = subscription.user_email || '';
             document.getElementById('status').value = subscription.status;
-            document.getElementById('periodType').value = subscription.period_type;
+            document.getElementById('periodType').value = subscription.type;
             document.getElementById('amount').value = subscription.amount;
             document.getElementById('expiresAt').value = subscription.expires_at ? subscription.expires_at.split('T')[0] : '';
         }
@@ -1827,36 +1930,63 @@
             
             const subscriptionData = {
                 status: formData.get('status'),
-                period_type: formData.get('periodType'),
+                type: formData.get('periodType'),
                 amount: parseFloat(formData.get('amount')),
                 expires_at: formData.get('expiresAt') || null
             };
 
             try {
                 if (subscriptionId) {
-                    // Update existing subscription
+                    // Update existing subscription using real schema
                     const { error } = await supabase
                         .from('subscriptions')
                         .update(subscriptionData)
                         .eq('id', subscriptionId);
 
                     if (error) {
-                        showNotification('Suscripción actualizada exitosamente (demo)', 'success');
-                    } else {
-                        showNotification('Suscripción actualizada exitosamente', 'success');
+                        console.error('Error updating subscription:', error);
+                        showNotification('Error actualizando suscripción: ' + error.message, 'error');
+                        return;
                     }
+
+                    showNotification('Suscripción actualizada exitosamente', 'success');
                 } else {
-                    // Create new subscription - would need user_id lookup
-                    showNotification('Funcionalidad de creación en desarrollo', 'warning');
-                    closeModal();
-                    return;
+                    // Create new subscription - would need user_id lookup from email
+                    const userEmail = formData.get('userEmail');
+                    const { data: user } = await supabase
+                        .from('auth.users')
+                        .select('id')
+                        .eq('email', userEmail)
+                        .single();
+
+                    if (!user) {
+                        showNotification('Usuario no encontrado', 'error');
+                        return;
+                    }
+
+                    const newSubscriptionData = {
+                        ...subscriptionData,
+                        user_id: user.id
+                    };
+
+                    const { error } = await supabase
+                        .from('subscriptions')
+                        .insert([newSubscriptionData]);
+
+                    if (error) {
+                        console.error('Error creating subscription:', error);
+                        showNotification('Error creando suscripción: ' + error.message, 'error');
+                        return;
+                    }
+
+                    showNotification('Suscripción creada exitosamente', 'success');
                 }
 
                 closeModal();
                 loadSubscriptions();
             } catch (error) {
                 console.error('Error saving subscription:', error);
-                showNotification('Error guardando suscripción', 'error');
+                showNotification('Error guardando suscripción: ' + error.message, 'error');
             }
         }
 
@@ -1879,42 +2009,55 @@
 
         async function generateSubscriptionReport() {
             try {
+                // Get real subscription data
                 const { data: allSubscriptions, error } = await supabase
                     .from('subscriptions')
-                    .select('*');
+                    .select('status, amount, type, created_at, expires_at, current_period_end');
 
-                let subscriptions = allSubscriptions;
-                
-                if (error || !subscriptions) {
-                    // Use mock data for demo
-                    subscriptions = [
-                        { status: 'active', amount: 19.99 },
-                        { status: 'active', amount: 29.99 },
-                        { status: 'trial', amount: 0 },
-                        { status: 'expired', amount: 19.99 },
-                        { status: 'canceled', amount: 19.99 }
-                    ];
+                if (error) {
+                    console.error('Error loading subscriptions for report:', error);
+                    showNotification('Error generando reporte: ' + error.message, 'error');
+                    return;
                 }
 
+                const subscriptions = allSubscriptions || [];
+                const now = new Date();
+
+                // Calculate real metrics from actual data
                 const report = {
                     total_subscriptions: subscriptions.length,
-                    active_count: subscriptions.filter(s => s.status === 'active').length,
-                    trial_count: subscriptions.filter(s => s.status === 'trial').length,
-                    expired_count: subscriptions.filter(s => s.status === 'expired').length,
-                    canceled_count: subscriptions.filter(s => s.status === 'canceled').length,
-                    total_revenue: subscriptions.reduce((sum, s) => sum + (s.amount || 0), 0),
+                    active_count: subscriptions.filter(s => {
+                        const expiryDate = new Date(s.expires_at || s.current_period_end);
+                        return s.status === 'active' && expiryDate > now;
+                    }).length,
+                    trial_count: subscriptions.filter(s => s.type === 'trial' || s.status === 'trial').length,
+                    expired_count: subscriptions.filter(s => {
+                        const expiryDate = new Date(s.expires_at || s.current_period_end);
+                        return s.status === 'expired' || (s.status === 'active' && expiryDate < now);
+                    }).length,
+                    canceled_count: subscriptions.filter(s => s.status === 'cancelled').length,
+                    total_revenue: subscriptions
+                        .filter(s => s.status === 'active')
+                        .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0),
                     avg_subscription_value: 0,
                     churn_rate: 0
                 };
                 
-                report.avg_subscription_value = report.total_revenue / (report.active_count || 1);
-                report.churn_rate = (report.canceled_count / report.total_subscriptions * 100).toFixed(2);
+                const activeRevenue = subscriptions
+                    .filter(s => s.status === 'active')
+                    .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+                
+                report.avg_subscription_value = report.active_count > 0 ? activeRevenue / report.active_count : 0;
+                report.churn_rate = report.total_subscriptions > 0 ? (report.canceled_count / report.total_subscriptions * 100).toFixed(2) : 0;
 
                 const reportHtml = `
                     <div class="modal-overlay" onclick="closeModal(event)">
                         <div class="modal-content" onclick="event.stopPropagation()">
                             <div class="modal-header">
                                 <h3>📊 Reporte de Suscripciones</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 8px;">
+                                    Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}
+                                </p>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
                                 <div><strong>Total Suscripciones:</strong> ${report.total_subscriptions}</div>
@@ -1923,8 +2066,8 @@
                                 <div><strong>Expiradas:</strong> ${report.expired_count}</div>
                                 <div><strong>Canceladas:</strong> ${report.canceled_count}</div>
                                 <div><strong>Churn Rate:</strong> ${report.churn_rate}%</div>
-                                <div><strong>Ingresos Total:</strong> $${report.total_revenue.toLocaleString()}</div>
-                                <div><strong>Valor Promedio:</strong> $${report.avg_subscription_value.toLocaleString()}</div>
+                                <div><strong>Ingresos Total:</strong> $${report.total_revenue.toFixed(2)}</div>
+                                <div><strong>Valor Promedio:</strong> $${report.avg_subscription_value.toFixed(2)}</div>
                             </div>
                             <div class="modal-actions">
                                 <button class="action-btn" onclick="closeModal()">Cerrar</button>
