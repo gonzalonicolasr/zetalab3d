@@ -389,7 +389,7 @@
             <div class="stat-card">
                 <h3>👥 Usuarios Registrados</h3>
                 <div class="number" id="totalUsers">-</div>
-                <div class="label">Total en la plataforma</div>
+                <div class="label">Total únicos (con piezas o suscripciones)</div>
             </div>
 
             <div class="stat-card">
@@ -399,7 +399,13 @@
             </div>
 
             <div class="stat-card">
-                <h3>🎯 Usuarios en Trial</h3>
+                <h3>🎯 Usuarios Activos</h3>
+                <div class="number" id="activeUsers">-</div>
+                <div class="label">Con piezas creadas</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>🔄 Usuarios en Trial</h3>
                 <div class="number" id="trialUsers">-</div>
                 <div class="label">Período de prueba</div>
             </div>
@@ -562,10 +568,14 @@
         // Cargar estadísticas principales
         async function loadStats() {
             try {
-                // Contar usuarios únicos desde pieces (método seguro)
-                const { count: usersFromPieces } = await supabase
+                // Contar TODOS los usuarios registrados (usando misma lógica que loadAllUsers)
+                const totalUsers = await getAllUsersCount();
+
+                // Contar usuarios activos (que crearon piezas)
+                const { data: uniquePieceUsers } = await supabase
                     .from('pieces')
-                    .select('user_id', { count: 'exact', head: true });
+                    .select('user_id');
+                const activeUsers = new Set(uniquePieceUsers?.map(p => p.user_id)).size;
 
                 // Contar suscripciones activas
                 const { count: activeSubscriptions } = await supabase
@@ -599,7 +609,8 @@
                 const totalRevenue = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
 
                 // Actualizar UI
-                document.getElementById('totalUsers').textContent = formatNumber(usersFromPieces || 0);
+                document.getElementById('totalUsers').textContent = formatNumber(totalUsers || 0);
+                document.getElementById('activeUsers').textContent = formatNumber(activeUsers || 0);
                 document.getElementById('activeSubscriptions').textContent = formatNumber(activeSubscriptions || 0);
                 document.getElementById('trialUsers').textContent = formatNumber(trialUsers || 0);
                 document.getElementById('totalPieces').textContent = formatNumber(totalPieces || 0);
@@ -612,6 +623,54 @@
                     el.textContent = 'Error';
                     el.className = 'number error';
                 });
+            }
+        }
+
+        // Función auxiliar para contar todos los usuarios (reutilizable)
+        async function getAllUsersCount() {
+            try {
+                // Obtener usuarios únicos de pieces
+                const { data: piecesData, error: piecesError } = await supabase
+                    .from('pieces')
+                    .select('user_id');
+
+                // Obtener usuarios de suscripciones 
+                const { data: subscriptionsData, error: subError } = await supabase
+                    .from('admin_subscriptions_with_emails')
+                    .select('user_id');
+                
+                // Crear Set para usuarios únicos
+                const uniqueUsers = new Set();
+                let pieceUsersCount = 0;
+                let subUsersCount = 0;
+                
+                // Agregar usuarios desde pieces
+                if (!piecesError && piecesData) {
+                    const pieceUsers = new Set();
+                    piecesData.forEach(piece => {
+                        uniqueUsers.add(piece.user_id);
+                        pieceUsers.add(piece.user_id);
+                    });
+                    pieceUsersCount = pieceUsers.size;
+                }
+                
+                // Agregar usuarios desde suscripciones
+                if (!subError && subscriptionsData) {
+                    const subUsers = new Set();
+                    subscriptionsData.forEach(sub => {
+                        uniqueUsers.add(sub.user_id);
+                        subUsers.add(sub.user_id);
+                    });
+                    subUsersCount = subUsers.size;
+                }
+                
+                // Debug info
+                console.log(`📊 Conteo de usuarios: ${uniqueUsers.size} total | ${pieceUsersCount} con piezas | ${subUsersCount} con suscripciones`);
+                
+                return uniqueUsers.size;
+            } catch (error) {
+                console.error('Error counting all users:', error);
+                return 0;
             }
         }
 
