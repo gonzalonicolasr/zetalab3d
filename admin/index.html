@@ -594,6 +594,80 @@
             border-color: var(--error);
         }
 
+        .status-canceled {
+            background: linear-gradient(135deg, #666666, #555555);
+            color: white;
+            border-color: #666666;
+        }
+
+        /* Plan and Trial Badges */
+        .plan-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+            border: 1px solid var(--accent-primary);
+            display: inline-block;
+        }
+
+        .trial-badge {
+            background: linear-gradient(135deg, var(--warning), #ff9500);
+            border-color: var(--warning);
+            animation: trialPulse 2s infinite;
+        }
+
+        @keyframes trialPulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            background: var(--bg-quaternary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-secondary);
+            transform: translateY(-1px);
+        }
+
+        .action-btn.warning {
+            background: rgba(255, 191, 0, 0.1);
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .action-btn.warning:hover {
+            background: rgba(255, 191, 0, 0.2);
+        }
+
+        .action-btn.success {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .action-btn.success:hover {
+            background: rgba(0, 255, 136, 0.2);
+        }
+
         /* Terminal Error Messages */
         .error {
             background: linear-gradient(135deg, rgba(255, 68, 68, 0.1), rgba(255, 68, 68, 0.05));
@@ -2214,6 +2288,7 @@
                         <button class="export-btn" onclick="exportSubscriptionData()">📊 Exportar Datos</button>
                         <button class="export-btn" onclick="showAssignSubscriptionModal()">➕ Asignar Suscripción</button>
                         <button class="export-btn" onclick="bulkSubscriptionActions()">⚙️ Acciones en Lote</button>
+                        <button class="export-btn" onclick="createSubscriptionViews()">🔧 Generar SQL Views</button>
                     </div>
                 </div>
 
@@ -2238,6 +2313,26 @@
                         <div class="metric-value" id="upcomingExpiries">0</div>
                         <div class="metric-label">Expiran en 7 días</div>
                         <div class="metric-change negative" id="expiriesChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="legacySubscriptionsCount">0</div>
+                        <div class="metric-label">📦 Legacy Subscriptions</div>
+                        <div class="metric-change" id="legacyChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="modernSubscriptionsCount">0</div>
+                        <div class="metric-label">🆕 Modern Subscriptions</div>
+                        <div class="metric-change positive" id="modernChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="expiredSubscriptionsCount">0</div>
+                        <div class="metric-label">⏰ Expired Subscriptions</div>
+                        <div class="metric-change" id="expiredChange">+0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="canceledSubscriptionsCount">0</div>
+                        <div class="metric-label">❌ Canceled Subscriptions</div>
+                        <div class="metric-change negative" id="canceledChange">+0</div>
                     </div>
                 </div>
 
@@ -5420,7 +5515,7 @@
         let selectedPayments = new Set();
         let usersWithoutSubscriptions = [];
 
-        // Load comprehensive subscription management data
+        // Load comprehensive subscription management data using real database schema
         async function loadSubscriptionManagement() {
             try {
                 console.log('🔄 Loading subscription management data...');
@@ -5429,27 +5524,109 @@
                 showLoadingState('subscriptionsTable');
                 showLoadingState('usersWithoutSubscriptionsTable');
                 
-                // Load all subscriptions with enhanced data
-                const { data: subscriptionsData, error: subError } = await supabase
-                    .from('admin_subscriptions_view')
+                // Load subscription plans first
+                const { data: plansData } = await supabase
+                    .from('subscription_plans')
                     .select('*')
-                    .order('subscription_created', { ascending: false });
+                    .eq('is_active', true);
                 
-                if (subError) {
-                    console.error('Error loading subscriptions:', subError);
-                    // Fallback to basic subscription data
-                    const { data: basicSubs } = await supabase
-                        .from('subscriptions')
-                        .select(`
-                            *,
-                            profiles:user_id(email, name)
-                        `)
-                        .order('created_at', { ascending: false });
-                    
-                    allSubscriptions = basicSubs || [];
-                } else {
-                    allSubscriptions = subscriptionsData || [];
-                }
+                const plansMap = {};
+                plansData?.forEach(plan => {
+                    plansMap[plan.id] = plan;
+                });
+                
+                // Load legacy subscriptions table data
+                const { data: legacySubscriptions } = await supabase
+                    .from('subscriptions')
+                    .select(`
+                        id,
+                        user_id,
+                        plan_type,
+                        active,
+                        created_at,
+                        expires_at,
+                        payment_id,
+                        amount,
+                        payment_status,
+                        profiles:user_id(id, email, name)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                // Load modern user_subscriptions table data
+                const { data: userSubscriptions } = await supabase
+                    .from('user_subscriptions')
+                    .select(`
+                        id,
+                        user_id,
+                        plan_id,
+                        status,
+                        trial_started_at,
+                        trial_ends_at,
+                        current_period_start,
+                        current_period_end,
+                        canceled_at,
+                        mp_subscription_id,
+                        mp_preapproval_id,
+                        profiles:user_id(id, email, name)
+                    `)
+                    .order('trial_started_at', { ascending: false });
+                
+                // Combine and normalize both subscription types
+                allSubscriptions = [];
+                
+                // Process legacy subscriptions
+                (legacySubscriptions || []).forEach(sub => {
+                    if (sub.profiles) {
+                        allSubscriptions.push({
+                            id: sub.id,
+                            user_id: sub.user_id,
+                            user_email: sub.profiles.email,
+                            user_name: sub.profiles.name,
+                            plan_name: sub.plan_type,
+                            plan_type: sub.plan_type,
+                            status: sub.active ? 'active' : 'expired',
+                            amount: sub.amount,
+                            created_at: sub.created_at,
+                            expires_at: sub.expires_at,
+                            payment_status: sub.payment_status,
+                            subscription_type: 'legacy',
+                            is_trial: sub.plan_type === 'trial',
+                            days_remaining: sub.expires_at ? Math.ceil((new Date(sub.expires_at) - new Date()) / (1000 * 60 * 60 * 24)) : 0
+                        });
+                    }
+                });
+                
+                // Process modern user subscriptions
+                (userSubscriptions || []).forEach(sub => {
+                    if (sub.profiles) {
+                        const plan = plansMap[sub.plan_id] || { name: 'Unknown', price_ars: 0 };
+                        const isTrialActive = sub.trial_ends_at && new Date(sub.trial_ends_at) > new Date();
+                        const isActive = sub.status !== 'canceled' && (isTrialActive || (sub.current_period_end && new Date(sub.current_period_end) > new Date()));
+                        
+                        allSubscriptions.push({
+                            id: sub.id,
+                            user_id: sub.user_id,
+                            user_email: sub.profiles.email,
+                            user_name: sub.profiles.name,
+                            plan_name: plan.name,
+                            plan_type: plan.slug || sub.status,
+                            status: sub.canceled_at ? 'canceled' : (isTrialActive ? 'trial' : (isActive ? 'active' : 'expired')),
+                            amount: plan.price_ars,
+                            created_at: sub.trial_started_at,
+                            expires_at: isTrialActive ? sub.trial_ends_at : sub.current_period_end,
+                            payment_status: sub.mp_subscription_id ? 'active' : 'pending',
+                            subscription_type: 'modern',
+                            is_trial: isTrialActive,
+                            mp_subscription_id: sub.mp_subscription_id,
+                            mp_preapproval_id: sub.mp_preapproval_id,
+                            days_remaining: sub.trial_ends_at || sub.current_period_end ? 
+                                Math.ceil((new Date(sub.trial_ends_at || sub.current_period_end) - new Date()) / (1000 * 60 * 60 * 24)) : 0
+                        });
+                    }
+                });
+                
+                // Sort by creation date
+                allSubscriptions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 
                 // Load users without subscriptions
                 const subscribedUserIds = allSubscriptions.map(s => s.user_id).filter(Boolean);
@@ -5486,7 +5663,7 @@
                 displayAllSubscriptions();
                 displayUsersWithoutSubscriptions();
                 
-                console.log(`✅ Loaded ${allSubscriptions.length} subscriptions and ${usersWithoutSubscriptions.length} users without subscriptions`);
+                console.log(`✅ Loaded ${allSubscriptions.length} subscriptions (${legacySubscriptions?.length || 0} legacy + ${userSubscriptions?.length || 0} modern) and ${usersWithoutSubscriptions.length} users without subscriptions`);
                 
             } catch (error) {
                 console.error('Error in loadSubscriptionManagement:', error);
@@ -5543,23 +5720,189 @@
 
         // Update subscription statistics display
         function updateSubscriptionStatistics() {
-            const activeCount = allSubscriptions.filter(s => s.computed_status === 'active' || s.status === 'active').length;
-            const trialCount = allSubscriptions.filter(s => s.computed_status === 'trial' || s.type === 'trial').length;
+            // Count active subscriptions (both legacy and modern)
+            const activeCount = allSubscriptions.filter(s => s.status === 'active').length;
+            
+            // Count trial subscriptions 
+            const trialCount = allSubscriptions.filter(s => s.status === 'trial' || s.is_trial).length;
+            
+            // Count subscriptions expiring soon (within 7 days)
             const expiringSoon = allSubscriptions.filter(s => {
-                const expiryDate = new Date(s.expires_at || s.current_period_end);
-                const daysDiff = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-                return daysDiff <= 7 && daysDiff >= 0;
+                const daysRemaining = s.days_remaining;
+                return daysRemaining >= 0 && daysRemaining <= 7;
             }).length;
             
+            // Calculate Monthly Recurring Revenue from active subscriptions only
             const mrr = allSubscriptions
-                .filter(s => s.computed_status === 'active' || s.status === 'active')
-                .reduce((sum, s) => sum + (parseFloat(s.plan_price || s.amount || 0)), 0);
+                .filter(s => s.status === 'active')
+                .reduce((sum, s) => sum + (parseFloat(s.amount || 0)), 0);
+            
+            // Count total subscriptions by type for additional metrics
+            const legacyCount = allSubscriptions.filter(s => s.subscription_type === 'legacy').length;
+            const modernCount = allSubscriptions.filter(s => s.subscription_type === 'modern').length;
+            const expiredCount = allSubscriptions.filter(s => s.status === 'expired').length;
+            const canceledCount = allSubscriptions.filter(s => s.status === 'canceled').length;
             
             // Update DOM elements
             updateMetricValue('totalActiveSubscriptions', activeCount);
             updateMetricValue('totalTrialSubscriptions', trialCount);
-            updateMetricValue('monthlyRecurringRevenue', formatCurrency(mrr));
+            updateMetricValue('monthlyRecurringRevenue', `$${mrr.toFixed(2)} ARS`);
             updateMetricValue('upcomingExpiries', expiringSoon);
+            
+            // Update additional metrics if elements exist
+            if (document.getElementById('legacySubscriptionsCount')) {
+                updateMetricValue('legacySubscriptionsCount', legacyCount);
+            }
+            if (document.getElementById('modernSubscriptionsCount')) {
+                updateMetricValue('modernSubscriptionsCount', modernCount);
+            }
+            if (document.getElementById('expiredSubscriptionsCount')) {
+                updateMetricValue('expiredSubscriptionsCount', expiredCount);
+            }
+            if (document.getElementById('canceledSubscriptionsCount')) {
+                updateMetricValue('canceledSubscriptionsCount', canceledCount);
+            }
+
+            console.log(`📊 Subscription Stats: ${activeCount} active, ${trialCount} trial, ${expiringSoon} expiring soon, MRR: $${mrr.toFixed(2)} ARS`);
+        }
+
+        /* 
+        ============================================
+        COMPREHENSIVE SUBSCRIPTION MANAGEMENT SYSTEM
+        ============================================
+        
+        This enhanced subscription management system provides:
+        
+        ✅ REAL DATABASE SCHEMA INTEGRATION:
+        - Works with actual 'subscriptions', 'user_subscriptions', and 'subscription_plans' tables
+        - Handles both legacy and modern subscription types seamlessly
+        - Supports all real columns: trial_started_at, trial_ends_at, current_period_start, etc.
+        
+        ✅ COMPREHENSIVE SUBSCRIPTION OPERATIONS:
+        - View all subscriptions with detailed information (legacy + modern)
+        - Edit subscription expiration dates for both subscription types
+        - Extend subscriptions by adding days 
+        - Cancel active subscriptions with proper status updates
+        - Reactivate expired/canceled subscriptions
+        - Assign new subscriptions to users with plan selection
+        
+        ✅ ADVANCED FILTERING & ANALYTICS:
+        - Filter by status (active, trial, expired, canceled)
+        - Filter by plan type and user search
+        - Comprehensive statistics: active, trial, MRR, expiring soon
+        - Separate counters for legacy vs modern subscriptions
+        
+        ✅ BULK OPERATIONS:
+        - Select multiple subscriptions for batch actions
+        - Bulk extend, cancel, or assign operations
+        - Export functionality with comprehensive CSV data
+        
+        ✅ DATABASE OPTIMIZATION:
+        - SQL view templates for better performance
+        - Proper normalization between subscription types
+        - Efficient queries with joins to profiles and plans tables
+        
+        ✅ USER EXPERIENCE:
+        - Visual indicators for trial subscriptions (pulsing badges)
+        - Payment status indicators with MercadoPago integration
+        - Expiration warnings with color coding
+        - Action buttons with proper permissions (cancel/reactivate)
+        
+        The system maintains backward compatibility while providing 
+        modern subscription management capabilities.
+        */
+
+        // Helper function to create useful SQL views for subscription management
+        async function createSubscriptionViews() {
+            try {
+                console.log('🔧 Creating helpful SQL views for subscription management...');
+                
+                // View for comprehensive subscription data
+                const subscriptionViewSQL = `
+                    CREATE OR REPLACE VIEW admin_subscriptions_comprehensive AS
+                    SELECT 
+                        'modern'::text as subscription_type,
+                        us.id,
+                        us.user_id,
+                        p.email as user_email,
+                        p.name as user_name,
+                        sp.name as plan_name,
+                        sp.slug as plan_slug,
+                        sp.price_ars as amount,
+                        us.status,
+                        CASE 
+                            WHEN us.trial_ends_at IS NOT NULL AND us.trial_ends_at > NOW() THEN true
+                            ELSE false
+                        END as is_trial,
+                        us.trial_started_at as created_at,
+                        COALESCE(us.trial_ends_at, us.current_period_end) as expires_at,
+                        CASE 
+                            WHEN us.mp_subscription_id IS NOT NULL THEN 'active'
+                            ELSE 'pending'
+                        END as payment_status,
+                        us.mp_subscription_id,
+                        us.mp_preapproval_id,
+                        EXTRACT(days FROM COALESCE(us.trial_ends_at, us.current_period_end) - NOW())::integer as days_remaining
+                    FROM user_subscriptions us
+                    LEFT JOIN profiles p ON us.user_id = p.id
+                    LEFT JOIN subscription_plans sp ON us.plan_id = sp.id
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        'legacy'::text as subscription_type,
+                        s.id::text,
+                        s.user_id,
+                        p.email as user_email,
+                        p.name as user_name,
+                        s.plan_type as plan_name,
+                        s.plan_type as plan_slug,
+                        s.amount,
+                        CASE WHEN s.active THEN 'active' ELSE 'expired' END as status,
+                        CASE WHEN s.plan_type = 'trial' THEN true ELSE false END as is_trial,
+                        s.created_at,
+                        s.expires_at,
+                        s.payment_status,
+                        null as mp_subscription_id,
+                        null as mp_preapproval_id,
+                        EXTRACT(days FROM s.expires_at - NOW())::integer as days_remaining
+                    FROM subscriptions s
+                    LEFT JOIN profiles p ON s.user_id = p.id
+                    ORDER BY created_at DESC;
+                `;
+
+                // View for subscription analytics
+                const analyticsViewSQL = `
+                    CREATE OR REPLACE VIEW subscription_analytics AS
+                    SELECT 
+                        DATE_TRUNC('month', created_at) as month,
+                        subscription_type,
+                        plan_name,
+                        status,
+                        COUNT(*) as subscription_count,
+                        SUM(amount) as total_revenue,
+                        AVG(amount) as avg_revenue,
+                        COUNT(CASE WHEN is_trial THEN 1 END) as trial_count,
+                        COUNT(CASE WHEN status = 'active' THEN 1 END) as active_count,
+                        COUNT(CASE WHEN days_remaining BETWEEN 0 AND 7 THEN 1 END) as expiring_soon_count
+                    FROM admin_subscriptions_comprehensive
+                    GROUP BY DATE_TRUNC('month', created_at), subscription_type, plan_name, status
+                    ORDER BY month DESC, subscription_type, plan_name;
+                `;
+
+                // Note: These views would typically be created by a database admin
+                // For now, we'll just log the SQL so it can be run manually
+                console.log('📝 SQL Views to create:', {
+                    comprehensive_view: subscriptionViewSQL,
+                    analytics_view: analyticsViewSQL
+                });
+
+                showNotification('SQL Views logged to console for manual creation', 'info');
+                
+            } catch (error) {
+                console.error('Error in createSubscriptionViews:', error);
+                showNotification('Error preparing SQL views', 'error');
+            }
         }
 
         // Update payment statistics display
@@ -5613,59 +5956,100 @@
             }
             
             const html = allSubscriptions.map(sub => {
-                const status = sub.computed_status || sub.status || 'unknown';
+                const status = sub.status || 'unknown';
                 const statusClass = `status-${status}`;
-                const userEmail = sub.user_email || sub.profiles?.email || 'N/A';
-                const userName = sub.user_name || sub.profiles?.name || 'Sin nombre';
-                const expiryDate = sub.expires_at || sub.current_period_end;
-                const daysRemaining = expiryDate ? 
-                    Math.max(0, Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24))) : 'N/A';
+                const userEmail = sub.user_email || 'N/A';
+                const userName = sub.user_name || 'Sin nombre';
+                const expiryDate = sub.expires_at;
+                const daysRemaining = sub.days_remaining;
+                const isExpiringSoon = daysRemaining <= 7 && daysRemaining > 0;
+                const isExpired = daysRemaining <= 0;
+                
+                // Format amount with ARS symbol
+                const formattedAmount = sub.amount ? `$${parseFloat(sub.amount).toFixed(2)} ARS` : 'N/A';
+                
+                // Payment status indicator
+                const paymentIndicator = sub.payment_status === 'active' ? '✅' : 
+                                       sub.payment_status === 'pending' ? '⏳' : 
+                                       sub.subscription_type === 'modern' && sub.mp_subscription_id ? '💳' : '❌';
                 
                 return `
-                    <tr data-subscription-id="${sub.subscription_id || sub.id}">
+                    <tr data-subscription-id="${sub.id}" data-subscription-type="${sub.subscription_type}">
                         <td>
-                            <input type="checkbox" class="subscription-checkbox" value="${sub.subscription_id || sub.id}" 
-                                   onchange="toggleSubscriptionSelection('${sub.subscription_id || sub.id}')">
+                            <input type="checkbox" class="subscription-checkbox" value="${sub.id}" 
+                                   onchange="toggleSubscriptionSelection('${sub.id}')">
                         </td>
                         <td>
                             <div>
                                 <strong>${userEmail}</strong>
                                 <br>
                                 <small style="color: var(--text-secondary);">${userName}</small>
+                                <br>
+                                <span style="color: var(--text-tertiary); font-size: 0.75rem;">
+                                    ${sub.subscription_type === 'modern' ? '🆕 Modern' : '📦 Legacy'}
+                                </span>
                             </div>
                         </td>
                         <td>
-                            <span class="plan-badge">${sub.plan_name || sub.type || 'N/A'}</span>
+                            <span class="plan-badge ${sub.is_trial ? 'trial-badge' : ''}">${sub.plan_name}</span>
+                            ${sub.is_trial ? '<br><small style="color: var(--warning);">TRIAL</small>' : ''}
                         </td>
                         <td>
-                            <span class="status-badge ${statusClass}">${status}</span>
+                            <span class="status-badge ${statusClass}">
+                                ${status.toUpperCase()}
+                                ${isExpiringSoon ? ' ⚠️' : ''}
+                                ${isExpired ? ' ❌' : ''}
+                            </span>
                         </td>
                         <td class="editable-cell">
-                            <input type="number" class="inline-edit" 
-                                   value="${sub.plan_price || sub.amount || 0}" 
-                                   step="0.01" readonly>
-                        </td>
-                        <td>${formatDate(sub.current_period_start || sub.subscription_created || sub.created_at)}</td>
-                        <td class="editable-cell">
-                            ${formatDate(expiryDate)}
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                ${formattedAmount}
+                                <span title="Payment Status: ${sub.payment_status}">${paymentIndicator}</span>
+                            </div>
                         </td>
                         <td>
-                            <span style="color: ${daysRemaining <= 7 && daysRemaining !== 'N/A' ? 'var(--error)' : 'var(--text-primary)'}">
-                                ${daysRemaining} días
+                            <div style="font-size: 0.85rem;">
+                                ${formatDate(sub.created_at)}
+                                ${sub.subscription_type === 'modern' && sub.mp_subscription_id ? 
+                                    '<br><small style="color: var(--info);">MP ID: ' + sub.mp_subscription_id.substring(0, 8) + '...</small>' : ''}
+                            </div>
+                        </td>
+                        <td class="editable-cell">
+                            <div style="font-size: 0.85rem;">
+                                ${expiryDate ? formatDate(expiryDate) : 'N/A'}
+                                ${sub.subscription_type === 'modern' && sub.mp_preapproval_id ?
+                                    '<br><small style="color: var(--cyan);">Preapproval: ' + sub.mp_preapproval_id.substring(0, 8) + '...</small>' : ''}
+                            </div>
+                        </td>
+                        <td>
+                            <span style="color: ${isExpiringSoon ? 'var(--warning)' : (isExpired ? 'var(--error)' : 'var(--text-primary)')}">
+                                ${daysRemaining > 0 ? `${daysRemaining} días` : (daysRemaining === 0 ? 'Hoy' : `${Math.abs(daysRemaining)} días vencido`)}
                             </span>
                         </td>
                         <td>
-                            ${sub.last_payment_date ? 
-                                `<div>
-                                    <span>$${sub.last_payment_amount || 0}</span><br>
-                                    <small style="color: var(--text-secondary);">${formatDate(sub.last_payment_date)}</small>
-                                </div>` : 
-                                '<span style="color: var(--text-tertiary);">Sin pagos</span>'
-                            }
+                            <div style="font-size: 0.85rem;">
+                                ${sub.payment_status && sub.amount ? 
+                                    `<span>$${parseFloat(sub.amount).toFixed(2)} ARS</span><br>
+                                     <small style="color: var(--text-secondary);">${formatDate(sub.created_at)}</small>` : 
+                                    '<span style="color: var(--text-tertiary);">Sin pagos</span>'
+                                }
+                            </div>
                         </td>
                         <td>
-                            <button class="action-btn" onclick="editSubscription('${sub.subscription_id || sub.id}')">✏️ Editar</button>
-                            <button class="action-btn" onclick="extendSubscription('${sub.subscription_id || sub.id}')">📅 Extender</button>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <button class="action-btn" onclick="editSubscription('${sub.id}', '${sub.subscription_type}')" 
+                                        title="Editar suscripción">✏️</button>
+                                <button class="action-btn" onclick="extendSubscription('${sub.id}', '${sub.subscription_type}')" 
+                                        title="Extender suscripción">📅</button>
+                                ${sub.status === 'active' || sub.status === 'trial' ? 
+                                    `<button class="action-btn warning" onclick="cancelSubscription('${sub.id}', '${sub.subscription_type}')" 
+                                             title="Cancelar suscripción">❌</button>` : ''
+                                }
+                                ${sub.status === 'canceled' || sub.status === 'expired' ?
+                                    `<button class="action-btn success" onclick="reactivateSubscription('${sub.id}', '${sub.subscription_type}')" 
+                                             title="Reactivar suscripción">🔄</button>` : ''
+                                }
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -5823,18 +6207,306 @@
         // ============================================
 
         // Edit subscription
-        function editSubscription(subscriptionId) {
-            showNotification('Función de edición en desarrollo', 'info');
+        // Edit subscription - works with both legacy and modern subscriptions
+        async function editSubscription(subscriptionId, subscriptionType = 'legacy') {
+            try {
+                const subscription = allSubscriptions.find(s => s.id === subscriptionId);
+                if (!subscription) {
+                    showNotification('Suscripción no encontrada', 'error');
+                    return;
+                }
+
+                const newExpiry = prompt(`Editar fecha de expiración para ${subscription.user_email}:`, 
+                    subscription.expires_at ? subscription.expires_at.split('T')[0] : '');
+                
+                if (!newExpiry) return;
+                
+                const newExpiryDate = new Date(newExpiry + 'T23:59:59Z');
+                
+                let updateResult;
+                if (subscriptionType === 'modern') {
+                    // Update user_subscriptions table
+                    const updateData = subscription.is_trial ? 
+                        { trial_ends_at: newExpiryDate.toISOString() } : 
+                        { current_period_end: newExpiryDate.toISOString() };
+                    
+                    updateResult = await supabase
+                        .from('user_subscriptions')
+                        .update(updateData)
+                        .eq('id', subscriptionId);
+                } else {
+                    // Update legacy subscriptions table
+                    updateResult = await supabase
+                        .from('subscriptions')
+                        .update({ 
+                            expires_at: newExpiryDate.toISOString(),
+                            active: newExpiryDate > new Date()
+                        })
+                        .eq('id', subscriptionId);
+                }
+
+                if (updateResult.error) {
+                    console.error('Error updating subscription:', updateResult.error);
+                    showNotification('Error al actualizar suscripción', 'error');
+                } else {
+                    showNotification('Suscripción actualizada exitosamente', 'success');
+                    loadSubscriptionManagement(); // Reload data
+                }
+            } catch (error) {
+                console.error('Error in editSubscription:', error);
+                showNotification('Error al editar suscripción', 'error');
+            }
         }
 
-        // Extend subscription
-        function extendSubscription(subscriptionId) {
-            showNotification('Función de extensión en desarrollo', 'info');
+        // Extend subscription - adds days to current expiry
+        async function extendSubscription(subscriptionId, subscriptionType = 'legacy') {
+            try {
+                const subscription = allSubscriptions.find(s => s.id === subscriptionId);
+                if (!subscription) {
+                    showNotification('Suscripción no encontrada', 'error');
+                    return;
+                }
+
+                const daysToAdd = prompt(`¿Cuántos días extender para ${subscription.user_email}?`, '30');
+                if (!daysToAdd || isNaN(daysToAdd)) return;
+
+                const currentExpiry = new Date(subscription.expires_at || new Date());
+                const newExpiry = new Date(currentExpiry.getTime() + (parseInt(daysToAdd) * 24 * 60 * 60 * 1000));
+                
+                let updateResult;
+                if (subscriptionType === 'modern') {
+                    const updateData = subscription.is_trial ? 
+                        { trial_ends_at: newExpiry.toISOString() } : 
+                        { current_period_end: newExpiry.toISOString() };
+                    
+                    updateResult = await supabase
+                        .from('user_subscriptions')
+                        .update(updateData)
+                        .eq('id', subscriptionId);
+                } else {
+                    updateResult = await supabase
+                        .from('subscriptions')
+                        .update({ 
+                            expires_at: newExpiry.toISOString(),
+                            active: true
+                        })
+                        .eq('id', subscriptionId);
+                }
+
+                if (updateResult.error) {
+                    console.error('Error extending subscription:', updateResult.error);
+                    showNotification('Error al extender suscripción', 'error');
+                } else {
+                    showNotification(`Suscripción extendida ${daysToAdd} días`, 'success');
+                    loadSubscriptionManagement();
+                }
+            } catch (error) {
+                console.error('Error in extendSubscription:', error);
+                showNotification('Error al extender suscripción', 'error');
+            }
         }
 
-        // Assign subscription to user
-        function assignSubscriptionToUser(userId, userEmail) {
-            showNotification('Función de asignación en desarrollo', 'info');
+        // Cancel subscription
+        async function cancelSubscription(subscriptionId, subscriptionType = 'legacy') {
+            try {
+                const subscription = allSubscriptions.find(s => s.id === subscriptionId);
+                if (!subscription) {
+                    showNotification('Suscripción no encontrada', 'error');
+                    return;
+                }
+
+                if (!confirm(`¿Confirmas la cancelación de la suscripción de ${subscription.user_email}?`)) {
+                    return;
+                }
+
+                let updateResult;
+                if (subscriptionType === 'modern') {
+                    updateResult = await supabase
+                        .from('user_subscriptions')
+                        .update({ 
+                            status: 'canceled',
+                            canceled_at: new Date().toISOString()
+                        })
+                        .eq('id', subscriptionId);
+                } else {
+                    updateResult = await supabase
+                        .from('subscriptions')
+                        .update({ 
+                            active: false,
+                            payment_status: 'canceled'
+                        })
+                        .eq('id', subscriptionId);
+                }
+
+                if (updateResult.error) {
+                    console.error('Error canceling subscription:', updateResult.error);
+                    showNotification('Error al cancelar suscripción', 'error');
+                } else {
+                    showNotification('Suscripción cancelada exitosamente', 'success');
+                    loadSubscriptionManagement();
+                }
+            } catch (error) {
+                console.error('Error in cancelSubscription:', error);
+                showNotification('Error al cancelar suscripción', 'error');
+            }
+        }
+
+        // Reactivate subscription
+        async function reactivateSubscription(subscriptionId, subscriptionType = 'legacy') {
+            try {
+                const subscription = allSubscriptions.find(s => s.id === subscriptionId);
+                if (!subscription) {
+                    showNotification('Suscripción no encontrada', 'error');
+                    return;
+                }
+
+                if (!confirm(`¿Confirmas la reactivación de la suscripción de ${subscription.user_email}?`)) {
+                    return;
+                }
+
+                // Calculate new expiry date (30 days from now)
+                const newExpiry = new Date();
+                newExpiry.setDate(newExpiry.getDate() + 30);
+
+                let updateResult;
+                if (subscriptionType === 'modern') {
+                    updateResult = await supabase
+                        .from('user_subscriptions')
+                        .update({ 
+                            status: 'active',
+                            canceled_at: null,
+                            current_period_start: new Date().toISOString(),
+                            current_period_end: newExpiry.toISOString()
+                        })
+                        .eq('id', subscriptionId);
+                } else {
+                    updateResult = await supabase
+                        .from('subscriptions')
+                        .update({ 
+                            active: true,
+                            payment_status: 'active',
+                            expires_at: newExpiry.toISOString()
+                        })
+                        .eq('id', subscriptionId);
+                }
+
+                if (updateResult.error) {
+                    console.error('Error reactivating subscription:', updateResult.error);
+                    showNotification('Error al reactivar suscripción', 'error');
+                } else {
+                    showNotification('Suscripción reactivada exitosamente', 'success');
+                    loadSubscriptionManagement();
+                }
+            } catch (error) {
+                console.error('Error in reactivateSubscription:', error);
+                showNotification('Error al reactivar suscripción', 'error');
+            }
+        }
+
+        // Assign subscription to user with plan selection
+        async function assignSubscriptionToUser(userId, userEmail) {
+            try {
+                // First get available plans
+                const { data: plans } = await supabase
+                    .from('subscription_plans')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('price_ars');
+
+                if (!plans || plans.length === 0) {
+                    showNotification('No hay planes disponibles', 'error');
+                    return;
+                }
+
+                // Create plan selection options
+                const planOptions = plans.map(plan => 
+                    `<option value="${plan.id}">${plan.name} - $${plan.price_ars} ARS (${plan.trial_days} días trial)</option>`
+                ).join('');
+
+                // Show modal with plan selection
+                const modalHtml = `
+                    <div class="modal-overlay" id="assignSubscriptionModal" style="display: flex;">
+                        <div class="modal-content" style="max-width: 500px;">
+                            <div class="modal-header">
+                                <h3>Asignar Suscripción</h3>
+                                <button class="modal-close" onclick="closeAssignModal()">&times;</button>
+                            </div>
+                            <div style="padding: 20px;">
+                                <p><strong>Usuario:</strong> ${userEmail}</p>
+                                <div style="margin: 20px 0;">
+                                    <label>Seleccionar Plan:</label>
+                                    <select id="selectedPlan" style="width: 100%; padding: 8px; margin-top: 5px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                                        ${planOptions}
+                                    </select>
+                                </div>
+                                <div style="margin: 20px 0;">
+                                    <label>
+                                        <input type="checkbox" id="startWithTrial"> Iniciar con período de prueba
+                                    </label>
+                                </div>
+                                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                    <button onclick="closeAssignModal()" style="padding: 10px 20px; background: var(--bg-quaternary); border: 1px solid var(--border-primary); color: var(--text-secondary); border-radius: 4px;">Cancelar</button>
+                                    <button onclick="confirmAssignSubscription('${userId}')" style="padding: 10px 20px; background: var(--accent-primary); border: none; color: var(--bg-primary); border-radius: 4px;">Asignar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            } catch (error) {
+                console.error('Error in assignSubscriptionToUser:', error);
+                showNotification('Error al preparar asignación', 'error');
+            }
+        }
+
+        // Close assign subscription modal
+        function closeAssignModal() {
+            const modal = document.getElementById('assignSubscriptionModal');
+            if (modal) modal.remove();
+        }
+
+        // Confirm subscription assignment
+        async function confirmAssignSubscription(userId) {
+            try {
+                const planId = document.getElementById('selectedPlan').value;
+                const startWithTrial = document.getElementById('startWithTrial').checked;
+
+                const now = new Date();
+                const trialEnd = new Date();
+                trialEnd.setDate(now.getDate() + 7); // 7 days trial by default
+
+                const periodEnd = new Date();
+                periodEnd.setMonth(now.getMonth() + 1); // 1 month subscription
+
+                const subscriptionData = {
+                    user_id: userId,
+                    plan_id: planId,
+                    status: startWithTrial ? 'trial' : 'active',
+                    trial_started_at: startWithTrial ? now.toISOString() : null,
+                    trial_ends_at: startWithTrial ? trialEnd.toISOString() : null,
+                    current_period_start: startWithTrial ? null : now.toISOString(),
+                    current_period_end: startWithTrial ? null : periodEnd.toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('user_subscriptions')
+                    .insert([subscriptionData]);
+
+                if (error) {
+                    console.error('Error creating subscription:', error);
+                    showNotification('Error al crear suscripción', 'error');
+                } else {
+                    showNotification('Suscripción asignada exitosamente', 'success');
+                    closeAssignModal();
+                    loadSubscriptionManagement(); // Reload data
+                }
+
+            } catch (error) {
+                console.error('Error in confirmAssignSubscription:', error);
+                showNotification('Error al confirmar asignación', 'error');
+            }
         }
 
         // View payment details
@@ -5884,12 +6556,126 @@
         }
 
         // Export functions
+        // Export subscription data to CSV
         function exportSubscriptionData() {
-            showNotification('Exportando datos de suscripciones...', 'info');
+            try {
+                if (!allSubscriptions || allSubscriptions.length === 0) {
+                    showNotification('No hay datos de suscripciones para exportar', 'warning');
+                    return;
+                }
+
+                // Prepare CSV headers
+                const headers = [
+                    'ID',
+                    'Tipo de Suscripción',
+                    'Usuario Email',
+                    'Usuario Nombre', 
+                    'Plan',
+                    'Estado',
+                    'Es Trial',
+                    'Monto ARS',
+                    'Fecha Creación',
+                    'Fecha Expiración',
+                    'Días Restantes',
+                    'Estado de Pago',
+                    'MP Subscription ID',
+                    'MP Preapproval ID'
+                ];
+
+                // Prepare CSV data
+                const csvData = allSubscriptions.map(sub => [
+                    sub.id,
+                    sub.subscription_type,
+                    sub.user_email,
+                    sub.user_name,
+                    sub.plan_name,
+                    sub.status,
+                    sub.is_trial ? 'Sí' : 'No',
+                    sub.amount || 0,
+                    formatDate(sub.created_at),
+                    sub.expires_at ? formatDate(sub.expires_at) : 'N/A',
+                    sub.days_remaining,
+                    sub.payment_status || 'N/A',
+                    sub.mp_subscription_id || 'N/A',
+                    sub.mp_preapproval_id || 'N/A'
+                ]);
+
+                // Create CSV content
+                const csvContent = [headers, ...csvData]
+                    .map(row => row.map(field => `"${field}"`).join(','))
+                    .join('\n');
+
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `zetalab_subscriptions_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+
+                showNotification(`Exportados ${allSubscriptions.length} registros de suscripciones`, 'success');
+
+            } catch (error) {
+                console.error('Error exporting subscription data:', error);
+                showNotification('Error al exportar datos de suscripciones', 'error');
+            }
         }
 
+        // Export payment data to CSV 
         function exportPaymentData() {
-            showNotification('Exportando datos de pagos...', 'info');
+            try {
+                if (!allPayments || allPayments.length === 0) {
+                    showNotification('No hay datos de pagos para exportar', 'warning');
+                    return;
+                }
+
+                // Prepare CSV headers
+                const headers = [
+                    'ID',
+                    'Usuario Email',
+                    'Usuario Nombre',
+                    'Monto',
+                    'Estado',
+                    'Método',
+                    'Proveedor',
+                    'Fecha',
+                    'Comisión',
+                    'Monto Neto',
+                    'ID de Transacción'
+                ];
+
+                // Prepare CSV data
+                const csvData = allPayments.map(payment => [
+                    payment.id,
+                    payment.user_email || payment.profiles?.email || 'N/A',
+                    payment.user_name || payment.profiles?.name || 'N/A',
+                    payment.amount || 0,
+                    payment.status || payment.display_status || 'N/A',
+                    payment.method || 'N/A',
+                    payment.provider || 'N/A',
+                    formatDate(payment.payment_date || payment.created_at),
+                    payment.fee_amount || 0,
+                    payment.net_amount || payment.amount || 0,
+                    payment.transaction_id || payment.external_id || 'N/A'
+                ]);
+
+                // Create CSV content
+                const csvContent = [headers, ...csvData]
+                    .map(row => row.map(field => `"${field}"`).join(','))
+                    .join('\n');
+
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `zetalab_payments_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+
+                showNotification(`Exportados ${allPayments.length} registros de pagos`, 'success');
+
+            } catch (error) {
+                console.error('Error exporting payment data:', error);
+                showNotification('Error al exportar datos de pagos', 'error');
+            }
         }
 
         // Reset filters
