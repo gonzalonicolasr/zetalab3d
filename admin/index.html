@@ -816,6 +816,497 @@
             align-items: center;
         }
 
+        /* User Action Buttons */
+        .user-actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-quaternary);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
+        .action-btn.danger:hover {
+            background: rgba(255, 68, 68, 0.1);
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .action-btn.primary:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .action-btn.warning:hover {
+            background: rgba(255, 191, 0, 0.1);
+            border-color: var(--amber);
+            color: var(--amber);
+        }
+
+        /* Bulk Actions */
+        .bulk-actions-bar {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .bulk-actions-bar.active {
+            display: flex;
+        }
+
+        .bulk-actions-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--amber), var(--accent-primary), var(--amber));
+            opacity: 0.7;
+        }
+
+        .bulk-selected-count {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .bulk-action-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            background: var(--bg-quaternary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bulk-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .bulk-action-btn.danger:hover {
+            background: rgba(255, 68, 68, 0.1);
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .bulk-action-btn.primary:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* Table Selection */
+        .select-checkbox {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: var(--accent-primary);
+        }
+
+        .select-all-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .select-all-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        /* User Detail Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border: 2px solid var(--border-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg), var(--glow-accent);
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--cyan), var(--accent-primary));
+            opacity: 0.8;
+        }
+
+        .modal-header {
+            padding: 24px 28px;
+            border-bottom: 2px solid var(--border-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-primary);
+        }
+
+        .modal-title {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-shadow: var(--glow-accent);
+            letter-spacing: 1px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 68, 68, 0.1);
+            color: var(--error);
+            transform: rotate(90deg);
+        }
+
+        .modal-content {
+            padding: 0;
+            overflow-y: auto;
+            max-height: calc(90vh - 100px);
+        }
+
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .modal-tab {
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-tab:hover {
+            background: rgba(0, 255, 136, 0.05);
+            color: var(--text-primary);
+        }
+
+        .modal-tab.active {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .modal-tab-content {
+            display: none;
+            padding: 28px;
+        }
+
+        .modal-tab-content.active {
+            display: block;
+        }
+
+        .user-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .user-detail-card {
+            background: var(--bg-quaternary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .user-detail-card h4 {
+            color: var(--accent-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .activity-timeline {
+            border-left: 2px solid var(--border-primary);
+            margin-left: 12px;
+            padding-left: 20px;
+        }
+
+        .activity-item {
+            position: relative;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .activity-item::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 18px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .activity-type {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .activity-date {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+
+        .activity-data {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        /* Admin Notes */
+        .admin-notes {
+            background: var(--bg-quaternary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .admin-notes-textarea {
+            width: 100%;
+            min-height: 120px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .admin-notes-textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+        }
+
+        .save-notes-btn {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .save-notes-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-accent), var(--shadow-sm);
+        }
+
+        /* Confirmation Dialog */
+        .confirm-dialog {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 3000;
+            backdrop-filter: blur(6px);
+        }
+
+        .confirm-dialog.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .confirm-box {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border: 2px solid var(--error);
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.3);
+        }
+
+        .confirm-icon {
+            font-size: 3rem;
+            color: var(--error);
+            margin-bottom: 16px;
+        }
+
+        .confirm-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--error);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .confirm-message {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .confirm-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .confirm-btn.danger {
+            background: linear-gradient(135deg, var(--error), #cc3333);
+            color: white;
+        }
+
+        .confirm-btn.secondary {
+            background: var(--bg-quaternary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+        }
+
+        .confirm-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
         .active-filters-label {
             font-size: 0.85rem;
             color: var(--text-secondary);
@@ -1257,10 +1748,40 @@
                         <button class="refresh-btn" onclick="loadAllUsers()">⟳ Actualizar</button>
                     </div>
                     
+                    <!-- Bulk Actions Bar -->
+                    <div class="bulk-actions-bar" id="bulkActionsBar">
+                        <div class="bulk-selected-count">
+                            <span id="selectedCount">0</span> usuarios seleccionados
+                        </div>
+                        <div class="bulk-actions">
+                            <button class="bulk-action-btn primary" onclick="exportSelectedUsers()">
+                                ⬇ Exportar CSV
+                            </button>
+                            <button class="bulk-action-btn" onclick="showBulkEmailDialog()">
+                                ✉ Enviar Email
+                            </button>
+                            <button class="bulk-action-btn warning" onclick="bulkSuspendUsers()">
+                                ⚠ Suspender
+                            </button>
+                            <button class="bulk-action-btn" onclick="bulkUnsuspendUsers()">
+                                ✓ Reactivar
+                            </button>
+                            <button class="bulk-action-btn danger" onclick="bulkDeleteUsers()">
+                                🗑 Eliminar
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div class="results-info" id="resultsInfo">
                         <div class="results-count" id="resultsCount">
                             Mostrando <span id="filteredCount">0</span> de <span id="totalCount">0</span> usuarios
                         </div>
+                    </div>
+                    
+                    <!-- Select All Control -->
+                    <div class="select-all-container">
+                        <input type="checkbox" id="selectAllCheckbox" class="select-checkbox" onchange="toggleSelectAll()">
+                        <label for="selectAllCheckbox" class="select-all-label">Seleccionar todos los usuarios visibles</label>
                     </div>
                     
                     <div class="users-table-wrapper">
@@ -1269,6 +1790,97 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div class="modal-overlay" id="userDetailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">⟨ Detalles de Usuario ⟩</h2>
+                <button class="modal-close" onclick="closeUserDetailModal()">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="modal-tabs">
+                    <button class="modal-tab active" onclick="switchTab('profile')" data-tab="profile">
+                        ◉ Perfil
+                    </button>
+                    <button class="modal-tab" onclick="switchTab('pieces')" data-tab="pieces">
+                        ▢ Piezas y Cálculos
+                    </button>
+                    <button class="modal-tab" onclick="switchTab('activity')" data-tab="activity">
+                        ◆ Actividad
+                    </button>
+                    <button class="modal-tab" onclick="switchTab('subscription')" data-tab="subscription">
+                        ▲ Suscripción
+                    </button>
+                    <button class="modal-tab" onclick="switchTab('admin')" data-tab="admin">
+                        ⚙ Admin
+                    </button>
+                </div>
+                
+                <!-- Profile Tab -->
+                <div class="modal-tab-content active" id="profileTab">
+                    <div class="user-detail-grid" id="userProfileGrid">
+                        <!-- Dynamic content will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Pieces Tab -->
+                <div class="modal-tab-content" id="piecesTab">
+                    <div id="userPiecesContent">
+                        <!-- Dynamic content will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Activity Tab -->
+                <div class="modal-tab-content" id="activityTab">
+                    <div class="activity-timeline" id="userActivityTimeline">
+                        <!-- Dynamic content will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Subscription Tab -->
+                <div class="modal-tab-content" id="subscriptionTab">
+                    <div id="userSubscriptionContent">
+                        <!-- Dynamic content will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Admin Tab -->
+                <div class="modal-tab-content" id="adminTab">
+                    <div class="admin-notes">
+                        <h4>📝 Notas Administrativas</h4>
+                        <textarea 
+                            class="admin-notes-textarea" 
+                            id="adminNotesTextarea" 
+                            placeholder="Agregar notas internas sobre este usuario..."
+                        ></textarea>
+                        <button class="save-notes-btn" onclick="saveAdminNotes()">
+                            Guardar Notas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div class="confirm-dialog" id="confirmDialog">
+        <div class="confirm-box">
+            <div class="confirm-icon">⚠</div>
+            <div class="confirm-title" id="confirmTitle">Confirmar Acción</div>
+            <div class="confirm-message" id="confirmMessage">
+                ¿Estás seguro de que deseas realizar esta acción?
+            </div>
+            <div class="confirm-actions">
+                <button class="confirm-btn danger" id="confirmBtn" onclick="confirmAction()">
+                    Confirmar
+                </button>
+                <button class="confirm-btn secondary" onclick="closeConfirmDialog()">
+                    Cancelar
+                </button>
             </div>
         </div>
     </div>
@@ -2015,15 +2627,17 @@
                 <table>
                     <thead>
                         <tr>
+                            <th width="40">
+                                <input type="checkbox" id="selectAllTableCheckbox" class="select-checkbox" onchange="toggleSelectAll()">
+                            </th>
                             <th>Usuario ID</th>
                             <th>Email</th>
                             <th>Registro</th>
                             <th>Último Acceso</th>
                             <th>Verificado</th>
-                            <th>Proveedores</th>
                             <th>Piezas</th>
-                            <th>Suscripción</th>
                             <th>Estado</th>
+                            <th width="200">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2041,7 +2655,9 @@
 
                 // Status badge
                 let statusBadge;
-                if (user.hasSubscription) {
+                if (user.is_suspended) {
+                    statusBadge = '<span class="status-badge status-expired">Suspendido</span>';
+                } else if (user.hasSubscription) {
                     statusBadge = '<span class="status-badge status-active">Premium</span>';
                 } else if (user.hasPieces) {
                     statusBadge = '<span class="status-badge status-trial">Free</span>';
@@ -2049,11 +2665,38 @@
                     statusBadge = '<span class="status-badge status-expired">Registrado</span>';
                 }
 
-                // Format providers
-                const providers = user.providers ? user.providers.join(', ') : 'email';
+                // User actions
+                const userActions = `
+                    <div class="user-actions">
+                        <button class="action-btn primary" onclick="showUserDetails('${user.id}')" title="Ver detalles">
+                            👁
+                        </button>
+                        <button class="action-btn ${user.is_suspended ? '' : 'warning'}" 
+                                onclick="${user.is_suspended ? `unsuspendUser('${user.id}')` : `suspendUser('${user.id}')`}" 
+                                title="${user.is_suspended ? 'Reactivar' : 'Suspender'}">
+                            ${user.is_suspended ? '✓' : '⚠'}
+                        </button>
+                        <button class="action-btn" onclick="resetUserPassword('${user.id}')" title="Reset Password">
+                            🔑
+                        </button>
+                        <button class="action-btn" onclick="impersonateUser('${user.id}')" title="Impersonar">
+                            👤
+                        </button>
+                        <button class="action-btn" onclick="sendWelcomeEmail('${user.id}')" title="Email Bienvenida">
+                            ✉
+                        </button>
+                        <button class="action-btn danger" onclick="deleteUser('${user.id}')" title="Eliminar">
+                            🗑
+                        </button>
+                    </div>
+                `;
 
                 html += `
                     <tr>
+                        <td>
+                            <input type="checkbox" class="select-checkbox user-select" 
+                                   value="${user.id}" onchange="updateBulkActions()">
+                        </td>
                         <td><span class="user-email">${userIdDisplay}</span></td>
                         <td>${user.email ? 
                             `<span class="user-email">${emailDisplay}</span>` : 
@@ -2062,16 +2705,18 @@
                         <td>${formatDate(user.created_at)}</td>
                         <td>${user.last_sign_in_at ? formatDate(user.last_sign_in_at) : '-'}</td>
                         <td>${user.verified ? '✅ Sí' : '❌ No'}</td>
-                        <td><code style="font-size: 0.8em;">${providers}</code></td>
                         <td>${user.piecesCount}</td>
-                        <td>${user.hasSubscription ? '✅' : '❌'}</td>
                         <td>${statusBadge}</td>
+                        <td>${userActions}</td>
                     </tr>
                 `;
             });
 
             html += '</tbody></table>';
             document.getElementById('allUsersTable').innerHTML = html;
+            
+            // Update bulk actions state
+            updateBulkActions();
         }
 
         function highlightMatch(text, query) {
@@ -2254,6 +2899,663 @@
                 document.getElementById('sidebar').classList.remove('mobile-open');
             }
         }
+
+        // ============================================
+        // NEW ADMIN FEATURES IMPLEMENTATION
+        // ============================================
+
+        // Global variables for admin operations
+        let selectedUsers = new Set();
+        let currentUser = null;
+        let confirmCallback = null;
+
+        // Bulk Selection Functions
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const tableCheckbox = document.getElementById('selectAllTableCheckbox');
+            const userCheckboxes = document.querySelectorAll('.user-select');
+            
+            // Sync checkboxes
+            if (selectAllCheckbox && tableCheckbox) {
+                selectAllCheckbox.checked = tableCheckbox.checked;
+                tableCheckbox.checked = selectAllCheckbox.checked;
+            }
+            
+            const isChecked = selectAllCheckbox ? selectAllCheckbox.checked : tableCheckbox.checked;
+            
+            userCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+                if (isChecked) {
+                    selectedUsers.add(checkbox.value);
+                } else {
+                    selectedUsers.delete(checkbox.value);
+                }
+            });
+            
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const userCheckboxes = document.querySelectorAll('.user-select');
+            selectedUsers.clear();
+            
+            userCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedUsers.add(checkbox.value);
+                }
+            });
+            
+            const bulkBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const tableCheckbox = document.getElementById('selectAllTableCheckbox');
+            
+            if (selectedCount) {
+                selectedCount.textContent = selectedUsers.size;
+            }
+            
+            // Show/hide bulk actions bar
+            if (selectedUsers.size > 0) {
+                bulkBar.classList.add('active');
+            } else {
+                bulkBar.classList.remove('active');
+            }
+            
+            // Update select all checkboxes
+            const allChecked = userCheckboxes.length > 0 && 
+                              Array.from(userCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(userCheckboxes).some(cb => cb.checked);
+            
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            }
+            if (tableCheckbox) {
+                tableCheckbox.checked = allChecked;
+                tableCheckbox.indeterminate = someChecked && !allChecked;
+            }
+        }
+
+        // Individual User Actions
+        async function showUserDetails(userId) {
+            try {
+                currentUser = filteredUsers.find(u => u.id === userId);
+                if (!currentUser) {
+                    alert('Usuario no encontrado');
+                    return;
+                }
+                
+                // Show modal
+                document.getElementById('userDetailModal').classList.add('active');
+                
+                // Load user data
+                await loadUserDetailData(userId);
+                
+            } catch (error) {
+                console.error('Error showing user details:', error);
+                alert('Error cargando detalles del usuario');
+            }
+        }
+
+        async function loadUserDetailData(userId) {
+            try {
+                // Load comprehensive user data
+                const [userSummary, userActivity, userPieces] = await Promise.all([
+                    supabase.from('admin_user_summary').select('*').eq('id', userId).single(),
+                    supabase.from('admin_user_activity_log').select('*').eq('user_id', userId).order('activity_date', { ascending: false }).limit(50),
+                    supabase.from('pieces').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+                ]);
+
+                // Populate profile tab
+                populateProfileTab(userSummary.data || currentUser);
+                
+                // Populate activity tab
+                populateActivityTab(userActivity.data || []);
+                
+                // Populate pieces tab
+                populatePiecesTab(userPieces.data || []);
+                
+                // Populate subscription tab
+                populateSubscriptionTab(userSummary.data || {});
+                
+            } catch (error) {
+                console.error('Error loading user detail data:', error);
+            }
+        }
+
+        function populateProfileTab(user) {
+            const grid = document.getElementById('userProfileGrid');
+            grid.innerHTML = `
+                <div class="user-detail-card">
+                    <h4>👤 Información Personal</h4>
+                    <div class="detail-item">
+                        <span class="detail-label">ID de Usuario:</span>
+                        <span class="detail-value">${user.id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Email:</span>
+                        <span class="detail-value">${user.email || 'No disponible'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Teléfono:</span>
+                        <span class="detail-value">${user.phone || 'No disponible'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Rol:</span>
+                        <span class="detail-value">${user.role || 'user'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Estado:</span>
+                        <span class="detail-value">${user.verified ? '✅ Verificado' : '❌ No verificado'}</span>
+                    </div>
+                </div>
+                
+                <div class="user-detail-card">
+                    <h4>📊 Estadísticas</h4>
+                    <div class="detail-item">
+                        <span class="detail-label">Piezas Creadas:</span>
+                        <span class="detail-value">${user.total_pieces || user.piecesCount || 0}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Versiones Guardadas:</span>
+                        <span class="detail-value">${user.total_versions || 0}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Valor Estimado Total:</span>
+                        <span class="detail-value">${formatCurrency(user.total_estimated_value || 0)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Días Activos:</span>
+                        <span class="detail-value">${(user.active_days_pieces || 0) + (user.active_days_calculations || 0)}</span>
+                    </div>
+                </div>
+                
+                <div class="user-detail-card">
+                    <h4>📅 Fechas Importantes</h4>
+                    <div class="detail-item">
+                        <span class="detail-label">Registro:</span>
+                        <span class="detail-value">${formatDate(user.created_at)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Último Acceso:</span>
+                        <span class="detail-value">${user.last_sign_in_at ? formatDate(user.last_sign_in_at) : 'Nunca'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Última Pieza:</span>
+                        <span class="detail-value">${user.last_piece_created ? formatDate(user.last_piece_created) : 'Nunca'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Suspendido Hasta:</span>
+                        <span class="detail-value">${user.banned_until ? formatDate(user.banned_until) : 'No suspendido'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function populateActivityTab(activities) {
+            const timeline = document.getElementById('userActivityTimeline');
+            if (!activities || activities.length === 0) {
+                timeline.innerHTML = '<p>No hay actividad registrada para este usuario.</p>';
+                return;
+            }
+            
+            timeline.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-type">${getActivityTypeLabel(activity.activity_type)}</div>
+                    <div class="activity-date">${formatDate(activity.activity_date)}</div>
+                    <div class="activity-data">${formatActivityData(activity.activity_data)}</div>
+                </div>
+            `).join('');
+        }
+
+        function populatePiecesTab(pieces) {
+            const content = document.getElementById('userPiecesContent');
+            if (!pieces || pieces.length === 0) {
+                content.innerHTML = '<p>Este usuario no ha creado ninguna pieza.</p>';
+                return;
+            }
+            
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Precio Estimado</th>
+                            <th>Fecha Creación</th>
+                            <th>Última Modificación</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            pieces.forEach(piece => {
+                html += `
+                    <tr>
+                        <td>${piece.title || 'Sin título'}</td>
+                        <td>${formatCurrency(piece.est_price_ars || 0)}</td>
+                        <td>${formatDate(piece.created_at)}</td>
+                        <td>${formatDate(piece.updated_at)}</td>
+                        <td>${piece.makerworld_url ? 
+                            `<a href="${piece.makerworld_url}" target="_blank" style="color: var(--accent-primary);">Ver</a>` : 
+                            '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+
+        function populateSubscriptionTab(user) {
+            const content = document.getElementById('userSubscriptionContent');
+            const hasSubscription = user.current_plan && user.subscription_active;
+            
+            content.innerHTML = `
+                <div class="user-detail-grid">
+                    <div class="user-detail-card">
+                        <h4>💳 Suscripción Actual</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Plan:</span>
+                            <span class="detail-value">${user.current_plan || 'Gratuito'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Estado:</span>
+                            <span class="detail-value">${user.subscription_active ? '✅ Activa' : '❌ Inactiva'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Expira:</span>
+                            <span class="detail-value">${user.subscription_expires ? formatDate(user.subscription_expires) : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Monto:</span>
+                            <span class="detail-value">${formatCurrency(user.subscription_amount || 0)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="user-detail-card">
+                        <h4>💰 Historial de Pagos</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Total Transacciones:</span>
+                            <span class="detail-value">${user.total_transactions || 0}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Total Pagado:</span>
+                            <span class="detail-value">${formatCurrency(user.total_payments || 0)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Valor Promedio:</span>
+                            <span class="detail-value">${formatCurrency((user.total_payments || 0) / Math.max(user.total_transactions || 1, 1))}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getActivityTypeLabel(type) {
+            const labels = {
+                'registration': 'Registro',
+                'piece_created': 'Pieza Creada',
+                'calculation_saved': 'Cálculo Guardado',
+                'subscription_created': 'Suscripción'
+            };
+            return labels[type] || type;
+        }
+
+        function formatActivityData(data) {
+            if (!data) return '';
+            try {
+                const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+                const entries = Object.entries(parsed).slice(0, 3); // Show first 3 entries
+                return entries.map(([key, value]) => `${key}: ${value}`).join(' | ');
+            } catch (e) {
+                return JSON.stringify(data).substring(0, 100);
+            }
+        }
+
+        // Modal Functions
+        function switchTab(tabName) {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.modal-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.modal-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Add active class to selected tab and content
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+        }
+
+        function closeUserDetailModal() {
+            document.getElementById('userDetailModal').classList.remove('active');
+            currentUser = null;
+        }
+
+        // User Action Functions
+        async function suspendUser(userId) {
+            showConfirmDialog(
+                'Suspender Usuario',
+                '¿Estás seguro de que quieres suspender este usuario? No podrá acceder a la aplicación.',
+                async () => {
+                    try {
+                        const { data, error } = await supabase
+                            .rpc('admin_suspend_user', { 
+                                target_user_id: userId,
+                                suspend_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+                            });
+
+                        if (error) throw error;
+                        
+                        alert('Usuario suspendido exitosamente');
+                        loadAllUsers();
+                        
+                    } catch (error) {
+                        console.error('Error suspending user:', error);
+                        alert('Error suspendiendo usuario: ' + error.message);
+                    }
+                }
+            );
+        }
+
+        async function unsuspendUser(userId) {
+            try {
+                const { data, error } = await supabase
+                    .rpc('admin_suspend_user', { 
+                        target_user_id: userId,
+                        suspend_until: null 
+                    });
+
+                if (error) throw error;
+                
+                alert('Usuario reactivado exitosamente');
+                loadAllUsers();
+                
+            } catch (error) {
+                console.error('Error unsuspending user:', error);
+                alert('Error reactivando usuario: ' + error.message);
+            }
+        }
+
+        async function deleteUser(userId) {
+            const user = filteredUsers.find(u => u.id === userId);
+            showConfirmDialog(
+                'Eliminar Usuario',
+                `¿Estás seguro de que quieres ELIMINAR permanentemente al usuario ${user?.email || userId}? Esta acción NO se puede deshacer.`,
+                async () => {
+                    try {
+                        const { data, error } = await supabase
+                            .rpc('admin_delete_user', { target_user_id: userId });
+
+                        if (error) throw error;
+                        
+                        alert('Usuario eliminado exitosamente');
+                        loadAllUsers();
+                        
+                    } catch (error) {
+                        console.error('Error deleting user:', error);
+                        alert('Error eliminando usuario: ' + error.message);
+                    }
+                }
+            );
+        }
+
+        async function resetUserPassword(userId) {
+            showConfirmDialog(
+                'Reset Password',
+                '¿Quieres enviar un email de reset de contraseña a este usuario?',
+                async () => {
+                    try {
+                        const user = filteredUsers.find(u => u.id === userId);
+                        if (!user?.email) {
+                            alert('Usuario no tiene email registrado');
+                            return;
+                        }
+
+                        const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+                        if (error) throw error;
+                        
+                        alert('Email de reset enviado exitosamente');
+                        
+                    } catch (error) {
+                        console.error('Error resetting password:', error);
+                        alert('Error enviando reset de contraseña: ' + error.message);
+                    }
+                }
+            );
+        }
+
+        function impersonateUser(userId) {
+            showConfirmDialog(
+                'Impersonar Usuario',
+                '¿Quieres impersonar este usuario? Se abrirá una nueva pestaña con la sesión del usuario.',
+                () => {
+                    // In a real implementation, this would use admin impersonation
+                    alert('Funcionalidad de impersonación pendiente de implementación');
+                    console.log('Impersonate user:', userId);
+                }
+            );
+        }
+
+        async function sendWelcomeEmail(userId) {
+            try {
+                const { data, error } = await supabase
+                    .rpc('admin_send_welcome_email', { target_user_id: userId });
+
+                if (error) throw error;
+                
+                alert('Email de bienvenida enviado');
+                
+            } catch (error) {
+                console.error('Error sending welcome email:', error);
+                alert('Error enviando email: ' + error.message);
+            }
+        }
+
+        // Bulk Operations
+        async function exportSelectedUsers() {
+            if (selectedUsers.size === 0) {
+                alert('No hay usuarios seleccionados');
+                return;
+            }
+
+            const selectedUserData = filteredUsers.filter(u => selectedUsers.has(u.id));
+            const csvContent = generateUserCSV(selectedUserData);
+            downloadCSV(csvContent, 'usuarios_zetalab.csv');
+        }
+
+        function generateUserCSV(users) {
+            const headers = ['ID', 'Email', 'Registro', 'Ultimo_Acceso', 'Verificado', 'Piezas', 'Estado'];
+            const rows = users.map(user => [
+                user.id,
+                user.email || '',
+                user.created_at,
+                user.last_sign_in_at || '',
+                user.verified ? 'Si' : 'No',
+                user.piecesCount || 0,
+                user.is_suspended ? 'Suspendido' : (user.hasSubscription ? 'Premium' : 'Free')
+            ]);
+            
+            return [headers, ...rows].map(row => 
+                row.map(field => `"${field}"`).join(',')
+            ).join('\n');
+        }
+
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        function showBulkEmailDialog() {
+            const customMessage = prompt('Mensaje personalizado para el email (opcional):');
+            if (customMessage !== null) { // User didn't cancel
+                bulkSendEmails(customMessage);
+            }
+        }
+
+        async function bulkSendEmails(customMessage = '') {
+            if (selectedUsers.size === 0) {
+                alert('No hay usuarios seleccionados');
+                return;
+            }
+
+            try {
+                const promises = Array.from(selectedUsers).map(userId => 
+                    supabase.rpc('admin_send_welcome_email', { 
+                        target_user_id: userId,
+                        custom_message: customMessage 
+                    })
+                );
+                
+                await Promise.all(promises);
+                alert(`Emails enviados a ${selectedUsers.size} usuarios`);
+                
+            } catch (error) {
+                console.error('Error sending bulk emails:', error);
+                alert('Error enviando emails: ' + error.message);
+            }
+        }
+
+        async function bulkSuspendUsers() {
+            if (selectedUsers.size === 0) {
+                alert('No hay usuarios seleccionados');
+                return;
+            }
+
+            showConfirmDialog(
+                'Suspender Usuarios',
+                `¿Estás seguro de que quieres suspender ${selectedUsers.size} usuarios?`,
+                async () => {
+                    try {
+                        const suspendUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                        const promises = Array.from(selectedUsers).map(userId => 
+                            supabase.rpc('admin_suspend_user', { 
+                                target_user_id: userId,
+                                suspend_until: suspendUntil
+                            })
+                        );
+                        
+                        await Promise.all(promises);
+                        alert(`${selectedUsers.size} usuarios suspendidos`);
+                        loadAllUsers();
+                        
+                    } catch (error) {
+                        console.error('Error bulk suspending:', error);
+                        alert('Error suspendiendo usuarios: ' + error.message);
+                    }
+                }
+            );
+        }
+
+        async function bulkUnsuspendUsers() {
+            if (selectedUsers.size === 0) {
+                alert('No hay usuarios seleccionados');
+                return;
+            }
+
+            try {
+                const promises = Array.from(selectedUsers).map(userId => 
+                    supabase.rpc('admin_suspend_user', { 
+                        target_user_id: userId,
+                        suspend_until: null
+                    })
+                );
+                
+                await Promise.all(promises);
+                alert(`${selectedUsers.size} usuarios reactivados`);
+                loadAllUsers();
+                
+            } catch (error) {
+                console.error('Error bulk unsuspending:', error);
+                alert('Error reactivando usuarios: ' + error.message);
+            }
+        }
+
+        async function bulkDeleteUsers() {
+            if (selectedUsers.size === 0) {
+                alert('No hay usuarios seleccionados');
+                return;
+            }
+
+            showConfirmDialog(
+                'ELIMINAR Usuarios',
+                `⚠️ PELIGRO: ¿Estás seguro de que quieres ELIMINAR permanentemente ${selectedUsers.size} usuarios? Esta acción NO se puede deshacer.`,
+                async () => {
+                    try {
+                        const promises = Array.from(selectedUsers).map(userId => 
+                            supabase.rpc('admin_delete_user', { target_user_id: userId })
+                        );
+                        
+                        await Promise.all(promises);
+                        alert(`${selectedUsers.size} usuarios eliminados`);
+                        loadAllUsers();
+                        
+                    } catch (error) {
+                        console.error('Error bulk deleting:', error);
+                        alert('Error eliminando usuarios: ' + error.message);
+                    }
+                }
+            );
+        }
+
+        // Admin Notes
+        async function saveAdminNotes() {
+            const notes = document.getElementById('adminNotesTextarea').value;
+            if (!currentUser) return;
+
+            try {
+                // In a real implementation, save to admin_notes table
+                console.log('Saving admin notes for user:', currentUser.id, notes);
+                alert('Notas guardadas (funcionalidad pendiente de implementación completa)');
+                
+            } catch (error) {
+                console.error('Error saving admin notes:', error);
+                alert('Error guardando notas');
+            }
+        }
+
+        // Confirmation Dialog
+        function showConfirmDialog(title, message, callback) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            confirmCallback = callback;
+            document.getElementById('confirmDialog').classList.add('active');
+        }
+
+        function closeConfirmDialog() {
+            document.getElementById('confirmDialog').classList.remove('active');
+            confirmCallback = null;
+        }
+
+        function confirmAction() {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            closeConfirmDialog();
+        }
+
+        // Click outside modal to close
+        document.getElementById('userDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeUserDetailModal();
+            }
+        });
+
+        document.getElementById('confirmDialog').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeConfirmDialog();
+            }
+        });
 
         // Cargar datos al iniciar
         document.addEventListener('DOMContentLoaded', function() {
