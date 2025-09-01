@@ -1252,12 +1252,37 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <script>
-        // Supabase configuration
+        // Supabase configuration with updated keys
         const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjMxNDgyNjQsImV4cCI6MjAzODcyNDI2NH0.Dz_9UnmZdoiCAfSLQD5WmSg6JWUGGqOjB_WIXPjShWQ';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc';
+        const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3MDM4OSwiZXhwIjoyMDcxNzQ2Mzg5fQ.DfuFLgbxVNmrhfqXVgCRIoTCsDvUK02qR9wJqzik2PY';
         
-        // Initialize Supabase client
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Initialize Supabase clients with safety check
+        let supabase, supabaseAdmin;
+        
+        // Wait for Supabase to be available
+        function initSupabase() {
+            if (typeof window.supabase === 'undefined') {
+                console.log('⏳ Waiting for Supabase to load...');
+                setTimeout(initSupabase, 100);
+                return;
+            }
+            
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabaseAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+                console.log('✅ Supabase clients initialized successfully');
+            } catch (error) {
+                console.error('❌ Error initializing Supabase:', error);
+            }
+        }
+        
+        // Initialize when DOM loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSupabase);
+        } else {
+            initSupabase();
+        }
 
         // Navigation functionality
         function showSection(sectionName) {
@@ -1309,13 +1334,22 @@
             document.getElementById('activeSubscriptions').textContent = '...';
             document.getElementById('totalRevenue').textContent = '...';
 
-            // Load initial data with timeout
-            setTimeout(() => {
+            // Load initial data after Supabase is ready
+            const waitForSupabaseAndLoad = () => {
+                if (!supabase || !supabaseAdmin) {
+                    console.log('⏳ Waiting for Supabase to initialize...');
+                    setTimeout(waitForSupabaseAndLoad, 200);
+                    return;
+                }
+                
                 loadAllData().catch(error => {
                     console.error('Failed to load initial data:', error);
                     showNotification('Error cargando datos iniciales. Usa el botón "Diagnóstico" para más información.', 'warning');
                 });
-            }, 1000);
+            };
+            
+            // Start checking after a small delay to let Supabase initialize
+            setTimeout(waitForSupabaseAndLoad, 500);
 
             console.log('✅ Dashboard initialization complete');
         });
@@ -1336,6 +1370,11 @@
         async function loadDashboardStats() {
             console.log('🔄 Loading dashboard stats...');
             
+            if (!supabase || !supabaseAdmin) {
+                console.error('❌ Supabase clients not initialized yet');
+                return;
+            }
+            
             try {
                 // Method 1: Try using admin views first (most likely to work)
                 console.log('📊 Trying admin views...');
@@ -1354,9 +1393,9 @@
                 } else {
                     console.log('❌ Admin views failed:', adminViewError);
                     
-                    // Method 2: Try direct auth.users query
+                    // Method 2: Try direct auth.users query with admin client
                     console.log('📊 Trying direct auth.users query...');
-                    const { count: totalUsers, error: countError } = await supabase
+                    const { count: totalUsers, error: countError } = await supabaseAdmin
                         .from('auth.users')
                         .select('*', { count: 'exact', head: true });
                     
@@ -1364,7 +1403,7 @@
                         console.log('✅ Direct auth query worked, total users:', totalUsers);
                         
                         // Get verified count
-                        const { count: verifiedUsers } = await supabase
+                        const { count: verifiedUsers } = await supabaseAdmin
                             .from('auth.users')
                             .select('*', { count: 'exact', head: true })
                             .not('email_confirmed_at', 'is', null);
@@ -1437,6 +1476,11 @@
 
         // Load recent activity
         async function loadRecentActivity() {
+            if (!supabase || !supabaseAdmin) {
+                console.error('❌ Supabase clients not initialized yet');
+                return;
+            }
+            
             try {
                 const tbody = document.getElementById('recentActivity');
                 
@@ -1544,6 +1588,12 @@
         // Users management functions with comprehensive debugging and fallbacks
         async function loadUsers() {
             console.log('👥 Loading users...');
+            
+            if (!supabase || !supabaseAdmin) {
+                console.error('❌ Supabase clients not initialized yet');
+                return;
+            }
+            
             const tbody = document.getElementById('usersTable');
             
             try {
@@ -1581,9 +1631,9 @@
                 } else {
                     console.log('❌ Admin users view failed:', adminError);
                     
-                    // Method 2: Try direct auth.users query
+                    // Method 2: Try direct auth.users query with admin client
                     console.log('📊 Trying direct auth.users query...');
-                    const { data: authUsers, error: authError } = await supabase
+                    const { data: authUsers, error: authError } = await supabaseAdmin
                         .from('auth.users')
                         .select(`
                             id,
@@ -1747,6 +1797,12 @@
         // Subscription management functions with comprehensive debugging
         async function loadSubscriptions() {
             console.log('💳 Loading subscriptions...');
+            
+            if (!supabase || !supabaseAdmin) {
+                console.error('❌ Supabase clients not initialized yet');
+                return;
+            }
+            
             const table = document.getElementById('subscriptionsTable');
             
             try {
@@ -1823,7 +1879,7 @@
                         const userIds = subscriptions.map(sub => sub.user_id);
                         if (userIds.length > 0) {
                             console.log('📊 Trying to get user emails...');
-                            const { data: users, error: usersError } = await supabase
+                            const { data: users, error: usersError } = await supabaseAdmin
                                 .from('auth.users')
                                 .select('id, email, raw_user_meta_data')
                                 .in('id', userIds);
@@ -2125,7 +2181,7 @@
                 }
 
                 // Get user email for this subscription
-                const { data: user } = await supabase
+                const { data: user } = await supabaseAdmin
                     .from('auth.users')
                     .select('email')
                     .eq('id', subscription.user_id)
@@ -2181,7 +2237,7 @@
                 } else {
                     // Create new subscription - would need user_id lookup from email
                     const userEmail = formData.get('userEmail');
-                    const { data: user } = await supabase
+                    const { data: user } = await supabaseAdmin
                         .from('auth.users')
                         .select('id')
                         .eq('email', userEmail)
@@ -2364,6 +2420,11 @@
             const debugPanel = document.getElementById('debugPanel');
             const debugInfo = document.getElementById('debugInfo');
             
+            if (!supabase || !supabaseAdmin) {
+                debugInfo.textContent = '❌ Error: Supabase clients not initialized yet\n';
+                return;
+            }
+            
             debugPanel.style.display = 'block';
             debugInfo.textContent = 'Probando conexión a Supabase...\n';
             
@@ -2383,7 +2444,7 @@
 
                 // Test 2: Auth schema access
                 debugInfo.textContent += '\n2. Test de acceso a auth.users...\n';
-                const { data: authTest, error: authError } = await supabase
+                const { data: authTest, error: authError } = await supabaseAdmin
                     .from('auth.users')
                     .select('id')
                     .limit(1);
