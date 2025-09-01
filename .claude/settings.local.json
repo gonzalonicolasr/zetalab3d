@@ -9,7 +9,8 @@
       "Bash(curl:*)",
       "Bash(where python)",
       "Bash(git add:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npx serve:*)"
     ],
     "deny": [],
     "ask": []
