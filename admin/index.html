@@ -705,6 +705,173 @@
             font-weight: 500;
         }
 
+        /* Enhanced Subscription Management Styles */
+        .mini-btn {
+            background: var(--bg-quaternary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-left: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .mini-btn:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .preset-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .preset-btn:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .detail-section {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid var(--border-primary);
+        }
+
+        .detail-section h4 {
+            color: var(--accent-primary);
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            font-size: 0.9rem;
+        }
+
+        .detail-grid div {
+            padding: 8px;
+            background: var(--bg-quaternary);
+            border-radius: 4px;
+            border: 1px solid var(--border-secondary);
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .badge.active {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.1));
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .badge.trial {
+            background: linear-gradient(135deg, rgba(255, 191, 0, 0.2), rgba(255, 191, 0, 0.1));
+            color: var(--warning);
+            border: 1px solid var(--warning);
+            animation: pulse 2s infinite;
+        }
+
+        .badge.expired, .badge.canceled {
+            background: linear-gradient(135deg, rgba(255, 68, 68, 0.2), rgba(255, 68, 68, 0.1));
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .badge.approved {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.1));
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .badge.pending {
+            background: linear-gradient(135deg, rgba(255, 191, 0, 0.2), rgba(255, 191, 0, 0.1));
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .badge.rejected, .badge.refunded {
+            background: linear-gradient(135deg, rgba(255, 68, 68, 0.2), rgba(255, 68, 68, 0.1));
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        /* Disabled button styles */
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--bg-quaternary);
+            border-color: var(--border-primary);
+        }
+
+        .action-btn:disabled:hover {
+            background: var(--bg-quaternary);
+            color: var(--text-secondary);
+            border-color: var(--border-primary);
+            transform: none;
+        }
+
+        /* Pulse animation for trial badges */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+
+        /* Enhanced table styles for subscription management */
+        .subscription-table th:nth-child(11) {
+            min-width: 200px; /* Actions column */
+        }
+
+        .subscription-table td {
+            vertical-align: top;
+            padding: 12px 8px;
+        }
+
+        /* Modal enhancements */
+        .modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-secondary);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-quaternary));
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .modal-footer {
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-primary);
+        }
+
         /* Terminal Users Section */
         .users-section {
             display: none;
@@ -2360,7 +2527,7 @@
                     </div>
                 </div>
 
-                <!-- Comprehensive Subscription Table -->
+                <!-- Enhanced Comprehensive Subscription Table -->
                 <div class="data-table">
                     <div class="data-table-header">
                         <h3>📋 Todas las Suscripciones</h3>
@@ -2370,6 +2537,11 @@
                                 Seleccionar todo
                             </label>
                             <span id="selectedSubscriptionsCount" style="color: var(--text-secondary); font-size: 0.9rem;">0 seleccionados</span>
+                            <div style="border-left: 1px solid var(--border-primary); padding-left: 10px; margin-left: 10px;">
+                                <button class="action-btn" onclick="showBulkEditModal()" id="bulkEditBtn" disabled>✏️ Editar Lote</button>
+                                <button class="action-btn" onclick="showBulkExtendModal()" id="bulkExtendBtn" disabled>📅 Extender Lote</button>
+                                <button class="action-btn warning" onclick="bulkCancelSubscriptions()" id="bulkCancelBtn" disabled>❌ Cancelar Lote</button>
+                            </div>
                         </div>
                     </div>
                     <div class="table-content">
@@ -2378,19 +2550,20 @@
                                 <tr>
                                     <th style="width: 40px;"><input type="checkbox" id="selectAllSubsHeader" onchange="toggleSelectAllSubscriptions()" /></th>
                                     <th>Usuario</th>
-                                    <th>Plan</th>
+                                    <th>Plan / Tipo</th>
                                     <th>Estado</th>
                                     <th>Precio</th>
                                     <th>Inicio</th>
                                     <th>Expiración</th>
                                     <th>Días Restantes</th>
-                                    <th>Último Pago</th>
+                                    <th>Pago Info</th>
+                                    <th>Uso/Límites</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="subscriptionsTable">
                                 <tr>
-                                    <td colspan="10" style="text-align: center; padding: 40px;">
+                                    <td colspan="11" style="text-align: center; padding: 40px;">
                                         <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                                             <div class="loading-spinner"></div>
                                             Cargando suscripciones...
@@ -2399,6 +2572,75 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Enhanced Payment Transactions History -->
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>💳 Historial de Transacciones</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="paymentStatusFilter" onchange="filterPaymentTransactions()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px;">
+                                <option value="">Todos los estados</option>
+                                <option value="approved">Aprobados</option>
+                                <option value="pending">Pendientes</option>
+                                <option value="rejected">Rechazados</option>
+                                <option value="refunded">Reembolsados</option>
+                            </select>
+                            <input type="date" id="paymentDateFilter" onchange="filterPaymentTransactions()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px;">
+                            <button onclick="exportPaymentTransactions()" class="export-btn">📊 Exportar</button>
+                        </div>
+                    </div>
+                    <div class="table-content" style="max-height: 400px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID Transacción</th>
+                                    <th>Usuario</th>
+                                    <th>Monto</th>
+                                    <th>Estado</th>
+                                    <th>Método</th>
+                                    <th>Fecha</th>
+                                    <th>MP ID</th>
+                                    <th>Descripción</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentTransactionsTable">
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 20px;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                            <div class="loading-spinner"></div>
+                                            Cargando transacciones...
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Subscription Analytics Dashboard -->
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>📊 Análisis de Suscripciones</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="generateSubscriptionReport()" class="export-btn">📈 Generar Reporte</button>
+                            <button onclick="viewSubscriptionTrends()" class="export-btn">📉 Ver Tendencias</button>
+                            <button onclick="exportChurnAnalysis()" class="export-btn">🔄 Análisis Churn</button>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px;">
+                        <!-- Subscription Lifecycle Chart -->
+                        <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px;">
+                            <h4>Ciclo de Vida de Suscripciones</h4>
+                            <canvas id="subscriptionLifecycleChart" width="400" height="300"></canvas>
+                        </div>
+                        <!-- Revenue Chart -->
+                        <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px;">
+                            <h4>Ingresos por Periodo</h4>
+                            <canvas id="revenueChart" width="400" height="300"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -2955,6 +3197,186 @@
 
     <!-- Modal Container -->
     <div id="modalContainer"></div>
+
+    <!-- Enhanced Subscription Management Modals -->
+    
+    <!-- Bulk Edit Subscription Modal -->
+    <div class="modal-overlay" id="bulkEditSubscriptionModal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>✏️ Edición en Lote de Suscripciones</h3>
+                <button class="close-modal" onclick="closeBulkEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                    <strong>Suscripciones seleccionadas:</strong> <span id="bulkEditCount">0</span>
+                </div>
+                
+                <div style="display: grid; gap: 15px;">
+                    <div>
+                        <label>📅 Nueva fecha de expiración:</label>
+                        <input type="date" id="bulkEditExpiry" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label>💰 Nuevo precio (ARS):</label>
+                        <input type="number" id="bulkEditAmount" placeholder="Ej: 5000" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label>📊 Cambiar estado a:</label>
+                        <select id="bulkEditStatus" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                            <option value="">No cambiar</option>
+                            <option value="active">Activo</option>
+                            <option value="trial">Trial</option>
+                            <option value="expired">Expirado</option>
+                            <option value="canceled">Cancelado</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label>📝 Nota administrativa:</label>
+                        <textarea id="bulkEditNote" placeholder="Motivo de la edición en lote..." style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; min-height: 80px;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeBulkEditModal()" class="action-btn">Cancelar</button>
+                <button onclick="confirmBulkEdit()" class="action-btn success">Aplicar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Extend Subscription Modal -->
+    <div class="modal-overlay" id="bulkExtendSubscriptionModal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>📅 Extender Suscripciones en Lote</h3>
+                <button class="close-modal" onclick="closeBulkExtendModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                    <strong>Suscripciones seleccionadas:</strong> <span id="bulkExtendCount">0</span>
+                </div>
+                
+                <div style="display: grid; gap: 15px;">
+                    <div>
+                        <label>⏰ Días a extender:</label>
+                        <div style="display: flex; gap: 10px; margin-top: 8px;">
+                            <button onclick="setBulkExtendDays(7)" class="preset-btn">7 días</button>
+                            <button onclick="setBulkExtendDays(30)" class="preset-btn">30 días</button>
+                            <button onclick="setBulkExtendDays(90)" class="preset-btn">90 días</button>
+                            <button onclick="setBulkExtendDays(365)" class="preset-btn">1 año</button>
+                        </div>
+                        <input type="number" id="bulkExtendDays" value="30" min="1" max="365" style="width: 100%; padding: 8px; margin-top: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label>📝 Motivo de la extensión:</label>
+                        <select id="bulkExtendReason" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                            <option value="promotional">Promoción especial</option>
+                            <option value="compensation">Compensación por problemas</option>
+                            <option value="loyalty">Beneficio por lealtad</option>
+                            <option value="support">Soporte técnico</option>
+                            <option value="other">Otro motivo</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label>📧 Notificar por email:</label>
+                        <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                            <input type="checkbox" id="bulkExtendNotify" checked>
+                            Enviar email de confirmación a los usuarios
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeBulkExtendModal()" class="action-btn">Cancelar</button>
+                <button onclick="confirmBulkExtend()" class="action-btn success">Extender Suscripciones</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Details Modal -->
+    <div class="modal-overlay" id="subscriptionDetailsModal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>📋 Detalles de Suscripción</h3>
+                <button class="close-modal" onclick="closeSubscriptionDetailsModal()">×</button>
+            </div>
+            <div class="modal-body" id="subscriptionDetailsContent">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeSubscriptionDetailsModal()" class="action-btn">Cerrar</button>
+                <button onclick="editCurrentSubscription()" class="action-btn">✏️ Editar</button>
+                <button onclick="viewPaymentHistory()" class="action-btn">💳 Historial de Pagos</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Assign Subscription Modal -->
+    <div class="modal-overlay" id="enhancedAssignSubscriptionModal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>➕ Asignar Nueva Suscripción</h3>
+                <button class="close-modal" onclick="closeEnhancedAssignModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: grid; gap: 15px;">
+                    <div>
+                        <label>👤 Usuario:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="assignUserEmail" placeholder="email@usuario.com" style="flex: 1; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                            <button onclick="searchUserForAssign()" class="action-btn">🔍 Buscar</button>
+                        </div>
+                        <div id="userSearchResults" style="margin-top: 8px; max-height: 150px; overflow-y: auto;"></div>
+                    </div>
+                    
+                    <div>
+                        <label>📦 Plan de suscripción:</label>
+                        <select id="assignPlanSelect" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                            <option value="">Seleccionar plan...</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label>⏰ Tipo de periodo:</label>
+                        <select id="assignPeriodType" onchange="updateAssignDates()" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                            <option value="trial">Trial (días gratuitos)</option>
+                            <option value="monthly">Mensual</option>
+                            <option value="custom">Periodo personalizado</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label>📅 Fecha de inicio:</label>
+                        <input type="date" id="assignStartDate" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label>📅 Fecha de expiración:</label>
+                        <input type="date" id="assignEndDate" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label>💰 Precio (ARS):</label>
+                        <input type="number" id="assignAmount" placeholder="Precio de la suscripción" style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label>📝 Notas administrativas:</label>
+                        <textarea id="assignNotes" placeholder="Notas internas sobre esta asignación..." style="width: 100%; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; min-height: 60px;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeEnhancedAssignModal()" class="action-btn">Cancelar</button>
+                <button onclick="confirmEnhancedAssign()" class="action-btn success">Crear Suscripción</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -6963,6 +7385,442 @@
                 initializeSearchAndFilters();
             }, 500);
         });
+
+        // =================================================================
+        // ENHANCED SUBSCRIPTION MANAGEMENT FUNCTIONS
+        // =================================================================
+
+        // Bulk edit modal functions
+        function showBulkEditModal() {
+            if (selectedSubscriptions.size === 0) {
+                showNotification('Selecciona al menos una suscripción para editar', 'warning');
+                return;
+            }
+            document.getElementById('bulkEditCount').textContent = selectedSubscriptions.size;
+            document.getElementById('bulkEditSubscriptionModal').style.display = 'flex';
+        }
+
+        function closeBulkEditModal() {
+            document.getElementById('bulkEditSubscriptionModal').style.display = 'none';
+            clearBulkEditForm();
+        }
+
+        function clearBulkEditForm() {
+            document.getElementById('bulkEditExpiry').value = '';
+            document.getElementById('bulkEditAmount').value = '';
+            document.getElementById('bulkEditStatus').value = '';
+            document.getElementById('bulkEditNote').value = '';
+        }
+
+        async function confirmBulkEdit() {
+            try {
+                const expiry = document.getElementById('bulkEditExpiry').value;
+                const amount = document.getElementById('bulkEditAmount').value;
+                const status = document.getElementById('bulkEditStatus').value;
+                const note = document.getElementById('bulkEditNote').value;
+
+                if (!expiry && !amount && !status) {
+                    showNotification('Debe especificar al menos un campo para editar', 'warning');
+                    return;
+                }
+
+                const subscriptionIds = Array.from(selectedSubscriptions);
+                let updateCount = 0;
+
+                for (const subId of subscriptionIds) {
+                    const subscription = allSubscriptions.find(s => s.id === subId);
+                    if (!subscription) continue;
+
+                    const updateData = {};
+                    if (expiry) {
+                        if (subscription.subscription_type === 'modern') {
+                            updateData[subscription.is_trial ? 'trial_ends_at' : 'current_period_end'] = expiry;
+                        } else {
+                            updateData.expires_at = expiry;
+                        }
+                    }
+                    if (amount) updateData.amount = parseFloat(amount);
+                    if (status) {
+                        if (subscription.subscription_type === 'modern') {
+                            updateData.status = status;
+                            if (status === 'canceled') updateData.canceled_at = new Date().toISOString();
+                        } else {
+                            updateData.active = status === 'active';
+                        }
+                    }
+
+                    const tableName = subscription.subscription_type === 'modern' ? 'user_subscriptions' : 'subscriptions';
+                    const { error } = await supabase.from(tableName).update(updateData).eq('id', subId);
+                    
+                    if (!error) updateCount++;
+                }
+
+                showNotification(`Actualizadas ${updateCount} suscripciones exitosamente`, 'success');
+                closeBulkEditModal();
+                selectedSubscriptions.clear();
+                updateSelectionCount('selectedSubscriptionsCount', 0);
+                updateBulkButtonStates();
+                loadSubscriptionManagement();
+            } catch (error) {
+                console.error('Error in bulk edit:', error);
+                showNotification('Error en edición en lote: ' + error.message, 'error');
+            }
+        }
+
+        // Bulk extend modal functions
+        function showBulkExtendModal() {
+            if (selectedSubscriptions.size === 0) {
+                showNotification('Selecciona al menos una suscripción para extender', 'warning');
+                return;
+            }
+            document.getElementById('bulkExtendCount').textContent = selectedSubscriptions.size;
+            document.getElementById('bulkExtendSubscriptionModal').style.display = 'flex';
+        }
+
+        function closeBulkExtendModal() {
+            document.getElementById('bulkExtendSubscriptionModal').style.display = 'none';
+        }
+
+        function setBulkExtendDays(days) {
+            document.getElementById('bulkExtendDays').value = days;
+        }
+
+        async function confirmBulkExtend() {
+            try {
+                const days = parseInt(document.getElementById('bulkExtendDays').value);
+                const reason = document.getElementById('bulkExtendReason').value;
+                const notify = document.getElementById('bulkExtendNotify').checked;
+
+                if (!days || days <= 0) {
+                    showNotification('Debe especificar un número válido de días', 'warning');
+                    return;
+                }
+
+                const subscriptionIds = Array.from(selectedSubscriptions);
+                let updateCount = 0;
+
+                for (const subId of subscriptionIds) {
+                    const subscription = allSubscriptions.find(s => s.id === subId);
+                    if (!subscription) continue;
+
+                    const currentExpiry = new Date(subscription.expires_at || new Date());
+                    const newExpiry = new Date(currentExpiry);
+                    newExpiry.setDate(newExpiry.getDate() + days);
+
+                    const updateData = {};
+                    if (subscription.subscription_type === 'modern') {
+                        updateData[subscription.is_trial ? 'trial_ends_at' : 'current_period_end'] = newExpiry.toISOString();
+                    } else {
+                        updateData.expires_at = newExpiry.toISOString();
+                    }
+
+                    const tableName = subscription.subscription_type === 'modern' ? 'user_subscriptions' : 'subscriptions';
+                    const { error } = await supabase.from(tableName).update(updateData).eq('id', subId);
+                    
+                    if (!error) updateCount++;
+                }
+
+                showNotification(`Extendidas ${updateCount} suscripciones por ${days} días`, 'success');
+                closeBulkExtendModal();
+                selectedSubscriptions.clear();
+                updateSelectionCount('selectedSubscriptionsCount', 0);
+                updateBulkButtonStates();
+                loadSubscriptionManagement();
+            } catch (error) {
+                console.error('Error in bulk extend:', error);
+                showNotification('Error en extensión en lote: ' + error.message, 'error');
+            }
+        }
+
+        // Bulk cancel subscriptions
+        async function bulkCancelSubscriptions() {
+            if (selectedSubscriptions.size === 0) {
+                showNotification('Selecciona al menos una suscripción para cancelar', 'warning');
+                return;
+            }
+
+            if (!confirm(`¿Confirmas la cancelación de ${selectedSubscriptions.size} suscripciones?`)) {
+                return;
+            }
+
+            try {
+                const subscriptionIds = Array.from(selectedSubscriptions);
+                let updateCount = 0;
+
+                for (const subId of subscriptionIds) {
+                    const subscription = allSubscriptions.find(s => s.id === subId);
+                    if (!subscription) continue;
+
+                    const updateData = {};
+                    if (subscription.subscription_type === 'modern') {
+                        updateData.status = 'canceled';
+                        updateData.canceled_at = new Date().toISOString();
+                    } else {
+                        updateData.active = false;
+                    }
+
+                    const tableName = subscription.subscription_type === 'modern' ? 'user_subscriptions' : 'subscriptions';
+                    const { error } = await supabase.from(tableName).update(updateData).eq('id', subId);
+                    
+                    if (!error) updateCount++;
+                }
+
+                showNotification(`Canceladas ${updateCount} suscripciones exitosamente`, 'success');
+                selectedSubscriptions.clear();
+                updateSelectionCount('selectedSubscriptionsCount', 0);
+                updateBulkButtonStates();
+                loadSubscriptionManagement();
+            } catch (error) {
+                console.error('Error in bulk cancel:', error);
+                showNotification('Error en cancelación en lote: ' + error.message, 'error');
+            }
+        }
+
+        // Update bulk action button states
+        function updateBulkButtonStates() {
+            const hasSelection = selectedSubscriptions.size > 0;
+            document.getElementById('bulkEditBtn').disabled = !hasSelection;
+            document.getElementById('bulkExtendBtn').disabled = !hasSelection;
+            document.getElementById('bulkCancelBtn').disabled = !hasSelection;
+        }
+
+        // Enhanced toggle selection with button updates
+        const originalToggleSubscriptionSelection = window.toggleSubscriptionSelection;
+        window.toggleSubscriptionSelection = function(subscriptionId) {
+            if (originalToggleSubscriptionSelection) {
+                originalToggleSubscriptionSelection(subscriptionId);
+            } else {
+                if (selectedSubscriptions.has(subscriptionId)) {
+                    selectedSubscriptions.delete(subscriptionId);
+                } else {
+                    selectedSubscriptions.add(subscriptionId);
+                }
+                updateSelectionCount('selectedSubscriptionsCount', selectedSubscriptions.size);
+            }
+            updateBulkButtonStates();
+        };
+
+        // Subscription details modal
+        async function showSubscriptionDetails(subscriptionId) {
+            try {
+                const subscription = allSubscriptions.find(s => s.id === subscriptionId);
+                if (!subscription) return;
+
+                // Get payment transactions
+                const { data: transactions } = await supabase
+                    .from('payment_transactions')
+                    .select('*')
+                    .eq('user_id', subscription.user_id)
+                    .order('processed_at', { ascending: false });
+
+                // Get usage data
+                const { data: pieces } = await supabase
+                    .from('pieces')
+                    .select('id, created_at')
+                    .eq('user_id', subscription.user_id);
+
+                const detailsHtml = `
+                    <div style="display: grid; gap: 20px;">
+                        <div class="detail-section">
+                            <h4>📋 Información de Suscripción</h4>
+                            <div class="detail-grid">
+                                <div><strong>Usuario:</strong> ${subscription.user_email}</div>
+                                <div><strong>Nombre:</strong> ${subscription.user_name || 'N/A'}</div>
+                                <div><strong>Plan:</strong> ${subscription.plan_name}</div>
+                                <div><strong>Tipo:</strong> ${subscription.subscription_type === 'modern' ? 'Modern' : 'Legacy'}</div>
+                                <div><strong>Estado:</strong> ${subscription.status}</div>
+                                <div><strong>Monto:</strong> ${formatCurrency(subscription.amount || 0)}</div>
+                                <div><strong>Inicio:</strong> ${formatDate(subscription.created_at)}</div>
+                                <div><strong>Expiración:</strong> ${formatDate(subscription.expires_at)}</div>
+                                <div><strong>Días restantes:</strong> ${subscription.days_remaining || 0}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>💳 Información de Pago</h4>
+                            <div class="detail-grid">
+                                <div><strong>Estado de Pago:</strong> ${subscription.payment_status || 'N/A'}</div>
+                                ${subscription.mp_subscription_id ? `<div><strong>MP Subscription ID:</strong> ${subscription.mp_subscription_id}</div>` : ''}
+                                ${subscription.mp_preapproval_id ? `<div><strong>MP Preapproval ID:</strong> ${subscription.mp_preapproval_id}</div>` : ''}
+                                <div><strong>Total de transacciones:</strong> ${transactions?.length || 0}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>📊 Uso de la Aplicación</h4>
+                            <div class="detail-grid">
+                                <div><strong>Piezas creadas:</strong> ${pieces?.length || 0}</div>
+                                <div><strong>Último acceso:</strong> Por implementar</div>
+                                <div><strong>Cálculos realizados:</strong> Por implementar</div>
+                            </div>
+                        </div>
+
+                        ${transactions && transactions.length > 0 ? `
+                        <div class="detail-section">
+                            <h4>📈 Historial de Transacciones</h4>
+                            <div style="max-height: 200px; overflow-y: auto;">
+                                ${transactions.map(t => `
+                                    <div style="padding: 8px; border-bottom: 1px solid var(--border-primary);">
+                                        <strong>${formatCurrency(t.amount)}</strong> - ${t.status} 
+                                        <small>(${formatDate(t.processed_at)})</small>
+                                        ${t.mp_payment_id ? `<br><small>MP ID: ${t.mp_payment_id}</small>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                document.getElementById('subscriptionDetailsContent').innerHTML = detailsHtml;
+                document.getElementById('subscriptionDetailsModal').style.display = 'flex';
+                
+                // Store current subscription for actions
+                window.currentSubscriptionDetails = subscription;
+            } catch (error) {
+                console.error('Error loading subscription details:', error);
+                showNotification('Error cargando detalles de suscripción', 'error');
+            }
+        }
+
+        function closeSubscriptionDetailsModal() {
+            document.getElementById('subscriptionDetailsModal').style.display = 'none';
+        }
+
+        // Load payment transactions for the table
+        async function loadPaymentTransactions() {
+            try {
+                const { data: transactions, error } = await supabase
+                    .from('payment_transactions')
+                    .select(`
+                        *,
+                        user_subscriptions!inner(
+                            profiles:user_id(email, name)
+                        )
+                    `)
+                    .order('processed_at', { ascending: false })
+                    .limit(100);
+
+                if (error) throw error;
+
+                const tableBody = document.getElementById('paymentTransactionsTable');
+                if (!transactions || transactions.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">No hay transacciones</td></tr>';
+                    return;
+                }
+
+                const html = transactions.map(t => `
+                    <tr>
+                        <td>${t.id.substring(0, 8)}...</td>
+                        <td>${t.user_subscriptions?.profiles?.email || 'N/A'}</td>
+                        <td><strong>${formatCurrency(t.amount)}</strong></td>
+                        <td>
+                            <span class="badge ${t.status}">
+                                ${t.status === 'approved' ? '✅ Aprobado' :
+                                  t.status === 'pending' ? '⏳ Pendiente' :
+                                  t.status === 'rejected' ? '❌ Rechazado' :
+                                  t.status === 'refunded' ? '💸 Reembolsado' : t.status}
+                            </span>
+                        </td>
+                        <td>MercadoPago</td>
+                        <td>${formatDate(t.processed_at)}</td>
+                        <td>${t.mp_payment_id ? t.mp_payment_id.substring(0, 8) + '...' : 'N/A'}</td>
+                        <td>${t.description || 'N/A'}</td>
+                        <td>
+                            <button onclick="viewTransactionDetails('${t.id}')" class="action-btn">👁️</button>
+                            ${t.status === 'approved' ? `<button onclick="processRefund('${t.id}')" class="action-btn warning">💸</button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+
+                tableBody.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading payment transactions:', error);
+            }
+        }
+
+        // Load user usage data asynchronously
+        async function loadAllUsageData() {
+            try {
+                for (const subscription of allSubscriptions) {
+                    loadUserUsageData(subscription.user_id);
+                }
+            } catch (error) {
+                console.error('Error loading usage data:', error);
+            }
+        }
+
+        async function loadUserUsageData(userId) {
+            try {
+                const { data: pieces, error } = await supabase
+                    .from('pieces')
+                    .select('id')
+                    .eq('user_id', userId);
+
+                if (!error) {
+                    const usageElement = document.getElementById(`usage-${userId}`);
+                    if (usageElement) {
+                        usageElement.textContent = pieces?.length || 0;
+                    }
+                }
+            } catch (error) {
+                console.error(`Error loading usage for user ${userId}:`, error);
+            }
+        }
+
+        // Enhanced analytics functions
+        async function generateSubscriptionReport() {
+            try {
+                const report = {
+                    total_subscriptions: allSubscriptions.length,
+                    active_count: allSubscriptions.filter(s => s.status === 'active').length,
+                    trial_count: allSubscriptions.filter(s => s.status === 'trial').length,
+                    expired_count: allSubscriptions.filter(s => s.status === 'expired').length,
+                    canceled_count: allSubscriptions.filter(s => s.status === 'canceled').length,
+                    total_revenue: allSubscriptions.reduce((sum, s) => sum + (s.amount || 0), 0),
+                    avg_subscription_value: 0,
+                    churn_rate: 0
+                };
+                
+                report.avg_subscription_value = report.total_revenue / (report.active_count || 1);
+                report.churn_rate = (report.canceled_count / report.total_subscriptions * 100).toFixed(2);
+
+                const reportHtml = `
+                    <div class="report-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+                        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; max-width: 600px; width: 90%;">
+                            <h3>📊 Reporte de Suscripciones</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+                                <div><strong>Total Suscripciones:</strong> ${report.total_subscriptions}</div>
+                                <div><strong>Activas:</strong> ${report.active_count}</div>
+                                <div><strong>En Trial:</strong> ${report.trial_count}</div>
+                                <div><strong>Expiradas:</strong> ${report.expired_count}</div>
+                                <div><strong>Canceladas:</strong> ${report.canceled_count}</div>
+                                <div><strong>Churn Rate:</strong> ${report.churn_rate}%</div>
+                                <div><strong>Ingresos Total:</strong> ${formatCurrency(report.total_revenue)}</div>
+                                <div><strong>Valor Promedio:</strong> ${formatCurrency(report.avg_subscription_value)}</div>
+                            </div>
+                            <button onclick="this.closest('.report-modal').remove()" style="padding: 10px 20px; background: var(--accent-primary); border: none; border-radius: 4px; color: var(--bg-primary); cursor: pointer;">Cerrar</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', reportHtml);
+            } catch (error) {
+                console.error('Error generating report:', error);
+                showNotification('Error generando reporte', 'error');
+            }
+        }
+
+        // Initialize payment transactions loading
+        if (typeof loadPaymentTransactions === 'function') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (document.getElementById('paymentTransactionsTable')) {
+                    loadPaymentTransactions();
+                }
+            });
+        }
+
+        console.log('✅ Enhanced subscription management functions loaded');
     </script>
 </body>
 </html>
