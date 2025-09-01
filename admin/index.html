@@ -1255,6 +1255,7 @@
         // Supabase configuration with updated keys
         const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc';
+        const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3MDM4OSwiZXhwIjoyMDcxNzQ2Mzg5fQ.DfuFLgbxVNmrhfqXVgCRIoTCsDvUK02qR9wJqzik2PY';
         const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3MDM4OSwiZXhwIjoyMDcxNzQ2Mzg5fQ.DfuFLgbxVNmrhfqXVgCRIoTCsDvUK02qR9wJqzik2PY';
         
         // Initialize Supabase clients with safety check
@@ -1435,7 +1436,7 @@
 
                 // Load subscription statistics with better error handling
                 console.log('📊 Loading subscription stats...');
-                const { data: subscriptions, error: subsError } = await supabase
+                const { data: subscriptions, error: subsError } = await supabaseAdmin
                     .from('subscriptions')
                     .select('status, amount, current_period_end, expires_at, type');
 
@@ -1485,7 +1486,7 @@
                 const tbody = document.getElementById('recentActivity');
                 
                 // Get recent subscription activities
-                const { data: recentSubscriptions, error: subsError } = await supabase
+                const { data: recentSubscriptions, error: subsError } = await supabaseAdmin
                     .from('subscriptions')
                     .select(`
                         created_at,
@@ -1498,7 +1499,7 @@
                     .limit(5);
 
                 // Get recent payment transactions
-                const { data: recentPayments, error: payError } = await supabase
+                const { data: recentPayments, error: payError } = await supabaseAdmin
                     .from('payment_transactions')
                     .select(`
                         created_at,
@@ -1853,7 +1854,7 @@
                     
                     // Method 2: Try direct subscriptions query
                     console.log('📊 Trying direct subscriptions query...');
-                    const { data: directSubs, error: directError } = await supabase
+                    const { data: directSubs, error: directError } = await supabaseAdmin
                         .from('subscriptions')
                         .select(`
                             id,
@@ -2083,7 +2084,7 @@
 
         async function updateSubscriptionStatus(subscriptionId, newStatus) {
             try {
-                const { error } = await supabase
+                const { error } = await supabaseAdmin
                     .from('subscriptions')
                     .update({ 
                         status: newStatus,
@@ -2222,7 +2223,7 @@
             try {
                 if (subscriptionId) {
                     // Update existing subscription using real schema
-                    const { error } = await supabase
+                    const { error } = await supabaseAdmin
                         .from('subscriptions')
                         .update(subscriptionData)
                         .eq('id', subscriptionId);
@@ -2253,7 +2254,7 @@
                         user_id: user.id
                     };
 
-                    const { error } = await supabase
+                    const { error } = await supabaseAdmin
                         .from('subscriptions')
                         .insert([newSubscriptionData]);
 
@@ -2294,7 +2295,7 @@
         async function generateSubscriptionReport() {
             try {
                 // Get real subscription data
-                const { data: allSubscriptions, error } = await supabase
+                const { data: allSubscriptions, error } = await supabaseAdmin
                     .from('subscriptions')
                     .select('status, amount, type, created_at, expires_at, current_period_end');
 
@@ -2457,7 +2458,7 @@
 
                 // Test 3: Subscriptions table
                 debugInfo.textContent += '\n3. Test de acceso a subscriptions...\n';
-                const { data: subTest, error: subError } = await supabase
+                const { data: subTest, error: subError } = await supabaseAdmin
                     .from('subscriptions')
                     .select('id')
                     .limit(1);
