@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZETALAB Admin - Datos Reales</title>
+    <title>ZETALAB Admin - Dashboard Completo</title>
     <style>
         * {
             margin: 0;
@@ -155,13 +155,104 @@
             border-radius: 8px;
             margin: 10px 0;
         }
+
+        .action-btn {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin: 2px;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover { background: #00dd77; }
+        .action-btn.danger { background: #ff4444; color: white; }
+        .action-btn.danger:hover { background: #dd3333; }
+        .action-btn.secondary { background: #666; color: white; }
+        .action-btn.secondary:hover { background: #777; }
+
+        .user-activity {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #0f0f0f;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .activity-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-item:last-child { border-bottom: none; }
+        
+        .activity-date { color: #888; font-size: 0.8em; }
+        
+        .activity-icon { 
+            margin-right: 8px; 
+            font-size: 1.1em; 
+        }
+        
+        .activity-amount { 
+            color: #00ff88; 
+            font-weight: bold; 
+            margin-left: 8px; 
+        }
+        
+        .activity-negative { 
+            color: #ff4444; 
+        }
+        
+        .days-remaining {
+            color: #ffaa00;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .days-expired {
+            color: #ff4444;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            background: #222;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+
+        .growth-positive { color: #00ff88; }
+        .growth-negative { color: #ff4444; }
+        .growth-neutral { color: #ffaa00; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🔧 ZETALAB Admin Dashboard</h1>
-            <p>Dashboard simple con datos reales de Supabase</p>
+            <p>Panel administrativo completo con gestión de usuarios y métricas avanzadas</p>
         </div>
 
         <div class="nav-tabs">
@@ -175,11 +266,15 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3 id="totalUsers">0</h3>
-                    <p>Usuarios Únicos</p>
+                    <p>Total Usuarios Registrados</p>
                 </div>
                 <div class="stat-card">
-                    <h3 id="totalSubscriptions">0</h3>
-                    <p>Suscripciones</p>
+                    <h3 id="activeUsers">0</h3>
+                    <p>Usuarios Activos (30 días)</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="verifiedUsers">0</h3>
+                    <p>Usuarios Verificados</p>
                 </div>
                 <div class="stat-card">
                     <h3 id="activeSubscriptions">0</h3>
@@ -189,14 +284,42 @@
                     <h3 id="totalRevenue">$0</h3>
                     <p>Ingresos Totales</p>
                 </div>
+                <div class="stat-card">
+                    <h3 id="monthlyGrowth">+0%</h3>
+                    <p>Crecimiento Mensual</p>
+                </div>
+            </div>
+
+            <div class="data-table">
+                <h3>📈 Actividad Reciente</h3>
+                <div id="recentActivity" class="loading">Cargando...</div>
             </div>
         </div>
 
         <!-- Users Section -->
         <div id="users" class="section">
             <div class="data-table">
-                <h3>Usuarios Únicos (desde tabla pieces)</h3>
+                <h3>👥 Todos los Usuarios Registrados</h3>
+                <div class="table-controls" style="padding: 15px; border-bottom: 1px solid #333;">
+                    <input type="text" id="userSearch" placeholder="🔍 Buscar por email..." 
+                           style="background: #222; border: 1px solid #444; color: #e0e0e0; padding: 8px 12px; border-radius: 5px; width: 300px;">
+                    <select id="userFilter" style="background: #222; border: 1px solid #444; color: #e0e0e0; padding: 8px 12px; border-radius: 5px; margin-left: 10px;">
+                        <option value="all">Todos los usuarios</option>
+                        <option value="verified">Solo verificados</option>
+                        <option value="unverified">No verificados</option>
+                        <option value="active">Activos (30 días)</option>
+                        <option value="subscribed">Con suscripción</option>
+                    </select>
+                </div>
                 <div id="usersContent" class="loading">Cargando...</div>
+            </div>
+
+            <!-- User Edit Modal -->
+            <div id="userEditModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 30px; border-radius: 10px; width: 500px; max-width: 90%; border: 2px solid #333;">
+                    <h3 style="color: #00ff88; margin-bottom: 20px;">✏️ Editar Usuario</h3>
+                    <div id="userEditContent"></div>
+                </div>
             </div>
         </div>
 
@@ -233,38 +356,126 @@
             if (tabName === 'subscriptions') loadSubscriptions();
         }
 
+        // Global variables for data
+        let allUsers = [];
+        let allSubscriptions = [];
+        let allPieces = [];
+        let allPieceVersions = [];
+        let allPaymentTransactions = [];
+        let allConfigProfiles = [];
+        let allFilaments = [];
+        let allUserUsage = [];
+
         // Cargar estadísticas del dashboard
         async function loadDashboard() {
             try {
                 console.log('📊 Cargando estadísticas del dashboard...');
 
-                // Contar usuarios únicos desde pieces
-                const { data: pieces } = await supabase.from('pieces').select('user_id');
-                const uniqueUsers = pieces ? [...new Set(pieces.map(p => p.user_id))].length : 0;
+                // Cargar TODOS los usuarios desde auth.users
+                const { data: users } = await supabase.auth.admin.listUsers();
+                allUsers = users?.users || [];
 
-                // Contar suscripciones reales
+                // Cargar suscripciones
                 const { data: subscriptions } = await supabase
                     .from('subscriptions')
-                    .select('id, active, amount, expires_at');
+                    .select('*');
+                allSubscriptions = subscriptions || [];
 
-                const totalSubs = subscriptions?.length || 0;
-                const activeSubs = subscriptions?.filter(s => {
+                // Cargar piezas para actividad
+                const { data: pieces } = await supabase
+                    .from('pieces')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                allPieces = pieces || [];
+
+                // Cargar datos adicionales para actividad expandida
+                const { data: pieceVersions } = await supabase
+                    .from('piece_versions')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                allPieceVersions = pieceVersions || [];
+
+                const { data: paymentTransactions } = await supabase
+                    .from('payment_transactions')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                allPaymentTransactions = paymentTransactions || [];
+
+                const { data: configProfiles } = await supabase
+                    .from('config_profiles')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                allConfigProfiles = configProfiles || [];
+
+                const { data: filaments } = await supabase
+                    .from('filaments')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                allFilaments = filaments || [];
+
+                const { data: userUsage } = await supabase
+                    .from('user_usage')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                allUserUsage = userUsage || [];
+
+                // Calcular métricas
+                const totalUsers = allUsers.length;
+                
+                // Usuarios activos (últimos 30 días)
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const activeUsers = allUsers.filter(user => 
+                    user.last_sign_in_at && new Date(user.last_sign_in_at) > thirtyDaysAgo
+                ).length;
+
+                // Usuarios verificados
+                const verifiedUsers = allUsers.filter(user => user.email_confirmed_at).length;
+
+                // Suscripciones activas
+                const activeSubs = allSubscriptions.filter(s => {
                     const isActive = s.active === true;
                     const notExpired = !s.expires_at || new Date(s.expires_at) > new Date();
                     return isActive && notExpired;
-                }).length || 0;
+                }).length;
 
-                const totalRevenue = subscriptions?.reduce((sum, s) => {
+                // Ingresos totales
+                const totalRevenue = allSubscriptions.reduce((sum, s) => {
                     return sum + (parseFloat(s.amount) || 0);
-                }, 0) || 0;
+                }, 0);
+
+                // Crecimiento mensual
+                const lastMonth = new Date();
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                const usersLastMonth = allUsers.filter(user => 
+                    new Date(user.created_at) > lastMonth
+                ).length;
+                const usersBeforeLastMonth = totalUsers - usersLastMonth;
+                const monthlyGrowth = usersBeforeLastMonth > 0 
+                    ? ((usersLastMonth / usersBeforeLastMonth) * 100) 
+                    : 0;
 
                 // Actualizar UI
-                document.getElementById('totalUsers').textContent = uniqueUsers;
-                document.getElementById('totalSubscriptions').textContent = totalSubs;
+                document.getElementById('totalUsers').textContent = totalUsers;
+                document.getElementById('activeUsers').textContent = activeUsers;
+                document.getElementById('verifiedUsers').textContent = verifiedUsers;
                 document.getElementById('activeSubscriptions').textContent = activeSubs;
                 document.getElementById('totalRevenue').textContent = `$${totalRevenue.toLocaleString()}`;
+                
+                const growthEl = document.getElementById('monthlyGrowth');
+                growthEl.textContent = `+${monthlyGrowth.toFixed(1)}%`;
+                growthEl.className = monthlyGrowth > 0 ? 'growth-positive' : 
+                                   monthlyGrowth < 0 ? 'growth-negative' : 'growth-neutral';
 
-                console.log('✅ Dashboard cargado:', { uniqueUsers, totalSubs, activeSubs, totalRevenue });
+                // Cargar actividad reciente
+                loadRecentActivity();
+
+                console.log('✅ Dashboard cargado:', { totalUsers, activeUsers, verifiedUsers, activeSubs, totalRevenue, monthlyGrowth });
 
             } catch (error) {
                 console.error('❌ Error cargando dashboard:', error);
@@ -272,65 +483,138 @@
             }
         }
 
-        // Cargar usuarios únicos
+        // Cargar actividad reciente expandida
+        function loadRecentActivity() {
+            const activities = [];
+
+            // Nuevos usuarios
+            allUsers.slice(-5).forEach(user => {
+                activities.push({
+                    type: 'user_register',
+                    date: new Date(user.created_at),
+                    description: `Nuevo usuario registrado: ${user.email}`,
+                    icon: '👤'
+                });
+            });
+
+            // Cálculos de presupuestos (piece_versions)
+            allPieceVersions.slice(-8).forEach(version => {
+                const user = allUsers.find(u => u.id === version.user_id);
+                const piece = allPieces.find(p => p.id === version.piece_id);
+                const total = version.total ? `$${parseFloat(version.total).toLocaleString()}` : 'N/A';
+                activities.push({
+                    type: 'budget_calculated',
+                    date: new Date(version.created_at),
+                    description: `Presupuesto calculado: ${total} para "${piece?.title || 'Pieza'}"`,
+                    icon: '💰',
+                    user: user?.email || 'Usuario desconocido',
+                    amount: total
+                });
+            });
+
+            // Transacciones de pago
+            allPaymentTransactions.slice(-5).forEach(transaction => {
+                const user = allUsers.find(u => u.id === transaction.user_id);
+                const amount = `$${parseFloat(transaction.amount || 0).toLocaleString()}`;
+                const statusIcon = transaction.status === 'approved' ? '✅' : '❌';
+                activities.push({
+                    type: 'payment',
+                    date: new Date(transaction.created_at),
+                    description: `Pago ${transaction.status}: ${amount} (MP: ${transaction.mp_payment_id || 'N/A'})`,
+                    icon: `💳 ${statusIcon}`,
+                    user: user?.email || 'Usuario desconocido',
+                    amount: amount
+                });
+            });
+
+            // Perfiles de configuración creados
+            allConfigProfiles.slice(-5).forEach(config => {
+                const user = allUsers.find(u => u.id === config.user_id);
+                activities.push({
+                    type: 'config_created',
+                    date: new Date(config.created_at),
+                    description: `Config creada: "${config.name}" (${config.consumo_w}W, $${config.precio_kwh}/kWh)`,
+                    icon: '⚙️',
+                    user: user?.email || 'Usuario desconocido'
+                });
+            });
+
+            // Filamentos registrados
+            allFilaments.slice(-5).forEach(filament => {
+                const user = allUsers.find(u => u.id === filament.user_id);
+                const price = `$${parseFloat(filament.price_per_kg_ars || 0).toLocaleString()}/kg`;
+                activities.push({
+                    type: 'filament_added',
+                    date: new Date(filament.created_at),
+                    description: `Filamento: ${filament.brand} ${filament.material} ${filament.color_name} (${price})`,
+                    icon: '🧵',
+                    user: user?.email || 'Usuario desconocido'
+                });
+            });
+
+            // Estadísticas de uso mensual
+            allUserUsage.slice(-3).forEach(usage => {
+                const user = allUsers.find(u => u.id === usage.user_id);
+                activities.push({
+                    type: 'monthly_usage',
+                    date: new Date(usage.created_at),
+                    description: `Uso mensual: ${usage.calculations_used} cálculos, ${usage.pieces_created} piezas, ${usage.html_exports} exports`,
+                    icon: '📊',
+                    user: user?.email || 'Usuario desconocido'
+                });
+            });
+
+            // Nuevas suscripciones
+            allSubscriptions.slice(-3).forEach(sub => {
+                const user = allUsers.find(u => u.id === sub.user_id);
+                activities.push({
+                    type: 'subscription',
+                    date: new Date(sub.created_at),
+                    description: `Suscripción ${sub.plan_type}: $${parseFloat(sub.amount || 0).toLocaleString()}`,
+                    icon: '💎',
+                    user: user?.email || 'Usuario desconocido',
+                    amount: `$${parseFloat(sub.amount || 0).toLocaleString()}`
+                });
+            });
+
+            // Ordenar por fecha (más recientes primero)
+            activities.sort((a, b) => b.date - a.date);
+
+            let html = '';
+            activities.slice(0, 25).forEach(activity => {
+                html += `
+                    <div class="activity-item">
+                        <div>
+                            <span class="activity-icon">${activity.icon}</span>
+                            ${activity.description}
+                            ${activity.user ? `<br><small style="color: #888;">por ${activity.user}</small>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            ${activity.amount ? `<div class="activity-amount">${activity.amount}</div>` : ''}
+                            <div class="activity-date">${activity.date.toLocaleString('es-ES')}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('recentActivity').innerHTML = html || '<p>No hay actividad reciente</p>';
+        }
+
+        // Cargar TODOS los usuarios
         async function loadUsers() {
             try {
-                console.log('👥 Cargando usuarios únicos...');
+                console.log('👥 Cargando todos los usuarios...');
                 
-                const { data: pieces } = await supabase
-                    .from('pieces')
-                    .select('user_id, title, created_at')
-                    .order('created_at', { ascending: false });
-
-                if (!pieces || pieces.length === 0) {
-                    document.getElementById('usersContent').innerHTML = '<p>No hay usuarios con piezas creadas</p>';
-                    return;
+                if (allUsers.length === 0) {
+                    await loadDashboard(); // Cargar datos si no están disponibles
                 }
 
-                // Agrupar por usuario
-                const userStats = {};
-                pieces.forEach(piece => {
-                    if (!userStats[piece.user_id]) {
-                        userStats[piece.user_id] = {
-                            id: piece.user_id,
-                            pieces_count: 0,
-                            first_piece: piece.created_at
-                        };
-                    }
-                    userStats[piece.user_id].pieces_count++;
-                    if (new Date(piece.created_at) < new Date(userStats[piece.user_id].first_piece)) {
-                        userStats[piece.user_id].first_piece = piece.created_at;
-                    }
-                });
+                displayUsers(allUsers);
+                
+                // Configurar filtros y búsqueda
+                setupUserFilters();
 
-                const users = Object.values(userStats);
-
-                let html = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>User ID</th>
-                                <th>Primera Pieza</th>
-                                <th>Total Piezas</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                users.forEach(user => {
-                    html += `
-                        <tr>
-                            <td style="font-family: monospace; font-size: 0.8rem;">${user.id.substring(0, 16)}...</td>
-                            <td>${new Date(user.first_piece).toLocaleDateString('es-ES')}</td>
-                            <td><strong>${user.pieces_count}</strong></td>
-                        </tr>
-                    `;
-                });
-
-                html += '</tbody></table>';
-                document.getElementById('usersContent').innerHTML = html;
-
-                console.log('✅ Usuarios cargados:', users.length);
+                console.log('✅ Usuarios cargados:', allUsers.length);
 
             } catch (error) {
                 console.error('❌ Error cargando usuarios:', error);
@@ -338,10 +622,408 @@
             }
         }
 
-        // Cargar suscripciones reales
+        // Mostrar usuarios en tabla
+        function displayUsers(users) {
+            if (!users || users.length === 0) {
+                document.getElementById('usersContent').innerHTML = '<p>No hay usuarios registrados</p>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Verificado</th>
+                            <th>Registrado</th>
+                            <th>Último Acceso</th>
+                            <th>Piezas</th>
+                            <th>Suscripción</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            users.forEach(user => {
+                // Calcular estadísticas del usuario
+                const userPieces = allPieces.filter(p => p.user_id === user.id);
+                const userSubscription = allSubscriptions.find(s => s.user_id === user.id && s.active);
+                
+                const isVerified = user.email_confirmed_at ? 'Sí' : 'No';
+                const verifiedClass = user.email_confirmed_at ? 'status-active' : 'status-inactive';
+                
+                const registeredDate = new Date(user.created_at).toLocaleDateString('es-ES');
+                const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('es-ES') : 'Nunca';
+                
+                const subStatus = userSubscription ? userSubscription.plan_type : 'Ninguna';
+                const subClass = userSubscription ? 'status-active' : 'status-inactive';
+
+                html += `
+                    <tr>
+                        <td><strong>${user.email}</strong></td>
+                        <td><span class="status-badge ${verifiedClass}">${isVerified}</span></td>
+                        <td>${registeredDate}</td>
+                        <td>${lastLogin}</td>
+                        <td><strong>${userPieces.length}</strong></td>
+                        <td><span class="status-badge ${subClass}">${subStatus}</span></td>
+                        <td>
+                            <button class="action-btn" onclick="editUser('${user.id}')">✏️ Editar</button>
+                            <button class="action-btn secondary" onclick="viewUserActivity('${user.id}')">📊 Actividad</button>
+                            <button class="action-btn danger" onclick="suspendUser('${user.id}')">⛔ Suspender</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('usersContent').innerHTML = html;
+        }
+
+        // Configurar filtros y búsqueda
+        function setupUserFilters() {
+            const searchInput = document.getElementById('userSearch');
+            const filterSelect = document.getElementById('userFilter');
+
+            searchInput.addEventListener('input', filterUsers);
+            filterSelect.addEventListener('change', filterUsers);
+        }
+
+        // Filtrar usuarios
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const filterType = document.getElementById('userFilter').value;
+
+            let filteredUsers = allUsers.filter(user => 
+                user.email.toLowerCase().includes(searchTerm)
+            );
+
+            switch (filterType) {
+                case 'verified':
+                    filteredUsers = filteredUsers.filter(user => user.email_confirmed_at);
+                    break;
+                case 'unverified':
+                    filteredUsers = filteredUsers.filter(user => !user.email_confirmed_at);
+                    break;
+                case 'active':
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    filteredUsers = filteredUsers.filter(user => 
+                        user.last_sign_in_at && new Date(user.last_sign_in_at) > thirtyDaysAgo
+                    );
+                    break;
+                case 'subscribed':
+                    filteredUsers = filteredUsers.filter(user => 
+                        allSubscriptions.some(s => s.user_id === user.id && s.active)
+                    );
+                    break;
+            }
+
+            displayUsers(filteredUsers);
+        }
+
+        // Editar usuario
+        async function editUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            const userSubscription = allSubscriptions.find(s => s.user_id === userId && s.active);
+
+            const modalContent = `
+                <form id="editUserForm" onsubmit="saveUser(event, '${userId}')">
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" name="email" value="${user.email}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Estado de verificación:</label>
+                        <select name="emailVerified">
+                            <option value="true" ${user.email_confirmed_at ? 'selected' : ''}>Verificado</option>
+                            <option value="false" ${!user.email_confirmed_at ? 'selected' : ''}>No verificado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tipo de suscripción:</label>
+                        <select name="subscriptionType">
+                            <option value="none" ${!userSubscription ? 'selected' : ''}>Sin suscripción</option>
+                            <option value="premium_monthly" ${userSubscription?.plan_type === 'premium_monthly' ? 'selected' : ''}>Premium Mensual</option>
+                            <option value="premium_yearly" ${userSubscription?.plan_type === 'premium_yearly' ? 'selected' : ''}>Premium Anual</option>
+                            <option value="trial" ${userSubscription?.plan_type === 'trial' ? 'selected' : ''}>Trial</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notas admin:</label>
+                        <textarea name="adminNotes" placeholder="Notas internas sobre este usuario..." rows="3">${user.raw_user_meta_data?.admin_notes || ''}</textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="action-btn secondary" onclick="closeUserModal()">Cancelar</button>
+                        <button type="submit" class="action-btn">💾 Guardar</button>
+                        <button type="button" class="action-btn danger" onclick="resetUserPassword('${userId}')">🔑 Reset Password</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('userEditContent').innerHTML = modalContent;
+            document.getElementById('userEditModal').style.display = 'block';
+        }
+
+        // Cerrar modal
+        function closeUserModal() {
+            document.getElementById('userEditModal').style.display = 'none';
+        }
+
+        // Guardar cambios de usuario
+        async function saveUser(event, userId) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            try {
+                // Actualizar metadata del usuario
+                const updates = {
+                    email: formData.get('email'),
+                    email_confirm: formData.get('emailVerified') === 'true',
+                    user_metadata: {
+                        admin_notes: formData.get('adminNotes')
+                    }
+                };
+
+                await supabase.auth.admin.updateUserById(userId, updates);
+
+                // Actualizar suscripción si es necesario
+                const subscriptionType = formData.get('subscriptionType');
+                if (subscriptionType !== 'none') {
+                    const existingSub = allSubscriptions.find(s => s.user_id === userId && s.active);
+                    
+                    if (existingSub) {
+                        await supabase
+                            .from('subscriptions')
+                            .update({ plan_type: subscriptionType })
+                            .eq('id', existingSub.id);
+                    } else {
+                        await supabase
+                            .from('subscriptions')
+                            .insert({
+                                user_id: userId,
+                                plan_type: subscriptionType,
+                                active: true,
+                                amount: subscriptionType.includes('monthly') ? 5000 : 50000
+                            });
+                    }
+                } else {
+                    // Desactivar suscripción existente
+                    await supabase
+                        .from('subscriptions')
+                        .update({ active: false })
+                        .eq('user_id', userId);
+                }
+
+                alert('Usuario actualizado correctamente');
+                closeUserModal();
+                loadDashboard(); // Recargar datos
+                loadUsers(); // Recargar tabla
+
+            } catch (error) {
+                console.error('Error actualizando usuario:', error);
+                alert('Error actualizando usuario: ' + error.message);
+            }
+        }
+
+        // Ver actividad expandida del usuario
+        function viewUserActivity(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            const userPieces = allPieces.filter(p => p.user_id === userId);
+            const userSubscriptions = allSubscriptions.filter(s => s.user_id === userId);
+            const userPieceVersions = allPieceVersions.filter(pv => pv.user_id === userId);
+            const userPayments = allPaymentTransactions.filter(pt => pt.user_id === userId);
+            const userConfigs = allConfigProfiles.filter(cp => cp.user_id === userId);
+            const userFilaments = allFilaments.filter(f => f.user_id === userId);
+            const userUsageStats = allUserUsage.filter(uu => uu.user_id === userId);
+
+            const activities = [];
+
+            // Registro del usuario
+            activities.push({
+                icon: '👤',
+                description: 'Usuario registrado',
+                date: new Date(user.created_at)
+            });
+
+            // Verificación de email
+            if (user.email_confirmed_at) {
+                activities.push({
+                    icon: '✅',
+                    description: 'Email verificado',
+                    date: new Date(user.email_confirmed_at)
+                });
+            }
+
+            // Último acceso
+            if (user.last_sign_in_at) {
+                activities.push({
+                    icon: '🔑',
+                    description: 'Último acceso',
+                    date: new Date(user.last_sign_in_at)
+                });
+            }
+
+            // Suscripciones
+            userSubscriptions.forEach(sub => {
+                const amount = `$${parseFloat(sub.amount || 0).toLocaleString()}`;
+                activities.push({
+                    icon: '💎',
+                    description: `Suscripción ${sub.plan_type} ${sub.active ? 'activada' : 'desactivada'}`,
+                    date: new Date(sub.created_at),
+                    amount: amount
+                });
+            });
+
+            // Cálculos de presupuestos
+            userPieceVersions.forEach(version => {
+                const piece = allPieces.find(p => p.id === version.piece_id);
+                const total = version.total ? `$${parseFloat(version.total).toLocaleString()}` : 'N/A';
+                const mlPrice = version.ml_price ? `(ML: $${parseFloat(version.ml_price).toLocaleString()})` : '';
+                activities.push({
+                    icon: '💰',
+                    description: `Presupuesto calculado para "${piece?.title || 'Pieza'}" ${mlPrice}`,
+                    date: new Date(version.created_at),
+                    amount: total
+                });
+            });
+
+            // Pagos realizados
+            userPayments.forEach(payment => {
+                const amount = `$${parseFloat(payment.amount || 0).toLocaleString()}`;
+                const statusIcon = payment.status === 'approved' ? '✅' : '❌';
+                activities.push({
+                    icon: `💳 ${statusIcon}`,
+                    description: `Pago ${payment.status}: ${payment.description || 'Sin descripción'} (MP ID: ${payment.mp_payment_id || 'N/A'})`,
+                    date: new Date(payment.created_at),
+                    amount: amount,
+                    isNegative: payment.status !== 'approved'
+                });
+            });
+
+            // Configuraciones creadas
+            userConfigs.forEach(config => {
+                activities.push({
+                    icon: '⚙️',
+                    description: `Config creada: "${config.name}" (${config.consumo_w}W, $${config.precio_kwh}/kWh)`,
+                    date: new Date(config.created_at)
+                });
+            });
+
+            // Filamentos registrados
+            userFilaments.forEach(filament => {
+                const price = `$${parseFloat(filament.price_per_kg_ars || 0).toLocaleString()}/kg`;
+                activities.push({
+                    icon: '🧵',
+                    description: `Filamento registrado: ${filament.brand} ${filament.material} ${filament.color_name}`,
+                    date: new Date(filament.created_at),
+                    amount: price
+                });
+            });
+
+            // Estadísticas de uso mensual
+            userUsageStats.forEach(usage => {
+                activities.push({
+                    icon: '📊',
+                    description: `Uso mensual (${usage.month_year}): ${usage.calculations_used} cálculos, ${usage.pieces_created} piezas, ${usage.html_exports} exports HTML`,
+                    date: new Date(usage.created_at || usage.month_year + '-01')
+                });
+            });
+
+            // Piezas creadas
+            userPieces.forEach(piece => {
+                activities.push({
+                    icon: '🔧',
+                    description: `Pieza creada: "${piece.title}"`,
+                    date: new Date(piece.created_at)
+                });
+            });
+
+            // Ordenar por fecha descendente
+            activities.sort((a, b) => b.date - a.date);
+
+            let activityHtml = `
+                <h4>📊 Actividad Completa de ${user.email}</h4>
+                <p style="color: #888; margin-bottom: 15px;">
+                    Total: ${userPieces.length} piezas | ${userPieceVersions.length} cálculos | ${userPayments.length} pagos | ${userFilaments.length} filamentos
+                </p>
+                <div class="user-activity">
+            `;
+
+            activities.forEach(activity => {
+                const amountClass = activity.isNegative ? 'activity-negative' : '';
+                activityHtml += `
+                    <div class="activity-item">
+                        <div>
+                            <span class="activity-icon">${activity.icon}</span>
+                            ${activity.description}
+                        </div>
+                        <div style="text-align: right;">
+                            ${activity.amount ? `<div class="activity-amount ${amountClass}">${activity.amount}</div>` : ''}
+                            <div class="activity-date">${activity.date.toLocaleString('es-ES')}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            activityHtml += '</div>';
+
+            const modalContent = `
+                ${activityHtml}
+                <div style="text-align: right; margin-top: 20px;">
+                    <button class="action-btn secondary" onclick="closeUserModal()">Cerrar</button>
+                </div>
+            `;
+
+            document.getElementById('userEditContent').innerHTML = modalContent;
+            document.getElementById('userEditModal').style.display = 'block';
+        }
+
+        // Suspender usuario
+        async function suspendUser(userId) {
+            if (!confirm('¿Estás seguro de suspender este usuario?')) return;
+
+            try {
+                // En Supabase, suspender = desactivar todas las suscripciones
+                await supabase
+                    .from('subscriptions')
+                    .update({ active: false })
+                    .eq('user_id', userId);
+
+                alert('Usuario suspendido correctamente');
+                loadDashboard();
+                loadUsers();
+
+            } catch (error) {
+                console.error('Error suspendiendo usuario:', error);
+                alert('Error suspendiendo usuario: ' + error.message);
+            }
+        }
+
+        // Reset password
+        async function resetUserPassword(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!confirm(`¿Enviar email de reset de password a ${user.email}?`)) return;
+
+            try {
+                await supabase.auth.resetPasswordForEmail(user.email);
+                alert('Email de reset enviado correctamente');
+            } catch (error) {
+                console.error('Error enviando reset:', error);
+                alert('Error enviando email: ' + error.message);
+            }
+        }
+
+        // Cargar suscripciones mejoradas con detalles del usuario
         async function loadSubscriptions() {
             try {
-                console.log('💳 Cargando suscripciones reales...');
+                console.log('💳 Cargando suscripciones mejoradas...');
                 
                 const { data: subscriptions } = await supabase
                     .from('subscriptions')
@@ -357,34 +1039,51 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>User ID</th>
+                                <th>Email</th>
                                 <th>Plan</th>
                                 <th>Estado</th>
                                 <th>Monto</th>
+                                <th>Creada</th>
                                 <th>Expira</th>
+                                <th>Días Restantes</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                 `;
 
                 subscriptions.forEach(sub => {
+                    const user = allUsers.find(u => u.id === sub.user_id);
+                    const userEmail = user ? user.email : 'Usuario no encontrado';
+                    
                     const now = new Date();
+                    const createdDate = new Date(sub.created_at);
                     const expiry = sub.expires_at ? new Date(sub.expires_at) : null;
                     
                     let status = 'inactive';
                     let statusText = 'Inactiva';
+                    let daysRemaining = 'N/A';
+                    let daysClass = '';
                     
                     if (sub.active) {
                         if (expiry && expiry > now) {
                             status = 'active';
                             statusText = 'Activa';
+                            const timeDiff = expiry.getTime() - now.getTime();
+                            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                            daysRemaining = daysDiff;
+                            daysClass = daysDiff <= 7 ? 'days-expired' : daysDiff <= 30 ? 'days-remaining' : '';
                         } else if (expiry && expiry < now) {
                             status = 'inactive';
                             statusText = 'Expirada';
+                            const timeDiff = now.getTime() - expiry.getTime();
+                            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                            daysRemaining = `-${daysDiff}`;
+                            daysClass = 'days-expired';
                         } else {
                             status = 'active';
                             statusText = 'Activa';
+                            daysRemaining = '∞';
                         }
                     }
 
@@ -395,12 +1094,29 @@
 
                     html += `
                         <tr>
-                            <td><strong>${sub.id}</strong></td>
-                            <td style="font-family: monospace; font-size: 0.8rem;">${sub.user_id.substring(0, 16)}...</td>
-                            <td>${sub.plan_type}</td>
+                            <td><strong>${userEmail}</strong></td>
+                            <td>
+                                <span style="text-transform: capitalize;">
+                                    ${sub.plan_type.replace('_', ' ')}
+                                </span>
+                            </td>
                             <td><span class="status-badge status-${status}">${statusText}</span></td>
                             <td>$${sub.amount ? parseFloat(sub.amount).toLocaleString() : '0'}</td>
+                            <td>${createdDate.toLocaleDateString('es-ES')}</td>
                             <td>${expiry ? expiry.toLocaleDateString('es-ES') : 'Sin vencimiento'}</td>
+                            <td>
+                                <span class="${daysClass}">
+                                    ${daysRemaining === 'N/A' ? 'N/A' : 
+                                      daysRemaining === '∞' ? '∞' : 
+                                      daysRemaining > 0 ? `${daysRemaining} días` : 
+                                      `Expiró hace ${Math.abs(daysRemaining)} días`}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="action-btn" onclick="extendSubscription('${sub.id}')">⏰ Extender</button>
+                                <button class="action-btn secondary" onclick="viewSubscriptionDetails('${sub.id}')">👁️ Ver</button>
+                                <button class="action-btn danger" onclick="cancelSubscription('${sub.id}')">❌ Cancelar</button>
+                            </td>
                         </tr>
                     `;
                 });
@@ -408,7 +1124,7 @@
                 html += '</tbody></table>';
                 document.getElementById('subscriptionsContent').innerHTML = html;
 
-                console.log('✅ Suscripciones cargadas:', subscriptions.length);
+                console.log('✅ Suscripciones mejoradas cargadas:', subscriptions.length);
 
             } catch (error) {
                 console.error('❌ Error cargando suscripciones:', error);
@@ -416,10 +1132,89 @@
             }
         }
 
+        // Extender suscripción
+        async function extendSubscription(subscriptionId) {
+            const days = prompt('¿Cuántos días extender la suscripción?', '30');
+            if (!days || isNaN(days)) return;
+            
+            try {
+                const subscription = allSubscriptions.find(s => s.id == subscriptionId);
+                const currentExpiry = subscription.expires_at ? new Date(subscription.expires_at) : new Date();
+                const newExpiry = new Date(currentExpiry.getTime() + (parseInt(days) * 24 * 60 * 60 * 1000));
+                
+                await supabase
+                    .from('subscriptions')
+                    .update({ 
+                        expires_at: newExpiry.toISOString(),
+                        active: true
+                    })
+                    .eq('id', subscriptionId);
+                
+                alert(`Suscripción extendida ${days} días hasta ${newExpiry.toLocaleDateString('es-ES')}`);
+                loadDashboard();
+                loadSubscriptions();
+                
+            } catch (error) {
+                alert('Error extendiendo suscripción: ' + error.message);
+            }
+        }
+
+        // Ver detalles de suscripción
+        function viewSubscriptionDetails(subscriptionId) {
+            const subscription = allSubscriptions.find(s => s.id == subscriptionId);
+            const user = allUsers.find(u => u.id === subscription.user_id);
+            
+            const modalContent = `
+                <h4>💳 Detalles de Suscripción</h4>
+                <div style="background: #0f0f0f; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <p><strong>ID:</strong> ${subscription.id}</p>
+                    <p><strong>Usuario:</strong> ${user?.email || 'No encontrado'}</p>
+                    <p><strong>Plan:</strong> ${subscription.plan_type}</p>
+                    <p><strong>Estado:</strong> ${subscription.active ? 'Activa' : 'Inactiva'}</p>
+                    <p><strong>Monto:</strong> $${parseFloat(subscription.amount || 0).toLocaleString()}</p>
+                    <p><strong>Creada:</strong> ${new Date(subscription.created_at).toLocaleString('es-ES')}</p>
+                    <p><strong>Expira:</strong> ${subscription.expires_at ? new Date(subscription.expires_at).toLocaleString('es-ES') : 'Sin vencimiento'}</p>
+                    <p><strong>Estado de pago:</strong> ${subscription.payment_status || 'N/A'}</p>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button class="action-btn secondary" onclick="closeUserModal()">Cerrar</button>
+                </div>
+            `;
+            
+            document.getElementById('userEditContent').innerHTML = modalContent;
+            document.getElementById('userEditModal').style.display = 'block';
+        }
+
+        // Cancelar suscripción
+        async function cancelSubscription(subscriptionId) {
+            if (!confirm('¿Estás seguro de cancelar esta suscripción?')) return;
+            
+            try {
+                await supabase
+                    .from('subscriptions')
+                    .update({ active: false })
+                    .eq('id', subscriptionId);
+                
+                alert('Suscripción cancelada correctamente');
+                loadDashboard();
+                loadSubscriptions();
+                
+            } catch (error) {
+                alert('Error cancelando suscripción: ' + error.message);
+            }
+        }
+
         // Cargar dashboard al inicializar
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard simple con datos reales...');
+            console.log('🚀 Inicializando dashboard completo con datos reales...');
             loadDashboard();
+
+            // Cerrar modal al hacer click fuera
+            document.getElementById('userEditModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeUserModal();
+                }
+            });
         });
     </script>
 </body>

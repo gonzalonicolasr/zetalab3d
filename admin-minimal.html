@@ -109,6 +109,218 @@
         .btn-secondary {
             background: linear-gradient(135deg, #2196F3, #1976D2);
         }
+        
+        /* Tab Navigation */
+        .tabs-nav {
+            display: flex;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 5px;
+            margin-bottom: 20px;
+            gap: 5px;
+        }
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            color: #cccccc;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        .tab-btn:hover:not(.active) {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Pieces Management Styles */
+        .filters-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: white;
+            flex: 1;
+            min-width: 200px;
+        }
+        .filter-input::placeholder {
+            color: #cccccc;
+        }
+        .filter-select {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: white;
+            min-width: 150px;
+        }
+        .filter-select option {
+            background: #2d2d2d;
+            color: white;
+        }
+        
+        /* Pieces Table */
+        .pieces-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .pieces-table th,
+        .pieces-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .pieces-table th {
+            background: rgba(255,255,255,0.1);
+            font-weight: bold;
+            color: #4CAF50;
+            cursor: pointer;
+            user-select: none;
+        }
+        .pieces-table th:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .pieces-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .piece-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+        .piece-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .btn-view {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        .btn-delete {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #2d2d2d, #1a1a1a);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #cccccc;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .modal-close:hover {
+            color: white;
+        }
+        .modal-header {
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .modal-section {
+            margin-bottom: 20px;
+        }
+        .modal-section h4 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        .version-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-left: 3px solid #4CAF50;
+        }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .page-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .page-btn.active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+        .page-btn:hover:not(.active) {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Stats Cards for Pieces */
+        .pieces-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .pieces-stats .stat-card {
+            padding: 15px;
+        }
+        .pieces-stats .stat-number {
+            font-size: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -125,36 +337,146 @@
             <button class="btn btn-secondary" onclick="exportData()">📊 Exportar Datos</button>
         </div>
 
-        <div class="stats-grid" id="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="users-count">-</div>
-                <div class="stat-label">Usuarios Registrados</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="pieces-count">-</div>
-                <div class="stat-label">Piezas Creadas</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="calculations-count">-</div>
-                <div class="stat-label">Cálculos Realizados</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="subscriptions-count">-</div>
-                <div class="stat-label">Suscripciones Activas</div>
+        <!-- Tab Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('overview')">📊 Resumen</button>
+            <button class="tab-btn" onclick="switchTab('users')">👥 Usuarios</button>
+            <button class="tab-btn" onclick="switchTab('pieces')">🧩 Piezas</button>
+            <button class="tab-btn" onclick="switchTab('activity')">📈 Actividad</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="tab-overview" class="tab-content active">
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="users-count">-</div>
+                    <div class="stat-label">Usuarios Registrados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="pieces-count">-</div>
+                    <div class="stat-label">Piezas Creadas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="calculations-count">-</div>
+                    <div class="stat-label">Cálculos Realizados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="subscriptions-count">-</div>
+                    <div class="stat-label">Suscripciones Activas</div>
+                </div>
             </div>
         </div>
 
-        <div class="section">
-            <h2>👥 Usuarios Registrados</h2>
-            <div id="users-container" class="loading">
-                Cargando usuarios...
+        <!-- Users Tab -->
+        <div id="tab-users" class="tab-content">
+            <div class="section">
+                <h2>👥 Usuarios Registrados</h2>
+                <div id="users-container" class="loading">
+                    Cargando usuarios...
+                </div>
             </div>
         </div>
 
-        <div class="section">
-            <h2>📊 Actividad Reciente</h2>
-            <div id="activity-container" class="loading">
-                Cargando actividad...
+        <!-- Pieces Tab -->
+        <div id="tab-pieces" class="tab-content">
+            <div class="section">
+                <h2>🧩 Gestión de Piezas</h2>
+                
+                <!-- Pieces Stats -->
+                <div class="pieces-stats" id="pieces-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-pieces">-</div>
+                        <div class="stat-label">Total Piezas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pieces-this-month">-</div>
+                        <div class="stat-label">Este Mes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="avg-piece-price">-</div>
+                        <div class="stat-label">Precio Promedio</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="avg-print-time">-</div>
+                        <div class="stat-label">Tiempo Promedio (min)</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters-bar">
+                    <input type="text" id="search-pieces" class="filter-input" placeholder="🔍 Buscar por título o usuario...">
+                    <select id="category-filter" class="filter-select">
+                        <option value="">Todas las categorías</option>
+                        <option value="Juguetes">Juguetes</option>
+                        <option value="Herramientas">Herramientas</option>
+                        <option value="Decoración">Decoración</option>
+                        <option value="Prototipos">Prototipos</option>
+                        <option value="Repuestos">Repuestos</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                    <select id="date-filter" class="filter-select">
+                        <option value="">Todas las fechas</option>
+                        <option value="today">Hoy</option>
+                        <option value="week">Esta semana</option>
+                        <option value="month">Este mes</option>
+                        <option value="year">Este año</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="clearPiecesFilters()">🧹 Limpiar Filtros</button>
+                </div>
+
+                <!-- Pieces Table -->
+                <div style="overflow-x: auto;">
+                    <table class="pieces-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortPiecesTable('title')">📝 Título</th>
+                                <th onclick="sortPiecesTable('user_email')">👤 Usuario</th>
+                                <th onclick="sortPiecesTable('category')">📂 Categoría</th>
+                                <th onclick="sortPiecesTable('est_weight_grams')">⚖️ Peso (gr)</th>
+                                <th onclick="sortPiecesTable('est_print_time_min')">⏱️ Tiempo (min)</th>
+                                <th onclick="sortPiecesTable('est_price_ars')">💰 Precio (ARS)</th>
+                                <th onclick="sortPiecesTable('created_at')">📅 Creado</th>
+                                <th onclick="sortPiecesTable('versions_count')">🔢 Versiones</th>
+                                <th>🛠️ Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pieces-table-body">
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 40px; color: #cccccc;">
+                                    Cargando piezas...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pieces-pagination">
+                    <!-- Pagination will be generated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Tab -->
+        <div id="tab-activity" class="tab-content">
+            <div class="section">
+                <h2>📊 Actividad Reciente</h2>
+                <div id="activity-container" class="loading">
+                    Cargando actividad...
+                </div>
+            </div>
+        </div>
+
+        <!-- Piece Detail Modal -->
+        <div id="piece-modal" class="modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closePieceModal()">&times;</button>
+                <div class="modal-header">
+                    <h2 id="modal-piece-title">Detalle de Pieza</h2>
+                </div>
+                <div id="modal-piece-content">
+                    <!-- Content will be populated dynamically -->
+                </div>
             </div>
         </div>
     </div>
@@ -165,6 +487,29 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc';
         
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Global variables for pieces management
+        let allPieces = [];
+        let filteredPieces = [];
+        let currentPiecePage = 1;
+        let piecesPerPage = 20;
+        let currentSort = { field: 'created_at', direction: 'desc' };
+
+        // Tab Management
+        function switchTab(tabName) {
+            // Remove active class from all tab buttons and contents
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to selected tab button and content
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Load data for specific tabs when first opened
+            if (tabName === 'pieces' && allPieces.length === 0) {
+                loadPieces();
+            }
+        }
 
         // Error handling utility
         function showError(message) {
@@ -187,6 +532,422 @@
                 return fallbackValue;
             }
         }
+
+        // ===== PIECES MANAGEMENT FUNCTIONS =====
+        
+        // Load all pieces with user information and statistics
+        async function loadPieces() {
+            try {
+                const piecesContainer = document.getElementById('pieces-table-body');
+                piecesContainer.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #cccccc;">Cargando piezas...</td></tr>';
+
+                // Get pieces data first
+                const { data: pieces, error: piecesError } = await supabase
+                    .from('pieces')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (piecesError) throw piecesError;
+
+                // Get user emails separately (in case auth.users isn't accessible)
+                const userEmails = new Map();
+                const userIds = [...new Set(pieces.map(p => p.user_id))];
+                
+                try {
+                    const { data: users } = await supabase
+                        .from('auth.users')
+                        .select('id, email')
+                        .in('id', userIds);
+                    
+                    if (users) {
+                        users.forEach(user => userEmails.set(user.id, user.email));
+                    }
+                } catch (authError) {
+                    console.warn('Could not fetch user emails:', authError.message);
+                }
+
+                // Get version counts for each piece
+                const versionCounts = new Map();
+                for (const piece of pieces) {
+                    try {
+                        const { count } = await supabase
+                            .from('piece_versions')
+                            .select('*', { count: 'exact' })
+                            .eq('piece_id', piece.id);
+                        versionCounts.set(piece.id, count || 0);
+                    } catch (err) {
+                        versionCounts.set(piece.id, 0);
+                    }
+                }
+
+                // Process pieces data
+                allPieces = pieces.map(piece => ({
+                    ...piece,
+                    user_email: userEmails.get(piece.user_id) || `Usuario: ${piece.user_id.substring(0, 8)}...`,
+                    versions_count: versionCounts.get(piece.id) || 0
+                }));
+
+                filteredPieces = [...allPieces];
+                await loadPiecesStats();
+                renderPiecesTable();
+                setupPiecesFilters();
+                
+            } catch (error) {
+                console.error('Error loading pieces:', error);
+                document.getElementById('pieces-table-body').innerHTML = 
+                    `<tr><td colspan="9" style="text-align: center; padding: 40px; color: #f44336;">Error cargando piezas: ${error.message}</td></tr>`;
+            }
+        }
+
+        // Load pieces statistics
+        async function loadPiecesStats() {
+            try {
+                const now = new Date();
+                const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+                const totalPieces = allPieces.length;
+                const piecesThisMonth = allPieces.filter(p => new Date(p.created_at) >= firstDayOfMonth).length;
+                
+                const validPrices = allPieces.filter(p => p.est_price_ars && p.est_price_ars > 0);
+                const avgPrice = validPrices.length > 0 
+                    ? validPrices.reduce((sum, p) => sum + p.est_price_ars, 0) / validPrices.length 
+                    : 0;
+                
+                const validTimes = allPieces.filter(p => p.est_print_time_min && p.est_print_time_min > 0);
+                const avgTime = validTimes.length > 0 
+                    ? validTimes.reduce((sum, p) => sum + p.est_print_time_min, 0) / validTimes.length 
+                    : 0;
+
+                document.getElementById('total-pieces').textContent = totalPieces.toLocaleString();
+                document.getElementById('pieces-this-month').textContent = piecesThisMonth.toLocaleString();
+                document.getElementById('avg-piece-price').textContent = avgPrice > 0 ? `$${Math.round(avgPrice).toLocaleString()}` : '-';
+                document.getElementById('avg-print-time').textContent = avgTime > 0 ? Math.round(avgTime).toLocaleString() : '-';
+
+            } catch (error) {
+                console.error('Error loading pieces stats:', error);
+            }
+        }
+
+        // Render pieces table with pagination
+        function renderPiecesTable() {
+            const tbody = document.getElementById('pieces-table-body');
+            const startIndex = (currentPiecePage - 1) * piecesPerPage;
+            const endIndex = startIndex + piecesPerPage;
+            const piecesToShow = filteredPieces.slice(startIndex, endIndex);
+
+            if (piecesToShow.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #cccccc;">No se encontraron piezas</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = piecesToShow.map(piece => `
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            ${piece.image_url ? `<img src="${piece.image_url}" class="piece-image" onerror="this.style.display='none'">` : '📦'}
+                            <span style="font-weight: bold;">${piece.title || 'Sin título'}</span>
+                        </div>
+                    </td>
+                    <td>${piece.user_email}</td>
+                    <td><span style="background: rgba(76, 175, 80, 0.2); color: #4CAF50; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${piece.category || 'Sin categoría'}</span></td>
+                    <td>${piece.est_weight_grams ? piece.est_weight_grams.toLocaleString() : '-'}</td>
+                    <td>${piece.est_print_time_min ? piece.est_print_time_min.toLocaleString() : '-'}</td>
+                    <td>${piece.est_price_ars ? `$${piece.est_price_ars.toLocaleString()}` : '-'}</td>
+                    <td>${new Date(piece.created_at).toLocaleDateString('es-AR')}</td>
+                    <td><span style="background: rgba(33, 150, 243, 0.2); color: #2196F3; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${piece.versions_count}</span></td>
+                    <td>
+                        <div class="piece-actions">
+                            <button class="btn btn-view btn-small" onclick="viewPieceDetail('${piece.id}')" title="Ver detalle">👁️</button>
+                            <button class="btn btn-delete btn-small" onclick="deletePiece('${piece.id}')" title="Eliminar">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            renderPiecesPagination();
+        }
+
+        // Render pagination controls
+        function renderPiecesPagination() {
+            const pagination = document.getElementById('pieces-pagination');
+            const totalPages = Math.ceil(filteredPieces.length / piecesPerPage);
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            // Previous button
+            if (currentPiecePage > 1) {
+                paginationHTML += `<button class="page-btn" onclick="changePiecePage(${currentPiecePage - 1})">‹ Anterior</button>`;
+            }
+
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPiecePage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `<button class="page-btn ${i === currentPiecePage ? 'active' : ''}" onclick="changePiecePage(${i})">${i}</button>`;
+            }
+
+            // Next button
+            if (currentPiecePage < totalPages) {
+                paginationHTML += `<button class="page-btn" onclick="changePiecePage(${currentPiecePage + 1})">Siguiente ›</button>`;
+            }
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        // Change page
+        function changePiecePage(page) {
+            currentPiecePage = page;
+            renderPiecesTable();
+        }
+
+        // Setup filter event listeners
+        function setupPiecesFilters() {
+            const searchInput = document.getElementById('search-pieces');
+            const categoryFilter = document.getElementById('category-filter');
+            const dateFilter = document.getElementById('date-filter');
+
+            searchInput.addEventListener('input', filterPieces);
+            categoryFilter.addEventListener('change', filterPieces);
+            dateFilter.addEventListener('change', filterPieces);
+        }
+
+        // Filter pieces based on search criteria
+        function filterPieces() {
+            const searchTerm = document.getElementById('search-pieces').value.toLowerCase();
+            const categoryFilter = document.getElementById('category-filter').value;
+            const dateFilter = document.getElementById('date-filter').value;
+
+            filteredPieces = allPieces.filter(piece => {
+                // Search filter
+                const matchesSearch = !searchTerm || 
+                    piece.title?.toLowerCase().includes(searchTerm) ||
+                    piece.user_email?.toLowerCase().includes(searchTerm) ||
+                    piece.notes?.toLowerCase().includes(searchTerm);
+
+                // Category filter
+                const matchesCategory = !categoryFilter || piece.category === categoryFilter;
+
+                // Date filter
+                let matchesDate = true;
+                if (dateFilter) {
+                    const pieceDate = new Date(piece.created_at);
+                    const now = new Date();
+                    
+                    switch (dateFilter) {
+                        case 'today':
+                            matchesDate = pieceDate.toDateString() === now.toDateString();
+                            break;
+                        case 'week':
+                            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            matchesDate = pieceDate >= weekAgo;
+                            break;
+                        case 'month':
+                            matchesDate = pieceDate.getMonth() === now.getMonth() && 
+                                         pieceDate.getFullYear() === now.getFullYear();
+                            break;
+                        case 'year':
+                            matchesDate = pieceDate.getFullYear() === now.getFullYear();
+                            break;
+                    }
+                }
+
+                return matchesSearch && matchesCategory && matchesDate;
+            });
+
+            currentPiecePage = 1;
+            renderPiecesTable();
+        }
+
+        // Clear all filters
+        function clearPiecesFilters() {
+            document.getElementById('search-pieces').value = '';
+            document.getElementById('category-filter').value = '';
+            document.getElementById('date-filter').value = '';
+            filteredPieces = [...allPieces];
+            currentPiecePage = 1;
+            renderPiecesTable();
+        }
+
+        // Sort pieces table
+        function sortPiecesTable(field) {
+            if (currentSort.field === field) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.direction = 'asc';
+            }
+
+            filteredPieces.sort((a, b) => {
+                let aVal = a[field];
+                let bVal = b[field];
+
+                // Handle null values
+                if (aVal == null) aVal = '';
+                if (bVal == null) bVal = '';
+
+                // Handle different data types
+                if (field.includes('_at')) {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                } else if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                let result = 0;
+                if (aVal < bVal) result = -1;
+                if (aVal > bVal) result = 1;
+
+                return currentSort.direction === 'desc' ? -result : result;
+            });
+
+            currentPiecePage = 1;
+            renderPiecesTable();
+        }
+
+        // View piece detail in modal
+        async function viewPieceDetail(pieceId) {
+            try {
+                const modal = document.getElementById('piece-modal');
+                const content = document.getElementById('modal-piece-content');
+                
+                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #cccccc;">Cargando detalle de pieza...</div>';
+                modal.classList.add('active');
+
+                // Get piece data first
+                const { data: piece, error: pieceError } = await supabase
+                    .from('pieces')
+                    .select('*')
+                    .eq('id', pieceId)
+                    .single();
+
+                if (pieceError) throw pieceError;
+
+                // Get related data
+                const [versionsResult, userResult, filamentResult] = await Promise.all([
+                    supabase.from('piece_versions').select('*').eq('piece_id', pieceId).order('created_at', { ascending: false }),
+                    supabase.from('auth.users').select('email').eq('id', piece.user_id).single().catch(() => null),
+                    piece.filament_id ? supabase.from('filaments').select('brand, material, color_name').eq('id', piece.filament_id).single().catch(() => null) : Promise.resolve(null)
+                ]);
+
+                const versions = versionsResult.data || [];
+                const user = userResult?.data;
+                const filament = filamentResult?.data;
+
+                document.getElementById('modal-piece-title').textContent = piece.title || 'Sin título';
+
+                content.innerHTML = `
+                    <div class="modal-section">
+                        <h4>📝 Información General</h4>
+                        <p><strong>Usuario:</strong> ${user?.email || `Usuario: ${piece.user_id.substring(0, 8)}...`}</p>
+                        <p><strong>Categoría:</strong> ${piece.category || 'Sin categoría'}</p>
+                        <p><strong>Creado:</strong> ${new Date(piece.created_at).toLocaleString('es-AR')}</p>
+                        <p><strong>Actualizado:</strong> ${new Date(piece.updated_at).toLocaleString('es-AR')}</p>
+                        ${piece.image_url ? `<p><strong>Imagen:</strong> <a href="${piece.image_url}" target="_blank" style="color: #4CAF50;">Ver imagen</a></p>` : ''}
+                    </div>
+
+                    <div class="modal-section">
+                        <h4>📊 Especificaciones</h4>
+                        <p><strong>Peso estimado:</strong> ${piece.est_weight_grams ? `${piece.est_weight_grams}g` : 'No especificado'}</p>
+                        <p><strong>Tiempo de impresión:</strong> ${piece.est_print_time_min ? `${piece.est_print_time_min} min (${Math.round(piece.est_print_time_min/60)}h)` : 'No especificado'}</p>
+                        <p><strong>Precio estimado:</strong> ${piece.est_price_ars ? `$${piece.est_price_ars.toLocaleString()}` : 'No especificado'}</p>
+                        ${filament ? `<p><strong>Filamento:</strong> ${filament.brand} - ${filament.material} (${filament.color_name})</p>` : ''}
+                    </div>
+
+                    ${piece.notes ? `
+                        <div class="modal-section">
+                            <h4>📄 Notas</h4>
+                            <p style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; white-space: pre-wrap;">${piece.notes}</p>
+                        </div>
+                    ` : ''}
+
+                    <div class="modal-section">
+                        <h4>🔢 Historial de Cálculos (${versions.length} versiones)</h4>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            ${versions.map(version => `
+                                <div class="version-item">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                        <strong>Total: $${(version.total || 0).toLocaleString()}</strong>
+                                        <span style="color: #cccccc; font-size: 0.9rem;">${new Date(version.created_at).toLocaleString('es-AR')}</span>
+                                    </div>
+                                    ${version.ml_price ? `<p style="font-size: 0.9rem; color: #cccccc;">Precio MercadoLibre: $${version.ml_price.toLocaleString()}</p>` : ''}
+                                    ${version.params ? `<details style="margin-top: 8px;"><summary style="cursor: pointer; color: #4CAF50;">Ver parámetros de cálculo</summary><pre style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 12px; overflow-x: auto; margin-top: 5px;">${JSON.stringify(JSON.parse(version.params), null, 2)}</pre></details>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading piece detail:', error);
+                content.innerHTML = `<div style="color: #f44336; text-align: center; padding: 40px;">Error cargando detalle: ${error.message}</div>`;
+            }
+        }
+
+        // Close piece modal
+        function closePieceModal() {
+            document.getElementById('piece-modal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('piece-modal');
+            if (event.target === modal) {
+                closePieceModal();
+            }
+        });
+
+        // Delete piece
+        async function deletePiece(pieceId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta pieza? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                // First delete all piece versions
+                const { error: versionsError } = await supabase
+                    .from('piece_versions')
+                    .delete()
+                    .eq('piece_id', pieceId);
+
+                if (versionsError) throw versionsError;
+
+                // Then delete the piece
+                const { error: pieceError } = await supabase
+                    .from('pieces')
+                    .delete()
+                    .eq('id', pieceId);
+
+                if (pieceError) throw pieceError;
+
+                // Update local data
+                allPieces = allPieces.filter(p => p.id !== pieceId);
+                filteredPieces = filteredPieces.filter(p => p.id !== pieceId);
+                
+                // Refresh display
+                await loadPiecesStats();
+                renderPiecesTable();
+
+                alert('Pieza eliminada correctamente');
+
+            } catch (error) {
+                console.error('Error deleting piece:', error);
+                alert('Error eliminando pieza: ' + error.message);
+            }
+        }
+
+        // ===== END PIECES MANAGEMENT =====
 
         // Load dashboard stats with graceful fallbacks
         async function loadStats() {
@@ -321,7 +1082,18 @@
                         pieces: document.getElementById('pieces-count').textContent,
                         calculations: document.getElementById('calculations-count').textContent,
                         subscriptions: document.getElementById('subscriptions-count').textContent
-                    }
+                    },
+                    pieces_summary: allPieces.length > 0 ? {
+                        total_pieces: allPieces.length,
+                        pieces_this_month: document.getElementById('pieces-this-month')?.textContent || '0',
+                        avg_price: document.getElementById('avg-piece-price')?.textContent || '0',
+                        avg_time: document.getElementById('avg-print-time')?.textContent || '0',
+                        categories: allPieces.reduce((acc, piece) => {
+                            const cat = piece.category || 'Sin categoría';
+                            acc[cat] = (acc[cat] || 0) + 1;
+                            return acc;
+                        }, {})
+                    } : null
                 };
 
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

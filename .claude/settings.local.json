@@ -10,7 +10,8 @@
       "Bash(where python)",
       "Bash(git add:*)",
       "Bash(dir:*)",
-      "Bash(npx serve:*)"
+      "Bash(npx serve:*)",
+      "mcp__sequential-thinking__sequentialthinking"
     ],
     "deny": [],
     "ask": []
