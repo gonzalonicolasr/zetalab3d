@@ -16,12 +16,114 @@
             background: linear-gradient(135deg, #0f1f1a, #1a2f26);
             color: #00ff88;
             min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background: rgba(0, 255, 136, 0.08);
+            border-right: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-280px);
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            color: #00ff88;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: transparent;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: rgba(0, 255, 136, 0.3);
+            transform: translateX(5px);
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .sidebar-nav .icon {
+            margin-right: 12px;
+            font-size: 1.2em;
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+        }
+
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            min-height: 100vh;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
         }
 
         .header {
@@ -175,7 +277,57 @@
             border-radius: 4px;
         }
 
+        /* Users section specific styles */
+        .users-section {
+            display: none;
+        }
+
+        .users-section.active {
+            display: block;
+        }
+
+        .users-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .users-count {
+            background: rgba(0, 255, 136, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .dashboard-section {
+            display: block;
+        }
+
+        .dashboard-section.hidden {
+            display: none;
+        }
+
         @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-280px);
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
             .stats-grid {
                 grid-template-columns: 1fr;
             }
@@ -186,17 +338,54 @@
                 overflow-x: auto;
             }
         }
+
+        @media (min-width: 769px) {
+            .sidebar-toggle {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔧 ZETALAB Admin Dashboard</h1>
-            <p>Gestión y estadísticas del sistema</p>
-            <button class="refresh-btn" onclick="loadAllData()">🔄 Actualizar Datos</button>
-        </div>
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
 
-        <div class="stats-grid">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>🔧 ZETALAB</h2>
+            <p>Admin Panel</p>
+        </div>
+        <nav>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="#" class="nav-link active" data-section="dashboard">
+                        <span class="icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-section="usuarios">
+                        <span class="icon">👥</span>
+                        Usuarios
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <div class="container">
+            <!-- Dashboard Section -->
+            <div class="dashboard-section" id="dashboardSection">
+                <div class="header">
+                    <h1>📊 Dashboard General</h1>
+                    <p>Gestión y estadísticas del sistema</p>
+                    <button class="refresh-btn" onclick="loadAllData()">🔄 Actualizar Datos</button>
+                </div>
+
+                <div class="stats-grid">
             <div class="stat-card">
                 <h3>👥 Usuarios Registrados</h3>
                 <div class="number" id="totalUsers">-</div>
@@ -263,6 +452,28 @@
                 </div>
             </div>
         </div>
+            </div>
+
+            <!-- Users Section -->
+            <div class="users-section" id="usuariosSection">
+                <div class="users-header">
+                    <h1>👥 Todos los Usuarios</h1>
+                    <div class="users-count" id="usersCount">
+                        <span id="totalUsersCount">0</span> usuarios registrados
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>Lista Completa de Usuarios</h3>
+                        <button class="refresh-btn" onclick="loadAllUsers()">🔄 Actualizar</button>
+                    </div>
+                    <div id="allUsersTable">
+                        <div class="loading">Cargando todos los usuarios...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -272,6 +483,57 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc';
         
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Sidebar Navigation Functions
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('mobile-open');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            }
+        }
+
+        function switchSection(sectionName) {
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Add active class to clicked nav link
+            document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+
+            // Hide all sections
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('usuariosSection').classList.remove('active');
+
+            // Show selected section
+            if (sectionName === 'dashboard') {
+                document.getElementById('dashboardSection').classList.remove('hidden');
+            } else if (sectionName === 'usuarios') {
+                document.getElementById('usuariosSection').classList.add('active');
+                loadAllUsers(); // Load users when section is shown
+            }
+
+            // Close sidebar on mobile after selection
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('mobile-open');
+            }
+        }
+
+        // Add click event listeners to nav links
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const section = this.getAttribute('data-section');
+                    switchSection(section);
+                });
+            });
+        });
 
         // Función para formatear números
         function formatNumber(num) {
@@ -564,6 +826,126 @@
                 console.error('Error loading payments:', error);
                 document.getElementById('paymentsTable').innerHTML = `
                     <div class="error">Error cargando transacciones: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Cargar todos los usuarios registrados
+        async function loadAllUsers() {
+            try {
+                console.log('🔄 Cargando todos los usuarios...');
+                
+                // Strategy 1: Get unique user_ids from pieces table (safer approach)
+                const { data: piecesData, error: piecesError } = await supabase
+                    .from('pieces')
+                    .select('user_id, created_at')
+                    .order('created_at', { ascending: false });
+
+                if (piecesError) throw piecesError;
+
+                // Strategy 2: Also try to get users from subscriptions table
+                const { data: subscriptionsData, error: subError } = await supabase
+                    .from('admin_subscriptions_with_emails')
+                    .select('user_id, user_email, created_at');
+                
+                // Combine data from both sources
+                const usersMap = new Map();
+                
+                // Add users from pieces
+                piecesData?.forEach(piece => {
+                    if (!usersMap.has(piece.user_id)) {
+                        usersMap.set(piece.user_id, {
+                            user_id: piece.user_id,
+                            email: null,
+                            first_seen: piece.created_at,
+                            has_pieces: true,
+                            has_subscription: false,
+                            pieces_count: 0
+                        });
+                    }
+                    usersMap.get(piece.user_id).pieces_count++;
+                });
+
+                // Add emails from subscriptions where available
+                if (!subError && subscriptionsData) {
+                    subscriptionsData.forEach(sub => {
+                        if (usersMap.has(sub.user_id)) {
+                            usersMap.get(sub.user_id).email = sub.user_email;
+                            usersMap.get(sub.user_id).has_subscription = true;
+                        } else {
+                            // User has subscription but no pieces
+                            usersMap.set(sub.user_id, {
+                                user_id: sub.user_id,
+                                email: sub.user_email,
+                                first_seen: sub.created_at,
+                                has_pieces: false,
+                                has_subscription: true,
+                                pieces_count: 0
+                            });
+                        }
+                    });
+                }
+
+                const users = Array.from(usersMap.values()).sort((a, b) => 
+                    new Date(b.first_seen) - new Date(a.first_seen)
+                );
+
+                // Update users count
+                document.getElementById('totalUsersCount').textContent = users.length;
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuario ID</th>
+                                <th>Email</th>
+                                <th>Primera Actividad</th>
+                                <th>Piezas</th>
+                                <th>Suscripción</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                users.forEach(user => {
+                    const statusBadge = user.has_subscription ? 
+                        '<span class="status-badge status-active">Premium</span>' :
+                        user.has_pieces ? 
+                            '<span class="status-badge status-trial">Free</span>' : 
+                            '<span class="status-badge status-expired">Inactivo</span>';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <span class="user-email">${user.user_id.substring(0, 8)}...</span>
+                            </td>
+                            <td>
+                                ${user.email ? 
+                                    `<span class="user-email">${user.email}</span>` : 
+                                    '<span style="opacity: 0.5;">No disponible</span>'
+                                }
+                            </td>
+                            <td>${formatDate(user.first_seen)}</td>
+                            <td>${user.pieces_count}</td>
+                            <td>${user.has_subscription ? '✅' : '❌'}</td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('allUsersTable').innerHTML = html;
+
+                console.log(`✅ Cargados ${users.length} usuarios`);
+
+            } catch (error) {
+                console.error('Error loading all users:', error);
+                document.getElementById('allUsersTable').innerHTML = `
+                    <div class="error">
+                        Error cargando usuarios: ${error.message}
+                        <br><small>Los usuarios se obtienen de manera segura desde las tablas de piezas y suscripciones</small>
+                    </div>
                 `;
             }
         }
