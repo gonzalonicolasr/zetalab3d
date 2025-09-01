@@ -629,6 +629,19 @@
         // Función auxiliar para contar todos los usuarios (reutilizable)
         async function getAllUsersCount() {
             try {
+                // Try to get total count from the new admin_users_view first
+                const { count: totalUsersFromView, error: viewError } = await supabase
+                    .from('admin_users_view')
+                    .select('*', { count: 'exact', head: true });
+
+                if (!viewError && totalUsersFromView !== null) {
+                    console.log(`📊 Conteo de usuarios desde admin_users_view: ${totalUsersFromView}`);
+                    return totalUsersFromView;
+                }
+
+                // Fallback to legacy counting method
+                console.log('Vista admin_users_view no disponible, usando método legacy');
+                
                 // Obtener usuarios únicos de pieces
                 const { data: piecesData, error: piecesError } = await supabase
                     .from('pieces')
@@ -665,7 +678,7 @@
                 }
                 
                 // Debug info
-                console.log(`📊 Conteo de usuarios: ${uniqueUsers.size} total | ${pieceUsersCount} con piezas | ${subUsersCount} con suscripciones`);
+                console.log(`📊 Conteo de usuarios (legacy): ${uniqueUsers.size} total | ${pieceUsersCount} con piezas | ${subUsersCount} con suscripciones`);
                 
                 return uniqueUsers.size;
             } catch (error) {
@@ -889,10 +902,120 @@
             }
         }
 
-        // Cargar todos los usuarios registrados
+        // Cargar todos los usuarios registrados usando la nueva vista
         async function loadAllUsers() {
             try {
-                console.log('🔄 Cargando todos los usuarios...');
+                console.log('🔄 Cargando todos los usuarios desde admin_users_view...');
+                
+                // Get comprehensive user data from the new view
+                const { data: usersData, error: usersError } = await supabase
+                    .from('admin_users_view')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(200); // Limit to 200 users as per your original query
+
+                if (usersError) {
+                    console.warn('No se pudo acceder a admin_users_view, usando método alternativo:', usersError);
+                    return loadAllUsersLegacy(); // Fallback to old method
+                }
+
+                // Get additional data from pieces and subscriptions for context
+                const [piecesData, subscriptionsData] = await Promise.all([
+                    supabase.from('pieces').select('user_id').then(({ data }) => data || []),
+                    supabase.from('admin_subscriptions_with_emails').select('user_id').then(({ data }) => data || [])
+                ]);
+
+                // Create maps for quick lookups
+                const pieceUsersSet = new Set(piecesData.map(p => p.user_id));
+                const subscriptionUsersSet = new Set(subscriptionsData.map(s => s.user_id));
+
+                // Count pieces per user
+                const piecesCounts = piecesData.reduce((acc, piece) => {
+                    acc[piece.user_id] = (acc[piece.user_id] || 0) + 1;
+                    return acc;
+                }, {});
+
+                // Update users count
+                document.getElementById('totalUsersCount').textContent = usersData.length;
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuario ID</th>
+                                <th>Email</th>
+                                <th>Registro</th>
+                                <th>Último Acceso</th>
+                                <th>Verificado</th>
+                                <th>Proveedores</th>
+                                <th>Piezas</th>
+                                <th>Suscripción</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                usersData.forEach(user => {
+                    const hasPieces = pieceUsersSet.has(user.id);
+                    const hasSubscription = subscriptionUsersSet.has(user.id);
+                    const piecesCount = piecesCounts[user.id] || 0;
+                    
+                    // Determine status badge
+                    let statusBadge;
+                    if (hasSubscription) {
+                        statusBadge = '<span class="status-badge status-active">Premium</span>';
+                    } else if (hasPieces) {
+                        statusBadge = '<span class="status-badge status-trial">Free</span>';
+                    } else {
+                        statusBadge = '<span class="status-badge status-expired">Registrado</span>';
+                    }
+
+                    // Format providers array
+                    const providers = user.providers ? user.providers.join(', ') : 'email';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <span class="user-email">${user.id.substring(0, 8)}...</span>
+                            </td>
+                            <td>
+                                ${user.email ? 
+                                    `<span class="user-email">${user.email}</span>` : 
+                                    '<span style="opacity: 0.5;">Sin email</span>'
+                                }
+                            </td>
+                            <td>${formatDate(user.created_at)}</td>
+                            <td>${user.last_sign_in_at ? formatDate(user.last_sign_in_at) : '-'}</td>
+                            <td>${user.verified ? '✅ Sí' : '❌ No'}</td>
+                            <td><code style="font-size: 0.8em;">${providers}</code></td>
+                            <td>${piecesCount}</td>
+                            <td>${hasSubscription ? '✅' : '❌'}</td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('allUsersTable').innerHTML = html;
+
+                console.log(`✅ Cargados ${usersData.length} usuarios desde admin_users_view`);
+
+            } catch (error) {
+                console.error('Error loading all users:', error);
+                document.getElementById('allUsersTable').innerHTML = `
+                    <div class="error">
+                        Error cargando usuarios: ${error.message}
+                        <br><small>Intentando cargar desde vista de administración</small>
+                    </div>
+                `;
+            }
+        }
+
+        // Legacy fallback method (same as before)
+        async function loadAllUsersLegacy() {
+            try {
+                console.log('🔄 Usando método legacy para cargar usuarios...');
                 
                 // Strategy 1: Get unique user_ids from pieces table (safer approach)
                 const { data: piecesData, error: piecesError } = await supabase
@@ -996,10 +1119,10 @@
                 html += '</tbody></table>';
                 document.getElementById('allUsersTable').innerHTML = html;
 
-                console.log(`✅ Cargados ${users.length} usuarios`);
+                console.log(`✅ Cargados ${users.length} usuarios usando método legacy`);
 
             } catch (error) {
-                console.error('Error loading all users:', error);
+                console.error('Error in legacy user loading:', error);
                 document.getElementById('allUsersTable').innerHTML = `
                     <div class="error">
                         Error cargando usuarios: ${error.message}
