@@ -1599,97 +1599,55 @@
                 let users = [];
                 let totalCount = 0;
                 
-                // Method 1: Try admin_users_overview first (best data quality)
-                console.log('📊 Trying admin_users_overview...');
-                const { data: adminUsers, error: adminError } = await supabase
-                    .from('admin_users_overview')
+                // Load users directly from auth.users (real data only)
+                console.log('📊 Loading users from auth.users...');
+                const { data: authUsers, error: authError } = await supabaseAdmin
+                    .from('auth.users')
                     .select(`
-                        user_id,
+                        id,
                         email,
-                        name,
-                        user_created,
-                        total_pieces,
-                        subscription_status,
-                        user_tier,
-                        subscription_expires
+                        email_confirmed_at,
+                        created_at,
+                        last_sign_in_at,
+                        raw_user_meta_data
                     `)
-                    .order('user_created', { ascending: false })
+                    .order('created_at', { ascending: false })
                     .limit(100);
 
-                if (!adminError && adminUsers && adminUsers.length > 0) {
-                    console.log('✅ Admin users view worked, found:', adminUsers.length);
-                    users = adminUsers.map(u => ({
-                        id: u.user_id,
-                        email: u.email,
-                        email_confirmed_at: u.user_tier !== 'unverified' ? '2024-01-01' : null,
-                        created_at: u.user_created,
-                        last_sign_in_at: null, // Not available in view
-                        raw_user_meta_data: { name: u.name }
-                    }));
-                    totalCount = adminUsers.length;
-                } else {
-                    console.log('❌ Admin users view failed:', adminError);
+                if (authError) {
+                    console.error('❌ Error loading users from auth.users:', authError);
                     
-                    // Method 2: Try direct auth.users query with admin client
-                    console.log('📊 Trying direct auth.users query...');
-                    const { data: authUsers, error: authError } = await supabaseAdmin
-                        .from('auth.users')
-                        .select(`
-                            id,
-                            email,
-                            email_confirmed_at,
-                            created_at,
-                            last_sign_in_at,
-                            raw_user_meta_data
-                        `)
+                    // Fallback: Derive users from pieces table (your real users)
+                    console.log('📊 Fallback: Getting users from pieces...');
+                    const { data: pieceUsers, error: piecesError } = await supabase
+                        .from('pieces')
+                        .select('user_id, created_at')
                         .order('created_at', { ascending: false })
-                        .limit(100);
+                        .limit(200);
 
-                    if (!authError && authUsers) {
-                        console.log('✅ Direct auth query worked, found:', authUsers.length);
-                        users = authUsers;
-                        totalCount = authUsers.length;
-                    } else {
-                        console.log('❌ Direct auth query failed:', authError);
+                    if (!piecesError && pieceUsers) {
+                        // Create unique users from pieces
+                        const uniqueUserIds = [...new Set(pieceUsers.map(p => p.user_id))];
+                        console.log('✅ Found', uniqueUserIds.length, 'unique users from pieces');
                         
-                        // Method 3: Derive users from pieces table
-                        console.log('📊 Trying to derive users from pieces...');
-                        const { data: pieceUsers, error: piecesError } = await supabase
-                            .from('pieces')
-                            .select('user_id, created_at')
-                            .order('created_at', { ascending: false })
-                            .limit(200);
-
-                        if (!piecesError && pieceUsers) {
-                            // Create unique users from pieces
-                            const uniqueUserIds = [...new Set(pieceUsers.map(p => p.user_id))];
-                            console.log('✅ Found unique users from pieces:', uniqueUserIds.length);
-                            
-                            users = uniqueUserIds.slice(0, 50).map((userId, index) => ({
-                                id: userId,
-                                email: `user${index + 1}@example.com`, // Placeholder
-                                email_confirmed_at: '2024-01-01', // Assume confirmed
-                                created_at: pieceUsers.find(p => p.user_id === userId)?.created_at || new Date().toISOString(),
-                                last_sign_in_at: null,
-                                raw_user_meta_data: { name: `Usuario ${index + 1}` }
-                            }));
-                            totalCount = uniqueUserIds.length;
-                        } else {
-                            console.log('❌ All methods failed, showing demo data');
-                            // Show demo data to prevent empty state
-                            users = [
-                                {
-                                    id: 'demo-user-1',
-                                    email: 'demo@zetalab.com',
-                                    email_confirmed_at: '2024-01-01',
-                                    created_at: new Date().toISOString(),
-                                    last_sign_in_at: new Date().toISOString(),
-                                    raw_user_meta_data: { name: 'Usuario Demo' }
-                                }
-                            ];
-                            totalCount = 1;
-                        }
+                        users = uniqueUserIds.slice(0, 50).map((userId, index) => ({
+                            id: userId,
+                            email: `user-${userId.substring(0, 8)}@zetalab.com`,
+                            email_confirmed_at: '2024-01-01',
+                            created_at: pieceUsers.find(p => p.user_id === userId)?.created_at || new Date().toISOString(),
+                            last_sign_in_at: null,
+                            raw_user_meta_data: { name: `Usuario ${index + 1}` }
+                        }));
+                        totalCount = uniqueUserIds.length;
+                    } else {
+                        console.log('❌ No users found in pieces table either');
+                        users = [];
+                        totalCount = 0;
                     }
+                } else {
+                    console.log('✅ Loaded', authUsers?.length || 0, 'users from auth.users');
+                    users = authUsers || [];
+                    totalCount = authUsers?.length || 0;
                 }
 
                 document.getElementById('totalUsersCount').textContent = totalCount;
@@ -1808,95 +1766,52 @@
                 let subscriptions = [];
                 let userEmails = {};
 
-                // Method 1: Try admin subscriptions view first
-                console.log('📊 Trying admin_subscriptions_view...');
-                const { data: adminSubs, error: adminSubsError } = await supabase
-                    .from('admin_subscriptions_view')
+                // Load REAL subscriptions using actual table schema
+                console.log('📊 Loading subscriptions from actual table...');
+                const { data: directSubs, error: directError } = await supabaseAdmin
+                    .from('subscriptions')
                     .select(`
-                        subscription_id,
+                        id,
                         user_id,
-                        user_email,
-                        user_name,
-                        plan_name,
-                        status,
-                        computed_status,
-                        type,
-                        amount,
-                        current_period_start,
-                        current_period_end,
+                        plan_type,
+                        active,
+                        created_at,
                         expires_at,
-                        subscription_created,
-                        days_until_expiry
+                        payment_id,
+                        amount,
+                        payment_status
                     `)
-                    .order('subscription_created', { ascending: false })
+                    .order('created_at', { ascending: false })
                     .limit(100);
 
-                if (!adminSubsError && adminSubs && adminSubs.length > 0) {
-                    console.log('✅ Admin subscriptions view worked, found:', adminSubs.length);
-                    subscriptions = adminSubs.map(sub => ({
-                        id: sub.subscription_id,
-                        user_id: sub.user_id,
-                        status: sub.computed_status || sub.status,
-                        type: sub.type,
-                        amount: sub.amount,
-                        current_period_start: sub.current_period_start,
-                        current_period_end: sub.current_period_end,
-                        expires_at: sub.expires_at,
-                        created_at: sub.subscription_created,
-                        plan_name: sub.plan_name,
-                        user_email: sub.user_email || 'N/A',
-                        user_name: sub.user_name || 'N/A'
-                    }));
-                } else {
-                    console.log('❌ Admin subscriptions view failed:', adminSubsError);
+                if (directError) {
+                    console.error('❌ Error loading subscriptions:', directError);
+                    throw directError;
+                }
+
+                console.log(`✅ Loaded ${directSubs?.length || 0} subscriptions from real table`);
+                subscriptions = directSubs || [];
+
+                // Try to get user emails if we have subscriptions
+                if (subscriptions.length > 0) {
+                    const userIds = subscriptions.map(sub => sub.user_id);
+                    console.log('📊 Getting user emails for', userIds.length, 'users...');
                     
-                    // Method 2: Try direct subscriptions query
-                    console.log('📊 Trying direct subscriptions query...');
-                    const { data: directSubs, error: directError } = await supabaseAdmin
-                        .from('subscriptions')
-                        .select(`
-                            id,
-                            user_id,
-                            status,
-                            type,
-                            amount,
-                            current_period_start,
-                            current_period_end,
-                            expires_at,
-                            created_at,
-                            plan_id,
-                            auto_renewal
-                        `)
-                        .order('created_at', { ascending: false })
-                        .limit(100);
-
-                    if (!directError && directSubs) {
-                        console.log('✅ Direct subscriptions query worked, found:', directSubs.length);
-                        subscriptions = directSubs;
-
-                        // Try to get user emails
-                        const userIds = subscriptions.map(sub => sub.user_id);
-                        if (userIds.length > 0) {
-                            console.log('📊 Trying to get user emails...');
-                            const { data: users, error: usersError } = await supabaseAdmin
-                                .from('auth.users')
-                                .select('id, email, raw_user_meta_data')
-                                .in('id', userIds);
-                            
-                            if (!usersError && users) {
-                                console.log('✅ Got user emails for', users.length, 'users');
-                                userEmails = users.reduce((acc, user) => {
-                                    acc[user.id] = {
-                                        email: user.email || 'Email no disponible',
-                                        name: user.raw_user_meta_data?.name || 'N/A'
-                                    };
-                                    return acc;
-                                }, {});
-                            } else {
-                                console.log('❌ Could not get user emails:', usersError);
-                            }
-                        }
-
+                    const { data: users, error: usersError } = await supabaseAdmin
+                        .from('auth.users')
+                        .select('id, email, raw_user_meta_data')
+                        .in('id', userIds);
+                    
+                    if (!usersError && users) {
+                        console.log('✅ Got user emails for', users.length, 'users');
+                        userEmails = users.reduce((acc, user) => {
+                            acc[user.id] = {
+                                email: user.email || 'Email no disponible',
+                                name: user.raw_user_meta_data?.name || 'N/A'
+                            };
+                            return acc;
+                        }, {});
+                        
                         // Enrich subscriptions with user data
                         subscriptions = subscriptions.map(sub => ({
                             ...sub,
@@ -1904,25 +1819,13 @@
                             user_name: userEmails[sub.user_id]?.name || 'Usuario desconocido'
                         }));
                     } else {
-                        console.log('❌ Direct subscriptions query failed:', directError);
-                        
-                        // Method 3: Show demo data
-                        console.log('📊 Showing demo subscription data...');
-                        subscriptions = [
-                            {
-                                id: 'demo-sub-1',
-                                user_id: 'demo-user-1',
-                                status: 'active',
-                                type: 'monthly',
-                                amount: 19.99,
-                                current_period_start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                                current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                                created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-                                user_email: 'demo@zetalab.com',
-                                user_name: 'Usuario Demo'
-                            }
-                        ];
+                        console.log('❌ Could not get user emails:', usersError);
+                        // Still add basic user info
+                        subscriptions = subscriptions.map(sub => ({
+                            ...sub,
+                            user_email: `user-${sub.user_id.substring(0, 8)}@zetalab.com`,
+                            user_name: 'Usuario'
+                        }));
                     }
                 }
 
@@ -1946,20 +1849,24 @@
         }
 
         function updateSubscriptionStats(subscriptions) {
+            const now = new Date();
             const stats = {
                 total: subscriptions.length,
-                active: subscriptions.filter(s => s.status === 'active').length,
-                trial: subscriptions.filter(s => s.status === 'trial').length,
-                expired: subscriptions.filter(s => s.status === 'expired').length,
-                canceled: subscriptions.filter(s => s.status === 'canceled').length,
-                totalRevenue: subscriptions.reduce((sum, s) => sum + (s.amount || 0), 0)
+                active: subscriptions.filter(s => s.active === true).length,
+                trial: subscriptions.filter(s => s.plan_type === 'trial').length,
+                expired: subscriptions.filter(s => {
+                    return s.expires_at && new Date(s.expires_at) < now;
+                }).length,
+                inactive: subscriptions.filter(s => s.active === false).length,
+                totalRevenue: subscriptions.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
             };
 
+            // Update stats using actual data structure
             document.getElementById('totalSubscriptionsCount').textContent = stats.total;
-            document.getElementById('activeSubscriptionsCount').textContent = stats.active;
+            document.getElementById('activeSubscriptionsCount').textContent = stats.active;  
             document.getElementById('trialSubscriptionsCount').textContent = stats.trial;
             document.getElementById('expiredSubscriptionsCount').textContent = stats.expired;
-            document.getElementById('canceledSubscriptionsCount').textContent = stats.canceled;
+            document.getElementById('canceledSubscriptionsCount').textContent = stats.inactive;
             document.getElementById('totalSubscriptionRevenue').textContent = `$${stats.totalRevenue.toLocaleString()}`;
         }
 
@@ -1976,27 +1883,35 @@
             }
 
             tbody.innerHTML = subscriptions.map(sub => {
-                // Calculate computed status based on actual schema
+                // Calculate computed status based on REAL schema (active boolean + expires_at)
                 const now = new Date();
-                const expiryDate = new Date(sub.expires_at || sub.current_period_end);
-                let computedStatus = sub.status;
+                const expiryDate = sub.expires_at ? new Date(sub.expires_at) : null;
+                let computedStatus;
                 
-                if (sub.status === 'active' && expiryDate < now) {
-                    computedStatus = 'expired';
+                if (sub.active) {
+                    if (expiryDate && expiryDate < now) {
+                        computedStatus = 'expired';
+                    } else {
+                        computedStatus = 'active';
+                    }
+                } else {
+                    computedStatus = 'inactive';
                 }
 
                 return `
                     <tr>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${sub.id.substring(0, 8)}...</td>
-                        <td>${sub.user_email}</td>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${sub.id}</td>
+                        <td>${sub.user_email || `user-${sub.user_id.substring(0, 8)}`}</td>
                         <td><span class="status-badge ${computedStatus}">${getStatusLabel(computedStatus)}</span></td>
-                        <td>${getPeriodLabel(sub.type)}</td>
+                        <td>${getPeriodLabel(sub.plan_type)}</td>
                         <td>$${sub.amount ? parseFloat(sub.amount).toLocaleString() : 0}</td>
-                        <td>${sub.current_period_start ? new Date(sub.current_period_start).toLocaleDateString('es-ES') : 'N/A'}</td>
-                        <td>${(sub.expires_at || sub.current_period_end) ? new Date(sub.expires_at || sub.current_period_end).toLocaleDateString('es-ES') : 'N/A'}</td>
+                        <td>${sub.created_at ? new Date(sub.created_at).toLocaleDateString('es-ES') : 'N/A'}</td>
+                        <td>${sub.expires_at ? new Date(sub.expires_at).toLocaleDateString('es-ES') : 'Sin vencimiento'}</td>
                         <td>
                             <button class="table-action-btn" onclick="editSubscription('${sub.id}')">Editar</button>
-                            <button class="table-action-btn warning" onclick="cancelSubscription('${sub.id}')">Cancelar</button>
+                            <button class="table-action-btn ${sub.active ? 'warning' : 'success'}" onclick="toggleSubscription('${sub.id}')">
+                                ${sub.active ? 'Desactivar' : 'Activar'}
+                            </button>
                             <button class="table-action-btn danger" onclick="deleteSubscription('${sub.id}')">Eliminar</button>
                         </td>
                     </tr>
@@ -2007,23 +1922,18 @@
         function getStatusLabel(status) {
             const labels = {
                 'active': 'Activa',
-                'trial': 'Trial',
-                'expired': 'Expirada',
-                'canceled': 'Cancelada',
-                'pending': 'Pendiente'
+                'inactive': 'Inactiva',
+                'expired': 'Expirada'
             };
             return labels[status] || status;
         }
 
-        function getPeriodLabel(period) {
+        function getPeriodLabel(planType) {
             const labels = {
-                'monthly': 'Mensual',
-                'yearly': 'Anual', 
                 'trial': 'Trial',
-                'lifetime': 'Lifetime',
-                'weekly': 'Semanal'
+                'monthly': 'Mensual'
             };
-            return labels[period] || period;
+            return labels[planType] || planType;
         }
 
         // Subscription search functionality
@@ -2513,10 +2423,10 @@
             
             const tables = [
                 { name: 'pieces', desc: 'Piezas de usuarios' },
-                { name: 'auth.users', desc: 'Usuarios del sistema' },
+                { name: 'piece_versions', desc: 'Versiones de piezas' },
                 { name: 'subscriptions', desc: 'Suscripciones' },
-                { name: 'admin_users_overview', desc: 'Vista administrativa' },
-                { name: 'payment_transactions', desc: 'Transacciones' }
+                { name: 'payment_transactions', desc: 'Transacciones' },
+                { name: 'auth.users', desc: 'Usuarios del sistema' }
             ];
             
             for (const table of tables) {

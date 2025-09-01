@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZETALAB Admin - Datos Reales</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #00ff88;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 30px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: #00ff88;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #333;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #00ff88;
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .data-table {
+            background: #1a1a1a;
+            border-radius: 10px;
+            border: 2px solid #333;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .data-table h3 {
+            color: #00ff88;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            background: #222;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #222;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-active { background: #00ff88; color: #000; }
+        .status-trial { background: #ffaa00; color: #000; }
+        .status-inactive { background: #ff4444; color: white; }
+
+        .loading {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+        }
+
+        .error {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #ff4444;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 ZETALAB Admin Dashboard</h1>
+            <p>Dashboard simple con datos reales de Supabase</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="nav-tab" onclick="showTab('users')">Usuarios</button>
+            <button class="nav-tab" onclick="showTab('subscriptions')">Suscripciones</button>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 id="totalUsers">0</h3>
+                    <p>Usuarios Únicos</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalSubscriptions">0</h3>
+                    <p>Suscripciones</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="activeSubscriptions">0</h3>
+                    <p>Suscripciones Activas</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalRevenue">$0</h3>
+                    <p>Ingresos Totales</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div id="users" class="section">
+            <div class="data-table">
+                <h3>Usuarios Únicos (desde tabla pieces)</h3>
+                <div id="usersContent" class="loading">Cargando...</div>
+            </div>
+        </div>
+
+        <!-- Subscriptions Section -->
+        <div id="subscriptions" class="section">
+            <div class="data-table">
+                <h3>Suscripciones Reales</h3>
+                <div id="subscriptionsContent" class="loading">Cargando...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Configuración real de Supabase
+        const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
+        const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3MDM4OSwiZXhwIjoyMDcxNzQ2Mzg5fQ.DfuFLgbxVNmrhfqXVgCRIoTCsDvUK02qR9wJqzik2PY';
+
+        // Cliente Supabase Admin (puede acceder a todas las tablas)
+        const supabase = window.supabase.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+        // Funciones de navegación
+        function showTab(tabName) {
+            // Ocultar todas las secciones
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            
+            // Mostrar sección seleccionada
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Cargar datos específicos
+            if (tabName === 'users') loadUsers();
+            if (tabName === 'subscriptions') loadSubscriptions();
+        }
+
+        // Cargar estadísticas del dashboard
+        async function loadDashboard() {
+            try {
+                console.log('📊 Cargando estadísticas del dashboard...');
+
+                // Contar usuarios únicos desde pieces
+                const { data: pieces } = await supabase.from('pieces').select('user_id');
+                const uniqueUsers = pieces ? [...new Set(pieces.map(p => p.user_id))].length : 0;
+
+                // Contar suscripciones reales
+                const { data: subscriptions } = await supabase
+                    .from('subscriptions')
+                    .select('id, active, amount, expires_at');
+
+                const totalSubs = subscriptions?.length || 0;
+                const activeSubs = subscriptions?.filter(s => {
+                    const isActive = s.active === true;
+                    const notExpired = !s.expires_at || new Date(s.expires_at) > new Date();
+                    return isActive && notExpired;
+                }).length || 0;
+
+                const totalRevenue = subscriptions?.reduce((sum, s) => {
+                    return sum + (parseFloat(s.amount) || 0);
+                }, 0) || 0;
+
+                // Actualizar UI
+                document.getElementById('totalUsers').textContent = uniqueUsers;
+                document.getElementById('totalSubscriptions').textContent = totalSubs;
+                document.getElementById('activeSubscriptions').textContent = activeSubs;
+                document.getElementById('totalRevenue').textContent = `$${totalRevenue.toLocaleString()}`;
+
+                console.log('✅ Dashboard cargado:', { uniqueUsers, totalSubs, activeSubs, totalRevenue });
+
+            } catch (error) {
+                console.error('❌ Error cargando dashboard:', error);
+                document.querySelectorAll('.stat-card h3').forEach(el => el.textContent = 'Error');
+            }
+        }
+
+        // Cargar usuarios únicos
+        async function loadUsers() {
+            try {
+                console.log('👥 Cargando usuarios únicos...');
+                
+                const { data: pieces } = await supabase
+                    .from('pieces')
+                    .select('user_id, title, created_at')
+                    .order('created_at', { ascending: false });
+
+                if (!pieces || pieces.length === 0) {
+                    document.getElementById('usersContent').innerHTML = '<p>No hay usuarios con piezas creadas</p>';
+                    return;
+                }
+
+                // Agrupar por usuario
+                const userStats = {};
+                pieces.forEach(piece => {
+                    if (!userStats[piece.user_id]) {
+                        userStats[piece.user_id] = {
+                            id: piece.user_id,
+                            pieces_count: 0,
+                            first_piece: piece.created_at
+                        };
+                    }
+                    userStats[piece.user_id].pieces_count++;
+                    if (new Date(piece.created_at) < new Date(userStats[piece.user_id].first_piece)) {
+                        userStats[piece.user_id].first_piece = piece.created_at;
+                    }
+                });
+
+                const users = Object.values(userStats);
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Primera Pieza</th>
+                                <th>Total Piezas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                users.forEach(user => {
+                    html += `
+                        <tr>
+                            <td style="font-family: monospace; font-size: 0.8rem;">${user.id.substring(0, 16)}...</td>
+                            <td>${new Date(user.first_piece).toLocaleDateString('es-ES')}</td>
+                            <td><strong>${user.pieces_count}</strong></td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('usersContent').innerHTML = html;
+
+                console.log('✅ Usuarios cargados:', users.length);
+
+            } catch (error) {
+                console.error('❌ Error cargando usuarios:', error);
+                document.getElementById('usersContent').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Cargar suscripciones reales
+        async function loadSubscriptions() {
+            try {
+                console.log('💳 Cargando suscripciones reales...');
+                
+                const { data: subscriptions } = await supabase
+                    .from('subscriptions')
+                    .select('id, user_id, plan_type, active, amount, expires_at, created_at, payment_status')
+                    .order('created_at', { ascending: false });
+
+                if (!subscriptions || subscriptions.length === 0) {
+                    document.getElementById('subscriptionsContent').innerHTML = '<p>No hay suscripciones registradas</p>';
+                    return;
+                }
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User ID</th>
+                                <th>Plan</th>
+                                <th>Estado</th>
+                                <th>Monto</th>
+                                <th>Expira</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                subscriptions.forEach(sub => {
+                    const now = new Date();
+                    const expiry = sub.expires_at ? new Date(sub.expires_at) : null;
+                    
+                    let status = 'inactive';
+                    let statusText = 'Inactiva';
+                    
+                    if (sub.active) {
+                        if (expiry && expiry > now) {
+                            status = 'active';
+                            statusText = 'Activa';
+                        } else if (expiry && expiry < now) {
+                            status = 'inactive';
+                            statusText = 'Expirada';
+                        } else {
+                            status = 'active';
+                            statusText = 'Activa';
+                        }
+                    }
+
+                    if (sub.plan_type === 'trial') {
+                        status = 'trial';
+                        statusText = 'Trial';
+                    }
+
+                    html += `
+                        <tr>
+                            <td><strong>${sub.id}</strong></td>
+                            <td style="font-family: monospace; font-size: 0.8rem;">${sub.user_id.substring(0, 16)}...</td>
+                            <td>${sub.plan_type}</td>
+                            <td><span class="status-badge status-${status}">${statusText}</span></td>
+                            <td>$${sub.amount ? parseFloat(sub.amount).toLocaleString() : '0'}</td>
+                            <td>${expiry ? expiry.toLocaleDateString('es-ES') : 'Sin vencimiento'}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('subscriptionsContent').innerHTML = html;
+
+                console.log('✅ Suscripciones cargadas:', subscriptions.length);
+
+            } catch (error) {
+                console.error('❌ Error cargando suscripciones:', error);
+                document.getElementById('subscriptionsContent').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Cargar dashboard al inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Inicializando dashboard simple con datos reales...');
+            loadDashboard();
+        });
+    </script>
+</body>
+</html>

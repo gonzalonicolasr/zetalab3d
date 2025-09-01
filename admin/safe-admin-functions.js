@@ -231,12 +231,22 @@ function updateMetricCard(metricId, value) {
 async function loadSubscriptionsData() {
     try {
         showTableLoading('subscriptionsTable');
-        console.log('💳 Loading subscriptions data...');
+        console.log('💳 Loading real subscriptions data from actual table...');
         
-        // Usar solo columnas reales: id, user_id, plan_type, active, created_at, expires_at, payment_id, amount, payment_status
+        // Use REAL table schema only - no views or non-existent columns
         const { data: subscriptions, error } = await supabase
             .from('subscriptions')
-            .select('*')
+            .select(`
+                id,
+                user_id,
+                plan_type,
+                active,
+                created_at,
+                expires_at,
+                payment_id,
+                amount,
+                payment_status
+            `)
             .order('created_at', { ascending: false })
             .limit(100);
         
@@ -248,11 +258,11 @@ async function loadSubscriptionsData() {
         AdminState.data.subscriptions = subscriptions || [];
         renderSubscriptionsTable(AdminState.data.subscriptions);
         
-        console.log(`✅ Loaded ${subscriptions?.length || 0} subscriptions`);
+        console.log(`✅ Loaded ${subscriptions?.length || 0} real subscriptions`);
         
     } catch (error) {
         console.error('❌ Error loading subscriptions:', error);
-        showTableError('subscriptionsTable', 'Error cargando suscripciones');
+        showTableError('subscriptionsTable', 'Error cargando suscripciones: ' + error.message);
     }
 }
 
