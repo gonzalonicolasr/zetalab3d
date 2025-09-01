@@ -1815,6 +1815,103 @@
                 justify-content: space-around;
             }
         }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-primary);
+            border-top: 2px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Enhanced Admin Styles */
+        .inline-edit {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-primary);
+            padding: 4px 8px;
+            border-radius: 3px;
+            min-width: 80px;
+        }
+
+        .inline-edit:hover {
+            border-color: var(--border-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .inline-edit:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: var(--bg-tertiary);
+            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .status-trial { background: rgba(255, 191, 0, 0.2); color: var(--warning); }
+        .status-expired { background: rgba(255, 68, 68, 0.2); color: var(--error); }
+        .status-cancelled { background: rgba(128, 128, 128, 0.2); color: var(--text-tertiary); }
+
+        .action-btn {
+            background: var(--bg-quaternary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 4px;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .action-btn.danger:hover {
+            background: var(--error);
+            border-color: var(--error);
+        }
+
+        /* Bulk Action Bar */
+        .bulk-actions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-accent);
+            border-radius: 8px;
+            padding: 12px 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+            display: none;
+        }
+
+        .bulk-actions.show {
+            display: flex;
+        }
     </style>
 </head>
 <body>
@@ -1851,6 +1948,12 @@
                     <a href="#" class="nav-link" data-section="subscriptions">
                         <span class="icon">💳</span>
                         Subscription Mgmt
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-section="payments">
+                        <span class="icon">💰</span>
+                        Payment Management
                     </a>
                 </li>
                 <li>
@@ -2100,63 +2203,282 @@
                 </div>
             </div>
 
-            <!-- Subscription Management Section -->
+            <!-- Enhanced Subscription Management Section -->
             <div class="analytics-section" id="subscriptionsSection">
                 <div class="analytics-header">
                     <div>
-                        <h1>⟨ Subscription Management ⟩</h1>
-                        <p>Gestión avanzada de suscripciones y pagos</p>
+                        <h1>⟨ Enhanced Subscription Management ⟩</h1>
+                        <p>Gestión completa de suscripciones - Ver, Editar y Administrar</p>
                     </div>
-                    <button class="export-btn" onclick="processRetentionCampaign()">📧 Campaña Retención</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="export-btn" onclick="exportSubscriptionData()">📊 Exportar Datos</button>
+                        <button class="export-btn" onclick="showAssignSubscriptionModal()">➕ Asignar Suscripción</button>
+                        <button class="export-btn" onclick="bulkSubscriptionActions()">⚙️ Acciones en Lote</button>
+                    </div>
                 </div>
 
+                <!-- Subscription Statistics -->
                 <div class="metrics-grid">
                     <div class="metric-card">
-                        <div class="metric-value" id="upcomingRenewals">0</div>
-                        <div class="metric-label">Renovaciones Próximas (7 días)</div>
-                        <div class="metric-change" id="renewalsChange">+0</div>
+                        <div class="metric-value" id="totalActiveSubscriptions">0</div>
+                        <div class="metric-label">Suscripciones Activas</div>
+                        <div class="metric-change" id="activeSubsChange">+0</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value" id="failedPayments">0</div>
-                        <div class="metric-label">Pagos Fallidos</div>
-                        <div class="metric-change negative" id="failedPaymentsChange">+0</div>
+                        <div class="metric-value" id="totalTrialSubscriptions">0</div>
+                        <div class="metric-label">Usuarios en Trial</div>
+                        <div class="metric-change positive" id="trialSubsChange">+0</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value" id="upgradeOpportunities">0</div>
-                        <div class="metric-label">Oportunidades de Upgrade</div>
-                        <div class="metric-change positive" id="upgradeChange">+0</div>
+                        <div class="metric-value" id="monthlyRecurringRevenue">$0</div>
+                        <div class="metric-label">MRR (Monthly Recurring Revenue)</div>
+                        <div class="metric-change positive" id="mrrChange">+$0</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value" id="ltv">$0</div>
-                        <div class="metric-label">Lifetime Value Promedio</div>
-                        <div class="metric-change positive" id="ltvChange">+$0</div>
+                        <div class="metric-value" id="upcomingExpiries">0</div>
+                        <div class="metric-label">Expiran en 7 días</div>
+                        <div class="metric-change negative" id="expiriesChange">+0</div>
                     </div>
                 </div>
 
-                <div class="chart-container">
-                    <h3>📊 Ciclo de Vida de Suscripciones</h3>
-                    <canvas id="subscriptionLifecycleChart" width="400" height="200"></canvas>
-                </div>
-
+                <!-- Subscription Filters -->
                 <div class="data-table">
                     <div class="data-table-header">
-                        <h3>⚠️ Acciones Requeridas</h3>
-                        <button class="export-btn" onclick="exportSubscriptionActions()">📋 Exportar Acciones</button>
+                        <h3>🔍 Filtros de Suscripciones</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="subscriptionStatusFilter" onchange="filterSubscriptions()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px;">
+                                <option value="">Todos los estados</option>
+                                <option value="active">Activos</option>
+                                <option value="trial">Trial</option>
+                                <option value="expired">Expirados</option>
+                                <option value="cancelled">Cancelados</option>
+                            </select>
+                            <select id="subscriptionPlanFilter" onchange="filterSubscriptions()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px;">
+                                <option value="">Todos los planes</option>
+                                <option value="trial">Trial</option>
+                                <option value="basic">Basic</option>
+                                <option value="premium">Premium</option>
+                            </select>
+                            <input type="text" id="userSearchFilter" placeholder="Buscar por email..." onkeyup="filterSubscriptions()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px; min-width: 200px;">
+                            <button onclick="resetSubscriptionFilters()" style="background: var(--bg-quaternary); color: var(--text-secondary); border: 1px solid var(--border-primary); padding: 8px 12px; border-radius: 4px; cursor: pointer;">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprehensive Subscription Table -->
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>📋 Todas las Suscripciones</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="selectAllSubscriptions" onchange="toggleSelectAllSubscriptions()" />
+                                Seleccionar todo
+                            </label>
+                            <span id="selectedSubscriptionsCount" style="color: var(--text-secondary); font-size: 0.9rem;">0 seleccionados</span>
+                        </div>
                     </div>
                     <div class="table-content">
                         <table>
                             <thead>
                                 <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAllSubsHeader" onchange="toggleSelectAllSubscriptions()" /></th>
                                     <th>Usuario</th>
-                                    <th>Acción</th>
-                                    <th>Prioridad</th>
-                                    <th>Fecha</th>
+                                    <th>Plan</th>
                                     <th>Estado</th>
+                                    <th>Precio</th>
+                                    <th>Inicio</th>
+                                    <th>Expiración</th>
+                                    <th>Días Restantes</th>
+                                    <th>Último Pago</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="subscriptionActionsTable">
+                            <tbody id="subscriptionsTable">
                                 <tr>
-                                    <td colspan="5" style="text-align: center; padding: 40px;">Cargando acciones...</td>
+                                    <td colspan="10" style="text-align: center; padding: 40px;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                            <div class="loading-spinner"></div>
+                                            Cargando suscripciones...
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Users Without Subscriptions -->
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>👥 Usuarios Sin Suscripción</h3>
+                        <button class="export-btn" onclick="showBulkAssignModal()">➕ Asignar en Lote</button>
+                    </div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAllNoSubs" onchange="toggleSelectAllNoSubscriptions()" /></th>
+                                    <th>Email</th>
+                                    <th>Nombre</th>
+                                    <th>Registro</th>
+                                    <th>Piezas Creadas</th>
+                                    <th>Última Actividad</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersWithoutSubscriptionsTable">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                            <div class="loading-spinner"></div>
+                                            Cargando usuarios sin suscripción...
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Management Section -->
+            <div class="analytics-section" id="paymentsSection">
+                <div class="analytics-header">
+                    <div>
+                        <h1>⟨ Payment Management Center ⟩</h1>
+                        <p>Gestión completa de pagos, transacciones y reembolsos</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="export-btn" onclick="exportPaymentData()">📊 Exportar Pagos</button>
+                        <button class="export-btn" onclick="generateRevenueReport()">📈 Reporte de Ingresos</button>
+                        <button class="export-btn" onclick="showRefundModal()">💸 Procesar Reembolso</button>
+                    </div>
+                </div>
+
+                <!-- Payment Statistics -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalGrossRevenue">$0</div>
+                        <div class="metric-label">Ingresos Brutos (30d)</div>
+                        <div class="metric-change positive" id="grossRevenueChange">+$0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalNetRevenue">$0</div>
+                        <div class="metric-label">Ingresos Netos (30d)</div>
+                        <div class="metric-change positive" id="netRevenueChange">+$0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="paymentSuccessRate">0%</div>
+                        <div class="metric-label">Tasa de Éxito de Pagos</div>
+                        <div class="metric-change" id="successRateChange">0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="recentFailedPayments">0</div>
+                        <div class="metric-label">Pagos Fallidos (7d)</div>
+                        <div class="metric-change negative" id="failedPaymentsCountChange">+0</div>
+                    </div>
+                </div>
+
+                <!-- Revenue Chart -->
+                <div class="chart-container">
+                    <h3>📈 Tendencia de Ingresos (Últimos 30 días)</h3>
+                    <canvas id="revenueChart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Payment Filters -->
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>🔍 Filtros de Pagos</h3>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <select id="paymentStatusFilter" onchange="filterPayments()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px;">
+                                <option value="">Todos los estados</option>
+                                <option value="completed">Completados</option>
+                                <option value="failed">Fallidos</option>
+                                <option value="pending">Pendientes</option>
+                                <option value="refunded">Reembolsados</option>
+                            </select>
+                            <select id="paymentMethodFilter" onchange="filterPayments()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px;">
+                                <option value="">Todos los métodos</option>
+                                <option value="credit_card">Tarjeta de Crédito</option>
+                                <option value="paypal">PayPal</option>
+                                <option value="stripe">Stripe</option>
+                            </select>
+                            <input type="date" id="paymentDateFromFilter" onchange="filterPayments()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px;">
+                            <input type="date" id="paymentDateToFilter" onchange="filterPayments()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 8px; border-radius: 4px;">
+                            <button onclick="resetPaymentFilters()" style="background: var(--bg-quaternary); color: var(--text-secondary); border: 1px solid var(--border-primary); padding: 8px 12px; border-radius: 4px; cursor: pointer;">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprehensive Payment Table -->
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>💰 Historial de Pagos</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="selectAllPayments" onchange="toggleSelectAllPayments()" />
+                                Seleccionar todo
+                            </label>
+                            <span id="selectedPaymentsCount" style="color: var(--text-secondary); font-size: 0.9rem;">0 seleccionados</span>
+                        </div>
+                    </div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAllPaymentsHeader" onchange="toggleSelectAllPayments()" /></th>
+                                    <th>Usuario</th>
+                                    <th>Monto</th>
+                                    <th>Estado</th>
+                                    <th>Método</th>
+                                    <th>Proveedor</th>
+                                    <th>Fecha</th>
+                                    <th>Comisión</th>
+                                    <th>Neto</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentsTable">
+                                <tr>
+                                    <td colspan="10" style="text-align: center; padding: 40px;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                            <div class="loading-spinner"></div>
+                                            Cargando historial de pagos...
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Failed Payments Section -->
+                <div class="data-table">
+                    <div class="data-table-header">
+                        <h3>❌ Pagos Fallidos Recientes</h3>
+                        <button class="export-btn" onclick="retryFailedPayments()">🔄 Reintentar Seleccionados</button>
+                    </div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAllFailedPayments" onchange="toggleSelectAllFailedPayments()" /></th>
+                                    <th>Usuario</th>
+                                    <th>Monto</th>
+                                    <th>Fecha</th>
+                                    <th>Motivo del Fallo</th>
+                                    <th>Reintentos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="failedPaymentsTable">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                            <div class="loading-spinner"></div>
+                                            Cargando pagos fallidos...
+                                        </div>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -2526,6 +2848,18 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Actions Bar -->
+    <div id="bulkActionsBar" class="bulk-actions" style="display: none;">
+        <span id="bulkActionsText">Acciones en lote:</span>
+        <button class="action-btn" onclick="bulkExtendSubscriptions()">📅 Extender Suscripciones</button>
+        <button class="action-btn" onclick="bulkAssignSubscriptions()">➕ Asignar en Lote</button>
+        <button class="action-btn" onclick="exportSelectedData()">📊 Exportar Selección</button>
+        <button class="action-btn danger" onclick="clearAllSelections()">✖ Limpiar</button>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modalContainer"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -3547,6 +3881,9 @@
             } else if (sectionName === 'subscriptions') {
                 document.getElementById('subscriptionsSection').classList.add('active');
                 loadSubscriptionManagement();
+            } else if (sectionName === 'payments') {
+                document.getElementById('paymentsSection').classList.add('active');
+                loadPaymentManagement();
             } else if (sectionName === 'behavior') {
                 document.getElementById('behaviorSection').classList.add('active');
                 loadUserBehaviorInsights();
@@ -5067,6 +5404,760 @@
                     return new Date(now.getFullYear(), 0, 1).toISOString();
                 default:
                     return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            }
+        }
+
+        // ============================================
+        // ENHANCED SUBSCRIPTION MANAGEMENT FUNCTIONS
+        // ============================================
+
+        // Global variables for subscription management
+        let allSubscriptions = [];
+        let filteredSubscriptions = [];
+        let selectedSubscriptions = new Set();
+        let allPayments = [];
+        let filteredPayments = [];
+        let selectedPayments = new Set();
+        let usersWithoutSubscriptions = [];
+
+        // Load comprehensive subscription management data
+        async function loadSubscriptionManagement() {
+            try {
+                console.log('🔄 Loading subscription management data...');
+                
+                // Show loading state
+                showLoadingState('subscriptionsTable');
+                showLoadingState('usersWithoutSubscriptionsTable');
+                
+                // Load all subscriptions with enhanced data
+                const { data: subscriptionsData, error: subError } = await supabase
+                    .from('admin_subscriptions_view')
+                    .select('*')
+                    .order('subscription_created', { ascending: false });
+                
+                if (subError) {
+                    console.error('Error loading subscriptions:', subError);
+                    // Fallback to basic subscription data
+                    const { data: basicSubs } = await supabase
+                        .from('subscriptions')
+                        .select(`
+                            *,
+                            profiles:user_id(email, name)
+                        `)
+                        .order('created_at', { ascending: false });
+                    
+                    allSubscriptions = basicSubs || [];
+                } else {
+                    allSubscriptions = subscriptionsData || [];
+                }
+                
+                // Load users without subscriptions
+                const subscribedUserIds = allSubscriptions.map(s => s.user_id).filter(Boolean);
+                const { data: allUsersData } = await supabase
+                    .from('profiles')
+                    .select('id, email, name, created_at')
+                    .not('id', 'in', `(${subscribedUserIds.length > 0 ? subscribedUserIds.join(',') : 'null'})`);
+                
+                // Get additional data for users without subscriptions
+                const { data: piecesData } = await supabase
+                    .from('pieces')
+                    .select('user_id, created_at');
+                
+                const piecesCounts = {};
+                const lastActivity = {};
+                
+                piecesData?.forEach(piece => {
+                    piecesCounts[piece.user_id] = (piecesCounts[piece.user_id] || 0) + 1;
+                    if (!lastActivity[piece.user_id] || new Date(piece.created_at) > new Date(lastActivity[piece.user_id])) {
+                        lastActivity[piece.user_id] = piece.created_at;
+                    }
+                });
+                
+                usersWithoutSubscriptions = (allUsersData || []).map(user => ({
+                    ...user,
+                    pieces_count: piecesCounts[user.id] || 0,
+                    last_activity: lastActivity[user.id] || user.created_at
+                }));
+                
+                // Update statistics
+                updateSubscriptionStatistics();
+                
+                // Display data
+                displayAllSubscriptions();
+                displayUsersWithoutSubscriptions();
+                
+                console.log(`✅ Loaded ${allSubscriptions.length} subscriptions and ${usersWithoutSubscriptions.length} users without subscriptions`);
+                
+            } catch (error) {
+                console.error('Error in loadSubscriptionManagement:', error);
+                showErrorState('subscriptionsTable', error.message);
+                showErrorState('usersWithoutSubscriptionsTable', error.message);
+            }
+        }
+
+        // Load comprehensive payment management data
+        async function loadPaymentManagement() {
+            try {
+                console.log('🔄 Loading payment management data...');
+                
+                showLoadingState('paymentsTable');
+                showLoadingState('failedPaymentsTable');
+                
+                // Load all payments with enhanced data
+                const { data: paymentsData, error: payError } = await supabase
+                    .from('admin_payments_view')
+                    .select('*')
+                    .order('payment_date', { ascending: false });
+                
+                if (payError) {
+                    console.error('Error loading payments:', payError);
+                    // Fallback to basic payment data if view doesn't exist
+                    const { data: basicPayments } = await supabase
+                        .from('payment_transactions')
+                        .select(`
+                            *,
+                            profiles:user_id(email, name)
+                        `)
+                        .order('created_at', { ascending: false });
+                    
+                    allPayments = basicPayments || [];
+                } else {
+                    allPayments = paymentsData || [];
+                }
+                
+                // Update payment statistics
+                updatePaymentStatistics();
+                
+                // Display payment data
+                displayAllPayments();
+                displayFailedPayments();
+                
+                console.log(`✅ Loaded ${allPayments.length} payment transactions`);
+                
+            } catch (error) {
+                console.error('Error in loadPaymentManagement:', error);
+                showErrorState('paymentsTable', error.message);
+                showErrorState('failedPaymentsTable', error.message);
+            }
+        }
+
+        // Update subscription statistics display
+        function updateSubscriptionStatistics() {
+            const activeCount = allSubscriptions.filter(s => s.computed_status === 'active' || s.status === 'active').length;
+            const trialCount = allSubscriptions.filter(s => s.computed_status === 'trial' || s.type === 'trial').length;
+            const expiringSoon = allSubscriptions.filter(s => {
+                const expiryDate = new Date(s.expires_at || s.current_period_end);
+                const daysDiff = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+                return daysDiff <= 7 && daysDiff >= 0;
+            }).length;
+            
+            const mrr = allSubscriptions
+                .filter(s => s.computed_status === 'active' || s.status === 'active')
+                .reduce((sum, s) => sum + (parseFloat(s.plan_price || s.amount || 0)), 0);
+            
+            // Update DOM elements
+            updateMetricValue('totalActiveSubscriptions', activeCount);
+            updateMetricValue('totalTrialSubscriptions', trialCount);
+            updateMetricValue('monthlyRecurringRevenue', formatCurrency(mrr));
+            updateMetricValue('upcomingExpiries', expiringSoon);
+        }
+
+        // Update payment statistics display
+        function updatePaymentStatistics() {
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            
+            const recentPayments = allPayments.filter(p => 
+                new Date(p.payment_date || p.created_at) > thirtyDaysAgo
+            );
+            
+            const grossRevenue = recentPayments
+                .filter(p => p.display_status === 'success' || p.status === 'completed')
+                .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+                
+            const netRevenue = recentPayments
+                .filter(p => p.display_status === 'success' || p.status === 'completed')
+                .reduce((sum, p) => sum + (parseFloat(p.net_amount || p.amount) || 0), 0);
+            
+            const totalPayments = recentPayments.length;
+            const successfulPayments = recentPayments.filter(p => 
+                p.display_status === 'success' || p.status === 'completed'
+            ).length;
+            const successRate = totalPayments > 0 ? (successfulPayments / totalPayments) * 100 : 0;
+            
+            const recentFailedPayments = allPayments.filter(p => 
+                (p.display_status === 'failed' || p.status === 'failed') && 
+                new Date(p.payment_date || p.created_at) > sevenDaysAgo
+            ).length;
+            
+            // Update DOM elements
+            updateMetricValue('totalGrossRevenue', formatCurrency(grossRevenue));
+            updateMetricValue('totalNetRevenue', formatCurrency(netRevenue));
+            updateMetricValue('paymentSuccessRate', successRate.toFixed(1) + '%');
+            updateMetricValue('recentFailedPayments', recentFailedPayments);
+        }
+
+        // Display all subscriptions in the table
+        function displayAllSubscriptions() {
+            const tableBody = document.getElementById('subscriptionsTable');
+            
+            if (allSubscriptions.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            No se encontraron suscripciones
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const html = allSubscriptions.map(sub => {
+                const status = sub.computed_status || sub.status || 'unknown';
+                const statusClass = `status-${status}`;
+                const userEmail = sub.user_email || sub.profiles?.email || 'N/A';
+                const userName = sub.user_name || sub.profiles?.name || 'Sin nombre';
+                const expiryDate = sub.expires_at || sub.current_period_end;
+                const daysRemaining = expiryDate ? 
+                    Math.max(0, Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24))) : 'N/A';
+                
+                return `
+                    <tr data-subscription-id="${sub.subscription_id || sub.id}">
+                        <td>
+                            <input type="checkbox" class="subscription-checkbox" value="${sub.subscription_id || sub.id}" 
+                                   onchange="toggleSubscriptionSelection('${sub.subscription_id || sub.id}')">
+                        </td>
+                        <td>
+                            <div>
+                                <strong>${userEmail}</strong>
+                                <br>
+                                <small style="color: var(--text-secondary);">${userName}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="plan-badge">${sub.plan_name || sub.type || 'N/A'}</span>
+                        </td>
+                        <td>
+                            <span class="status-badge ${statusClass}">${status}</span>
+                        </td>
+                        <td class="editable-cell">
+                            <input type="number" class="inline-edit" 
+                                   value="${sub.plan_price || sub.amount || 0}" 
+                                   step="0.01" readonly>
+                        </td>
+                        <td>${formatDate(sub.current_period_start || sub.subscription_created || sub.created_at)}</td>
+                        <td class="editable-cell">
+                            ${formatDate(expiryDate)}
+                        </td>
+                        <td>
+                            <span style="color: ${daysRemaining <= 7 && daysRemaining !== 'N/A' ? 'var(--error)' : 'var(--text-primary)'}">
+                                ${daysRemaining} días
+                            </span>
+                        </td>
+                        <td>
+                            ${sub.last_payment_date ? 
+                                `<div>
+                                    <span>$${sub.last_payment_amount || 0}</span><br>
+                                    <small style="color: var(--text-secondary);">${formatDate(sub.last_payment_date)}</small>
+                                </div>` : 
+                                '<span style="color: var(--text-tertiary);">Sin pagos</span>'
+                            }
+                        </td>
+                        <td>
+                            <button class="action-btn" onclick="editSubscription('${sub.subscription_id || sub.id}')">✏️ Editar</button>
+                            <button class="action-btn" onclick="extendSubscription('${sub.subscription_id || sub.id}')">📅 Extender</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            tableBody.innerHTML = html;
+        }
+
+        // Display users without subscriptions
+        function displayUsersWithoutSubscriptions() {
+            const tableBody = document.getElementById('usersWithoutSubscriptionsTable');
+            
+            if (usersWithoutSubscriptions.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            Todos los usuarios tienen suscripción
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const html = usersWithoutSubscriptions.map(user => `
+                <tr data-user-id="${user.id}">
+                    <td>
+                        <input type="checkbox" class="no-sub-checkbox" value="${user.id}" 
+                               onchange="toggleNoSubSelection('${user.id}')">
+                    </td>
+                    <td><strong>${user.email}</strong></td>
+                    <td>${user.name || 'Sin nombre'}</td>
+                    <td>${formatDate(user.created_at)}</td>
+                    <td>
+                        <span class="pieces-badge">${user.pieces_count} piezas</span>
+                    </td>
+                    <td>${formatDate(user.last_activity)}</td>
+                    <td>
+                        <button class="action-btn" onclick="assignSubscriptionToUser('${user.id}', '${user.email}')">
+                            ➕ Asignar Suscripción
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            tableBody.innerHTML = html;
+        }
+
+        // Display all payments
+        function displayAllPayments() {
+            const tableBody = document.getElementById('paymentsTable');
+            
+            if (allPayments.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            No se encontraron transacciones
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const html = allPayments.map(payment => {
+                const status = payment.display_status || payment.status || 'unknown';
+                const statusClass = `status-${status}`;
+                const userEmail = payment.user_email || payment.profiles?.email || 'N/A';
+                const userName = payment.user_name || payment.profiles?.name || 'Sin nombre';
+                
+                return `
+                    <tr data-payment-id="${payment.payment_id || payment.id}">
+                        <td>
+                            <input type="checkbox" class="payment-checkbox" value="${payment.payment_id || payment.id}" 
+                                   onchange="togglePaymentSelection('${payment.payment_id || payment.id}')">
+                        </td>
+                        <td>
+                            <div>
+                                <strong>${userEmail}</strong>
+                                <br>
+                                <small style="color: var(--text-secondary);">${userName}</small>
+                            </div>
+                        </td>
+                        <td><strong>$${payment.amount}</strong></td>
+                        <td>
+                            <span class="status-badge ${statusClass}">${status}</span>
+                        </td>
+                        <td>${payment.payment_method || 'N/A'}</td>
+                        <td>${payment.payment_provider || 'N/A'}</td>
+                        <td>${formatDate(payment.payment_date || payment.created_at)}</td>
+                        <td>$${payment.provider_fee || 0}</td>
+                        <td><strong>$${payment.net_amount || payment.amount}</strong></td>
+                        <td>
+                            <button class="action-btn" onclick="viewPaymentDetails('${payment.payment_id || payment.id}')">👁️ Ver</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            tableBody.innerHTML = html;
+        }
+
+        // Display failed payments
+        function displayFailedPayments() {
+            const failedPayments = allPayments.filter(p => 
+                p.display_status === 'failed' || p.status === 'failed'
+            );
+            const tableBody = document.getElementById('failedPaymentsTable');
+            
+            if (failedPayments.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            No hay pagos fallidos recientes
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const html = failedPayments.map(payment => {
+                const userEmail = payment.user_email || payment.profiles?.email || 'N/A';
+                const userName = payment.user_name || payment.profiles?.name || 'Sin nombre';
+                
+                return `
+                    <tr data-payment-id="${payment.payment_id || payment.id}">
+                        <td>
+                            <input type="checkbox" class="failed-payment-checkbox" value="${payment.payment_id || payment.id}">
+                        </td>
+                        <td>
+                            <div>
+                                <strong>${userEmail}</strong>
+                                <br>
+                                <small style="color: var(--text-secondary);">${userName}</small>
+                            </div>
+                        </td>
+                        <td><strong>$${payment.amount}</strong></td>
+                        <td>${formatDate(payment.payment_date || payment.created_at)}</td>
+                        <td>
+                            <span style="color: var(--error); font-size: 0.9rem;">
+                                ${payment.failure_reason || payment.error_message || 'Error desconocido'}
+                            </span>
+                        </td>
+                        <td>0</td>
+                        <td>
+                            <button class="action-btn" onclick="contactCustomer('${userEmail}')">📧 Contactar</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            tableBody.innerHTML = html;
+        }
+
+        // ============================================
+        // SUBSCRIPTION & PAYMENT MANAGEMENT ACTIONS
+        // ============================================
+
+        // Edit subscription
+        function editSubscription(subscriptionId) {
+            showNotification('Función de edición en desarrollo', 'info');
+        }
+
+        // Extend subscription
+        function extendSubscription(subscriptionId) {
+            showNotification('Función de extensión en desarrollo', 'info');
+        }
+
+        // Assign subscription to user
+        function assignSubscriptionToUser(userId, userEmail) {
+            showNotification('Función de asignación en desarrollo', 'info');
+        }
+
+        // View payment details
+        function viewPaymentDetails(paymentId) {
+            showNotification('Mostrando detalles del pago...', 'info');
+        }
+
+        // Contact customer
+        function contactCustomer(email) {
+            window.open(`mailto:${email}?subject=Problema con tu pago - ZETALAB`);
+        }
+
+        // ============================================
+        // FILTERING AND EXPORT FUNCTIONS
+        // ============================================
+
+        // Filter subscriptions
+        function filterSubscriptions() {
+            const statusFilter = document.getElementById('subscriptionStatusFilter')?.value || '';
+            const planFilter = document.getElementById('subscriptionPlanFilter')?.value || '';
+            const userFilter = document.getElementById('userSearchFilter')?.value.toLowerCase() || '';
+            
+            filteredSubscriptions = allSubscriptions.filter(sub => {
+                const statusMatch = !statusFilter || (sub.computed_status || sub.status) === statusFilter;
+                const planMatch = !planFilter || (sub.plan_name || sub.type || '').toLowerCase().includes(planFilter.toLowerCase());
+                const userMatch = !userFilter || 
+                    (sub.user_email || '').toLowerCase().includes(userFilter) ||
+                    (sub.user_name || '').toLowerCase().includes(userFilter);
+                
+                return statusMatch && planMatch && userMatch;
+            });
+            
+            displayFilteredSubscriptions();
+        }
+
+        function displayFilteredSubscriptions() {
+            // For now, just redisplay all - filtering logic would be implemented here
+            displayAllSubscriptions();
+        }
+
+        // Filter payments
+        function filterPayments() {
+            const statusFilter = document.getElementById('paymentStatusFilter')?.value || '';
+            const methodFilter = document.getElementById('paymentMethodFilter')?.value || '';
+            
+            displayAllPayments(); // For now, just redisplay all
+        }
+
+        // Export functions
+        function exportSubscriptionData() {
+            showNotification('Exportando datos de suscripciones...', 'info');
+        }
+
+        function exportPaymentData() {
+            showNotification('Exportando datos de pagos...', 'info');
+        }
+
+        // Reset filters
+        function resetSubscriptionFilters() {
+            document.getElementById('subscriptionStatusFilter').value = '';
+            document.getElementById('subscriptionPlanFilter').value = '';
+            document.getElementById('userSearchFilter').value = '';
+            displayAllSubscriptions();
+        }
+
+        function resetPaymentFilters() {
+            document.getElementById('paymentStatusFilter').value = '';
+            document.getElementById('paymentMethodFilter').value = '';
+            displayAllPayments();
+        }
+
+        // Selection management
+        function toggleSubscriptionSelection(subscriptionId) {
+            if (selectedSubscriptions.has(subscriptionId)) {
+                selectedSubscriptions.delete(subscriptionId);
+            } else {
+                selectedSubscriptions.add(subscriptionId);
+            }
+            updateSelectionCount('selectedSubscriptionsCount', selectedSubscriptions.size);
+            updateBulkActionsVisibility();
+        }
+
+        function togglePaymentSelection(paymentId) {
+            if (selectedPayments.has(paymentId)) {
+                selectedPayments.delete(paymentId);
+            } else {
+                selectedPayments.add(paymentId);
+            }
+            updateSelectionCount('selectedPaymentsCount', selectedPayments.size);
+            updateBulkActionsVisibility();
+        }
+
+        function toggleSelectAllSubscriptions() {
+            const selectAll = document.getElementById('selectAllSubscriptions');
+            const isChecked = selectAll.checked;
+            
+            document.querySelectorAll('.subscription-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+                if (isChecked) {
+                    selectedSubscriptions.add(checkbox.value);
+                } else {
+                    selectedSubscriptions.delete(checkbox.value);
+                }
+            });
+            
+            updateSelectionCount('selectedSubscriptionsCount', selectedSubscriptions.size);
+            updateBulkActionsVisibility();
+        }
+
+        function toggleSelectAllPayments() {
+            const selectAll = document.getElementById('selectAllPayments');
+            const isChecked = selectAll.checked;
+            
+            document.querySelectorAll('.payment-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+                if (isChecked) {
+                    selectedPayments.add(checkbox.value);
+                } else {
+                    selectedPayments.delete(checkbox.value);
+                }
+            });
+            
+            updateSelectionCount('selectedPaymentsCount', selectedPayments.size);
+            updateBulkActionsVisibility();
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS FOR ENHANCED ADMIN
+        // ============================================
+
+        // Show loading state
+        function showLoadingState(tableId) {
+            const table = document.getElementById(tableId);
+            if (table) {
+                table.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <div class="loading-spinner"></div>
+                                Cargando datos...
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Show error state
+        function showErrorState(tableId, errorMessage) {
+            const table = document.getElementById(tableId);
+            if (table) {
+                table.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px;">
+                            <div style="color: var(--error);">
+                                ❌ Error: ${errorMessage}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Update metric value
+        function updateMetricValue(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('es-AR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            
+            // Create visual notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                border-radius: 6px;
+                z-index: 10000;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function updateSelectionCount(elementId, count) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = `${count} seleccionados`;
+            }
+        }
+
+        // ============================================
+        // BULK OPERATIONS AND MODAL FUNCTIONS
+        // ============================================
+
+        // Bulk operations placeholders
+        function bulkExtendSubscriptions() {
+            if (selectedSubscriptions.size === 0) {
+                showNotification('No hay suscripciones seleccionadas', 'error');
+                return;
+            }
+            showNotification(`Función de extensión en lote para ${selectedSubscriptions.size} suscripciones`, 'info');
+        }
+
+        function bulkAssignSubscriptions() {
+            showNotification('Función de asignación en lote en desarrollo', 'info');
+        }
+
+        function exportSelectedData() {
+            const subsCount = selectedSubscriptions.size;
+            const payCount = selectedPayments.size;
+            
+            if (subsCount === 0 && payCount === 0) {
+                showNotification('No hay elementos seleccionados para exportar', 'error');
+                return;
+            }
+            
+            showNotification(`Exportando ${subsCount} suscripciones y ${payCount} pagos...`, 'info');
+        }
+
+        function clearAllSelections() {
+            selectedSubscriptions.clear();
+            selectedPayments.clear();
+            
+            // Uncheck all checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            
+            updateSelectionCount('selectedSubscriptionsCount', 0);
+            updateSelectionCount('selectedPaymentsCount', 0);
+            
+            // Hide bulk actions bar
+            const bulkBar = document.getElementById('bulkActionsBar');
+            if (bulkBar) {
+                bulkBar.style.display = 'none';
+            }
+            
+            showNotification('Selecciones limpiadas', 'success');
+        }
+
+        // Show assign subscription modal
+        function showAssignSubscriptionModal() {
+            showNotification('Modal de asignación en desarrollo', 'info');
+        }
+
+        // Show bulk assign modal
+        function showBulkAssignModal() {
+            showNotification('Modal de asignación en lote en desarrollo', 'info');
+        }
+
+        // Show refund modal
+        function showRefundModal() {
+            showNotification('Modal de reembolso en desarrollo', 'info');
+        }
+
+        // Bulk subscription actions
+        function bulkSubscriptionActions() {
+            if (selectedSubscriptions.size === 0) {
+                showNotification('No hay suscripciones seleccionadas', 'error');
+                return;
+            }
+            showNotification(`Acciones en lote para ${selectedSubscriptions.size} suscripciones`, 'info');
+        }
+
+        // Retry failed payments
+        function retryFailedPayments() {
+            const selectedFailedPayments = document.querySelectorAll('.failed-payment-checkbox:checked');
+            if (selectedFailedPayments.length === 0) {
+                showNotification('No hay pagos fallidos seleccionados', 'error');
+                return;
+            }
+            showNotification(`Reintentando ${selectedFailedPayments.length} pagos fallidos...`, 'info');
+        }
+
+        // Generate revenue report
+        function generateRevenueReport() {
+            showNotification('Generando reporte de ingresos...', 'info');
+        }
+
+        // Toggle no subscription selection
+        function toggleNoSubSelection(userId) {
+            const checkbox = document.querySelector(`input[value="${userId}"].no-sub-checkbox`);
+            // Add selection logic here if needed
+        }
+
+        // Update bulk actions visibility based on selections
+        function updateBulkActionsVisibility() {
+            const bulkBar = document.getElementById('bulkActionsBar');
+            const hasSelections = selectedSubscriptions.size > 0 || selectedPayments.size > 0;
+            
+            if (hasSelections && bulkBar) {
+                bulkBar.style.display = 'flex';
+                const text = document.getElementById('bulkActionsText');
+                if (text) {
+                    text.textContent = `${selectedSubscriptions.size + selectedPayments.size} elementos seleccionados - Acciones en lote:`;
+                }
+            } else if (bulkBar) {
+                bulkBar.style.display = 'none';
             }
         }
 
