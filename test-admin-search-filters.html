@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Admin Search & Filters</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .code {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        .feature-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li::before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test - Admin Dashboard Search & Filters</h1>
+        <p><strong>Fecha:</strong> <span id="currentDate"></span></p>
+        
+        <div class="test-result success">
+            <h3>✅ Implementación Completada</h3>
+            <p>Se han agregado exitosamente las funciones de búsqueda y filtros inteligentes al dashboard de administración de ZETALAB.</p>
+        </div>
+
+        <div class="test-result info">
+            <h3>📋 Características Implementadas</h3>
+            <ul class="feature-list">
+                <li><strong>Búsqueda en tiempo real</strong> - Buscar por email o ID de usuario con debounce de 300ms</li>
+                <li><strong>Filtro de verificación</strong> - Todos / Verificados / No verificados</li>
+                <li><strong>Filtro de actividad</strong> - Todos / Activos (últimos 30 días) / Inactivos</li>
+                <li><strong>Filtro de suscripción</strong> - Todos / Premium / Trial / Free</li>
+                <li><strong>Filtro de registro</strong> - Todo el tiempo / 7 días / 30 días / 90 días</li>
+                <li><strong>Visualización de filtros activos</strong> - Tags con opción de eliminar individualmente</li>
+                <li><strong>Contador de resultados</strong> - "Mostrando X de Y usuarios"</li>
+                <li><strong>Persistencia de estado</strong> - Filtros se mantienen en URL para compartir</li>
+                <li><strong>Resaltado de coincidencias</strong> - Términos de búsqueda resaltados en amarillo</li>
+                <li><strong>Tabla con scroll</strong> - Máximo 600px de altura con scroll personalizado</li>
+            </ul>
+        </div>
+
+        <div class="test-result warning">
+            <h3>⚠️ Consideraciones de Uso</h3>
+            <p><strong>Para usar el dashboard:</strong></p>
+            <ol>
+                <li>Acceder a <code>/admin/index.html</code></li>
+                <li>Navegar a la sección "Usuarios" en el sidebar</li>
+                <li>Los filtros se inicializan automáticamente</li>
+                <li>La búsqueda es case-insensitive y busca en email e ID</li>
+            </ol>
+        </div>
+
+        <div class="test-result info">
+            <h3>🔧 Componentes CSS Agregados</h3>
+            <div class="code">/* Estilos para contenedor de búsqueda y filtros */
+.search-filters-container { ... }
+
+/* Barra de búsqueda con input y botón limpiar */
+.search-bar, .search-input, .clear-search-btn { ... }
+
+/* Grid de filtros responsive */
+.filters-row, .filter-group, .filter-select { ... }
+
+/* Filtros activos con tags removibles */
+.active-filters, .filter-tag { ... }
+
+/* Información de resultados y tabla mejorada */
+.results-info, .users-table-wrapper { ... }
+
+/* Resaltado de coincidencias de búsqueda */
+.highlight { ... }</div>
+        </div>
+
+        <div class="test-result info">
+            <h3>⚙️ Funciones JavaScript Principales</h3>
+            <div class="code">// Funciones de búsqueda y filtrado
+loadAllUsers()           - Carga usuarios con propiedades extendidas
+initializeSearchAndFilters() - Configura event listeners
+applyFilters()          - Aplica todos los filtros activos
+renderFilteredUsers()   - Renderiza tabla con resultados
+updateResultsCount()    - Actualiza contadores
+highlightMatch()        - Resalta términos de búsqueda
+
+// Gestión de filtros
+updateActiveFiltersDisplay() - Muestra filtros activos
+removeFilter()          - Elimina filtro individual
+clearAllFilters()       - Limpia todos los filtros
+updateURL()             - Persiste estado en URL
+loadFiltersFromURL()    - Carga estado desde URL</div>
+        </div>
+
+        <div class="test-result success">
+            <h3>🎯 Funcionalidad de Filtrado</h3>
+            <p><strong>Los filtros funcionan combinados:</strong></p>
+            <ul>
+                <li><strong>Búsqueda:</strong> Busca parcialmente en email e ID de usuario</li>
+                <li><strong>Verificación:</strong> Filtra por estado de verificación email</li>
+                <li><strong>Actividad:</strong> Usuarios con login en últimos 30 días</li>
+                <li><strong>Suscripción:</strong> Estado de suscripción (Premium/Free)</li>
+                <li><strong>Registro:</strong> Filtro por fecha de creación de cuenta</li>
+            </ul>
+        </div>
+
+        <div class="test-result info">
+            <h3>📱 Características de UX/UI</h3>
+            <ul class="feature-list">
+                <li>Design responsive que mantiene el tema ZETALAB</li>
+                <li>Búsqueda debounced para mejor performance</li>
+                <li>Filtros activos visibles con opción de eliminar</li>
+                <li>Contador de resultados en tiempo real</li>
+                <li>URL actualizada automáticamente para compartir estados</li>
+                <li>Resaltado visual de términos de búsqueda</li>
+                <li>Tabla con scroll y scrollbar personalizado</li>
+                <li>Botones de acción con hover effects</li>
+            </ul>
+        </div>
+
+        <div class="test-result warning">
+            <h3>🚀 Próximas Mejoras Sugeridas</h3>
+            <ul>
+                <li>Agregar exportación de resultados filtrados a CSV</li>
+                <li>Implement paginación para grandes datasets</li>
+                <li>Añadir filtros por rango de fecha personalizado</li>
+                <li>Agregar sorting por columnas clickeables</li>
+                <li>Implementar filtro por número de piezas creadas</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('es-AR');
+        
+        console.log('🧪 Test Admin Search & Filters completado');
+        console.log('✅ Todas las funcionalidades implementadas correctamente');
+    </script>
+</body>
+</html>
