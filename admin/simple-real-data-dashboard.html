@@ -400,7 +400,7 @@
     
     <script>
         // Configuración segura de Supabase - Sin service role key expuesta
-        const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
+        // SUPABASE_URL ya se declara en auth-guard.js, solo definir SERVICE_ROLE_KEY
         const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3MDM4OSwiZXhwIjoyMDcxNzQ2Mzg5fQ.DfuFLgbxVNmrhfqXVgCRIoTCsDvUK02qR9wJqzik2PY';
 
         // Cliente Supabase Admin (protegido por Auth Guard)
@@ -1725,7 +1725,8 @@
                 }
                 
                 // Crear cliente Supabase con service role SOLO si está autenticado
-                supabase = window.supabase.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+                // Usar SUPABASE_URL del auth-guard.js que ya está disponible globalmente
+                supabase = window.supabase.createClient(window.SUPABASE_URL, SERVICE_ROLE_KEY);
                 isAdminAuthenticated = true;
                 
                 console.log('✅ Admin autenticado:', adminSession.email);
@@ -1750,8 +1751,29 @@
 
         // Cargar dashboard al inicializar (después de auth guard)
         document.addEventListener('DOMContentLoaded', function() {
-            // Esperar a que el auth guard termine
-            setTimeout(initSecureDashboard, 100);
+            // Esperar a que el auth guard termine y verificar múltiples veces
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            const tryInit = () => {
+                attempts++;
+                console.log(`🔄 Intento ${attempts} de inicialización del dashboard...`);
+                
+                const adminSession = window.authGuard?.getCurrentAdmin();
+                if (adminSession) {
+                    console.log('✅ Sesión admin encontrada, iniciando dashboard');
+                    initSecureDashboard();
+                } else if (attempts < maxAttempts) {
+                    console.log('⏳ Esperando autenticación admin...');
+                    setTimeout(tryInit, 200);
+                } else {
+                    console.log('❌ Timeout esperando autenticación, redirigiendo...');
+                    window.location.href = 'login.html';
+                }
+            };
+            
+            // Esperar un poco para que auth guard se complete
+            setTimeout(tryInit, 100);
 
             // Cerrar modal al hacer click fuera
             document.getElementById('userEditModal').addEventListener('click', function(e) {

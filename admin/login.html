@@ -298,12 +298,30 @@
                     role: adminUser.role,
                     permissions: adminUser.permissions,
                     token: authData.session.access_token,
-                    expires_at: authData.session.expires_at,
+                    expires_at: new Date(authData.session.expires_at * 1000).toISOString(), // Convertir Unix timestamp a ISO string
                     created_at: new Date().toISOString()
                 };
 
+                console.log('💾 Guardando sesión admin:', {
+                    email: sessionData.email,
+                    expires_at: sessionData.expires_at,
+                    admin_id: sessionData.admin_id
+                });
+
                 // 4. Guardar sesión en localStorage
                 localStorage.setItem('admin_session', JSON.stringify(sessionData));
+                
+                // Debug: Verificar que se guardó correctamente
+                const savedSession = localStorage.getItem('admin_session');
+                console.log('🔍 Verificando sesión guardada:', savedSession ? 'GUARDADA EXITOSAMENTE' : 'ERROR AL GUARDAR');
+                if (savedSession) {
+                    const parsed = JSON.parse(savedSession);
+                    console.log('📊 Datos de sesión guardados:', {
+                        email: parsed.email,
+                        expires_at: parsed.expires_at,
+                        token_length: parsed.token?.length || 0
+                    });
+                }
 
                 // 5. Registrar login en admin_sessions
                 const { error: sessionError } = await supabaseAdmin

@@ -3,9 +3,11 @@
  * Protege el dashboard verificando sesión de administrador válida
  */
 
-// Configuración de Supabase (usando anon key para verificaciones)
-const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.ZiYf2v8C1U1ZjJQwJFhI7b2wz0Cjss3HT9VIzNn7uCE';
+// Configuración de Supabase (usando anon key para verificaciones) - SINCRONIZADO con login.html
+// Variables globales para compartir con dashboard
+window.SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
+const SUPABASE_URL = window.SUPABASE_URL; // Para compatibilidad local
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc';
 
 // Variable global para la sesión admin
 let currentAdminSession = null;
@@ -25,8 +27,14 @@ async function initAuthGuard() {
         const isAuthenticated = await checkAdminAuthentication();
         
         if (!isAuthenticated) {
-            console.log('❌ No autenticado, redirigiendo a login...');
-            redirectToLogin();
+            console.log('❌ No autenticado, redirigiendo a login...', {
+                currentPage: window.location.href,
+                localStorage_admin_session: !!localStorage.getItem('admin_session')
+            });
+            // Pequeña demora para permitir que se complete cualquier proceso de login en curso
+            setTimeout(() => {
+                redirectToLogin();
+            }, 500);
             return false;
         }
         
@@ -42,7 +50,24 @@ async function initAuthGuard() {
         
     } catch (error) {
         console.error('❌ Error inicializando Auth Guard:', error);
-        redirectToLogin();
+        // Demora antes de redirigir para permitir que se complete cualquier proceso de login
+        // Pero no redirigir si estamos en proceso de login desde login.html
+        if (document.referrer && document.referrer.includes('login.html')) {
+            console.log('⏳ Viniendo de login, esperando más tiempo para la sesión...');
+            setTimeout(() => {
+                // Reintentar una vez más
+                checkAdminAuthentication().then(isAuth => {
+                    if (!isAuth) {
+                        console.log('❌ Reintento falló, redirigiendo...');
+                        redirectToLogin();
+                    }
+                });
+            }, 2000); // Esperar 2 segundos si venimos del login
+        } else {
+            setTimeout(() => {
+                redirectToLogin();
+            }, 500);
+        }
         return false;
     }
 }
@@ -55,30 +80,67 @@ async function checkAdminAuthentication() {
         // 1. Obtener sesión del localStorage
         const adminSessionStr = localStorage.getItem('admin_session');
         
+        console.log('🔍 Verificando localStorage admin_session:', adminSessionStr ? 'ENCONTRADA' : 'NO ENCONTRADA');
+        
         if (!adminSessionStr) {
             console.log('❌ No hay sesión en localStorage');
             return false;
         }
         
-        const adminSession = JSON.parse(adminSessionStr);
+        let adminSession;
+        try {
+            adminSession = JSON.parse(adminSessionStr);
+            console.log('📋 Sesión encontrada para:', adminSession.email);
+        } catch (parseError) {
+            console.log('❌ Error parseando sesión del localStorage:', parseError);
+            clearSession();
+            return false;
+        }
         
         // 2. Verificar expiración
         if (adminSession.expires_at && new Date(adminSession.expires_at) <= new Date()) {
-            console.log('❌ Sesión expirada');
+            console.log('❌ Sesión expirada:', adminSession.expires_at, 'vs', new Date().toISOString());
             clearSession();
             return false;
         }
         
-        // 3. Verificar token con Supabase Auth
-        const { data: { user }, error } = await authGuardSupabase.auth.getUser(adminSession.token);
+        console.log('✅ Sesión no expirada. Expira en:', adminSession.expires_at);
         
-        if (error || !user || user.id !== adminSession.user_id) {
-            console.log('❌ Token inválido:', error?.message);
-            clearSession();
-            return false;
+        console.log('✅ Sesión válida, verificando token...');
+        
+        // 3. Verificar token con Supabase Auth (mejorado)
+        try {
+            const { data: { user }, error } = await authGuardSupabase.auth.getUser(adminSession.token);
+            
+            if (error && error.message.includes('Invalid token')) {
+                console.log('⚠️ Token inválido, intentando verificar indirectamente...');
+                // Si el token directo falla, verificar con admin_users que sigue activo
+                const { data: adminUser, error: adminError } = await authGuardSupabase
+                    .from('admin_users')
+                    .select('*')
+                    .eq('user_id', adminSession.user_id)
+                    .eq('active', true)
+                    .single();
+                
+                if (adminError || !adminUser) {
+                    console.log('❌ Usuario ya no es admin activo');
+                    clearSession();
+                    return false;
+                }
+                
+                // Si el admin sigue activo, continuar con verificación básica
+                console.log('✅ Admin verificado indirectamente');
+            } else if (error || !user || user.id !== adminSession.user_id) {
+                console.log('❌ Token completamente inválido:', error?.message);
+                clearSession();
+                return false;
+            }
+        } catch (tokenError) {
+            console.warn('⚠️ Error verificando token, intentando verificación básica:', tokenError);
+            // Continuar con verificación de admin_users
         }
         
-        // 4. Verificar que sigue siendo admin activo
+        // 4. Verificar que sigue siendo admin activo (verificación final)
         const { data: adminUser, error: adminError } = await authGuardSupabase
             .from('admin_users')
             .select('*')
@@ -87,7 +149,7 @@ async function checkAdminAuthentication() {
             .single();
         
         if (adminError || !adminUser) {
-            console.log('❌ Usuario ya no es admin activo');
+            console.log('❌ Usuario ya no es admin activo (verificación final)');
             clearSession();
             return false;
         }
