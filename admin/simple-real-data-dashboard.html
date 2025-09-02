@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZETALAB Admin - Dashboard Completo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -259,6 +260,7 @@
             <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
             <button class="nav-tab" onclick="showTab('users')">Usuarios</button>
             <button class="nav-tab" onclick="showTab('subscriptions')">Suscripciones</button>
+            <button class="nav-tab" onclick="showTab('pieces')">Piezas</button>
         </div>
 
         <!-- Dashboard Section -->
@@ -330,16 +332,80 @@
                 <div id="subscriptionsContent" class="loading">Cargando...</div>
             </div>
         </div>
+
+        <!-- Pieces Section -->
+        <div id="pieces" class="section">
+            <!-- Pieces Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 id="totalPieces">0</h3>
+                    <p>Total Piezas</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="piecesThisMonth">0</h3>
+                    <p>Piezas Este Mes</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="averagePrice">$0</h3>
+                    <p>Precio Promedio</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="averagePrintTime">0h</h3>
+                    <p>Tiempo Impresión Promedio</p>
+                </div>
+            </div>
+
+            <div class="data-table">
+                <h3>🔧 Gestión de Piezas</h3>
+                <div class="table-controls" style="padding: 15px; border-bottom: 1px solid #333;">
+                    <input type="text" id="pieceSearch" placeholder="🔍 Buscar por título..." 
+                           style="background: #222; border: 1px solid #444; color: #e0e0e0; padding: 8px 12px; border-radius: 5px; width: 200px;">
+                    <input type="text" id="pieceUserSearch" placeholder="👤 Buscar por usuario..." 
+                           style="background: #222; border: 1px solid #444; color: #e0e0e0; padding: 8px 12px; border-radius: 5px; width: 200px; margin-left: 10px;">
+                    <select id="pieceCategoryFilter" style="background: #222; border: 1px solid #444; color: #e0e0e0; padding: 8px 12px; border-radius: 5px; margin-left: 10px;">
+                        <option value="all">Todas las categorías</option>
+                        <option value="decorativo">Decorativo</option>
+                        <option value="funcional">Funcional</option>
+                        <option value="prototipo">Prototipo</option>
+                        <option value="repuesto">Repuesto</option>
+                        <option value="miniatura">Miniatura</option>
+                        <option value="herramienta">Herramienta</option>
+                        <option value="juguete">Juguete</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                    <input type="date" id="pieceDateFrom" 
+                           style="background: #222; border: 1px solid #444; color: #e0e0e0; padding: 8px 12px; border-radius: 5px; margin-left: 10px;" 
+                           title="Desde fecha">
+                    <input type="date" id="pieceDateTo" 
+                           style="background: #222; border: 1px solid #444; color: #e0e0e0; padding: 8px 12px; border-radius: 5px; margin-left: 10px;" 
+                           title="Hasta fecha">
+                    <button class="action-btn secondary" onclick="clearPieceFilters()" style="margin-left: 10px;">🗑️ Limpiar</button>
+                </div>
+                <div id="piecesContent" class="loading">Cargando...</div>
+            </div>
+
+            <!-- Piece Detail Modal -->
+            <div id="pieceDetailModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 30px; border-radius: 10px; width: 800px; max-width: 90%; max-height: 90%; overflow-y: auto; border: 2px solid #333;">
+                    <h3 style="color: #00ff88; margin-bottom: 20px;">🔧 Detalles de Pieza</h3>
+                    <div id="pieceDetailContent"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Incluir Auth Guard antes del script principal -->
+    <script src="auth-guard.js"></script>
+    
     <script>
-        // Configuración real de Supabase
+        // Configuración segura de Supabase - Sin service role key expuesta
         const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
         const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3MDM4OSwiZXhwIjoyMDcxNzQ2Mzg5fQ.DfuFLgbxVNmrhfqXVgCRIoTCsDvUK02qR9wJqzik2PY';
 
-        // Cliente Supabase Admin (puede acceder a todas las tablas)
-        const supabase = window.supabase.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+        // Cliente Supabase Admin (protegido por Auth Guard)
+        let supabase = null;
+        let isAdminAuthenticated = false;
 
         // Funciones de navegación
         function showTab(tabName) {
@@ -354,6 +420,7 @@
             // Cargar datos específicos
             if (tabName === 'users') loadUsers();
             if (tabName === 'subscriptions') loadSubscriptions();
+            if (tabName === 'pieces') loadPieces();
         }
 
         // Global variables for data
@@ -366,8 +433,20 @@
         let allFilaments = [];
         let allUserUsage = [];
 
+        // Verificar autenticación antes de operaciones sensibles
+        function checkAdminAuth() {
+            if (!isAdminAuthenticated || !supabase) {
+                console.error('❌ Operación bloqueada: Admin no autenticado');
+                alert('Error de autenticación. Por favor inicia sesión nuevamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
         // Cargar estadísticas del dashboard
         async function loadDashboard() {
+            if (!checkAdminAuth()) return;
             try {
                 console.log('📊 Cargando estadísticas del dashboard...');
 
@@ -602,6 +681,7 @@
 
         // Cargar TODOS los usuarios
         async function loadUsers() {
+            if (!checkAdminAuth()) return;
             try {
                 console.log('👥 Cargando todos los usuarios...');
                 
@@ -748,8 +828,7 @@
                         <label>Tipo de suscripción:</label>
                         <select name="subscriptionType">
                             <option value="none" ${!userSubscription ? 'selected' : ''}>Sin suscripción</option>
-                            <option value="premium_monthly" ${userSubscription?.plan_type === 'premium_monthly' ? 'selected' : ''}>Premium Mensual</option>
-                            <option value="premium_yearly" ${userSubscription?.plan_type === 'premium_yearly' ? 'selected' : ''}>Premium Anual</option>
+                            <option value="monthly" ${userSubscription?.plan_type === 'monthly' ? 'selected' : ''}>Mensual</option>
                             <option value="trial" ${userSubscription?.plan_type === 'trial' ? 'selected' : ''}>Trial</option>
                         </select>
                     </div>
@@ -780,6 +859,13 @@
         async function saveUser(event, userId) {
             event.preventDefault();
             const formData = new FormData(event.target);
+            
+            console.log('💾 Saving user changes for:', userId);
+            console.log('📋 Form data:', {
+                email: formData.get('email'),
+                subscriptionType: formData.get('subscriptionType'),
+                emailVerified: formData.get('emailVerified')
+            });
 
             try {
                 // Actualizar metadata del usuario
@@ -795,30 +881,80 @@
 
                 // Actualizar suscripción si es necesario
                 const subscriptionType = formData.get('subscriptionType');
+                console.log('🔄 Processing subscription update:', subscriptionType);
+                
                 if (subscriptionType !== 'none') {
                     const existingSub = allSubscriptions.find(s => s.user_id === userId && s.active);
+                    console.log('📋 Existing subscription found:', existingSub);
+                    
+                    // Calcular fecha de expiración según el tipo de suscripción
+                    const now = new Date();
+                    let expiresAt = null;
+                    let amount = 0;
+                    
+                    if (subscriptionType === 'monthly') {
+                        expiresAt = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 días
+                        amount = 5000; // $5000 ARS mensuales
+                    } else if (subscriptionType === 'trial') {
+                        expiresAt = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 días
+                        amount = 0; // Trial gratuito
+                    }
+                    
+                    const subscriptionData = {
+                        plan_type: subscriptionType,
+                        expires_at: expiresAt ? expiresAt.toISOString() : null,
+                        amount: amount,
+                        active: true
+                    };
+                    
+                    console.log('📊 Subscription data to save:', subscriptionData);
                     
                     if (existingSub) {
-                        await supabase
+                        // Actualizar suscripción existente
+                        console.log('🔄 Updating existing subscription ID:', existingSub.id);
+                        const { data, error } = await supabase
                             .from('subscriptions')
-                            .update({ plan_type: subscriptionType })
+                            .update(subscriptionData)
                             .eq('id', existingSub.id);
+                            
+                        if (error) {
+                            console.error('❌ Error updating subscription:', error);
+                            throw error;
+                        }
+                        console.log('✅ Subscription updated successfully:', data);
                     } else {
-                        await supabase
+                        // Crear nueva suscripción
+                        console.log('➕ Creating new subscription for user:', userId);
+                        const insertData = {
+                            user_id: userId,
+                            ...subscriptionData,
+                            payment_status: subscriptionType === 'trial' ? 'free' : 'pending'
+                        };
+                        console.log('📊 Insert data:', insertData);
+                        
+                        const { data, error } = await supabase
                             .from('subscriptions')
-                            .insert({
-                                user_id: userId,
-                                plan_type: subscriptionType,
-                                active: true,
-                                amount: subscriptionType.includes('monthly') ? 5000 : 50000
-                            });
+                            .insert(insertData);
+                            
+                        if (error) {
+                            console.error('❌ Error creating subscription:', error);
+                            throw error;
+                        }
+                        console.log('✅ Subscription created successfully:', data);
                     }
                 } else {
                     // Desactivar suscripción existente
-                    await supabase
+                    console.log('⛔ Deactivating existing subscription for user:', userId);
+                    const { data, error } = await supabase
                         .from('subscriptions')
                         .update({ active: false })
                         .eq('user_id', userId);
+                        
+                    if (error) {
+                        console.error('❌ Error deactivating subscription:', error);
+                        throw error;
+                    }
+                    console.log('✅ Subscription deactivated successfully:', data);
                 }
 
                 alert('Usuario actualizado correctamente');
@@ -1204,15 +1340,430 @@
             }
         }
 
-        // Cargar dashboard al inicializar
+        // ================ PIECES MANAGEMENT FUNCTIONS ================
+
+        // Cargar piezas
+        async function loadPieces() {
+            try {
+                console.log('🔧 Cargando piezas...');
+                
+                if (allPieces.length === 0 || allUsers.length === 0) {
+                    await loadDashboard(); // Cargar datos si no están disponibles
+                }
+
+                // Calcular estadísticas de piezas
+                loadPiecesStatistics();
+                
+                // Mostrar tabla de piezas
+                displayPieces(allPieces);
+                
+                // Configurar filtros
+                setupPieceFilters();
+
+                console.log('✅ Piezas cargadas:', allPieces.length);
+
+            } catch (error) {
+                console.error('❌ Error cargando piezas:', error);
+                document.getElementById('piecesContent').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Calcular estadísticas de piezas
+        function loadPiecesStatistics() {
+            const totalPieces = allPieces.length;
+            
+            // Piezas este mes
+            const thisMonth = new Date();
+            thisMonth.setDate(1); // Primer día del mes
+            const piecesThisMonth = allPieces.filter(piece => 
+                new Date(piece.created_at) >= thisMonth
+            ).length;
+
+            // Precio promedio
+            const averagePrice = totalPieces > 0 
+                ? allPieces.reduce((sum, piece) => sum + (parseFloat(piece.est_price_ars) || 0), 0) / totalPieces
+                : 0;
+
+            // Tiempo promedio de impresión (en minutos)
+            const averagePrintTimeMinutes = totalPieces > 0
+                ? allPieces.reduce((sum, piece) => sum + (parseInt(piece.est_print_time_min) || 0), 0) / totalPieces
+                : 0;
+
+            // Convertir a horas y minutos
+            const hours = Math.floor(averagePrintTimeMinutes / 60);
+            const minutes = Math.round(averagePrintTimeMinutes % 60);
+
+            // Actualizar UI
+            document.getElementById('totalPieces').textContent = totalPieces;
+            document.getElementById('piecesThisMonth').textContent = piecesThisMonth;
+            document.getElementById('averagePrice').textContent = `$${averagePrice.toLocaleString()}`;
+            document.getElementById('averagePrintTime').textContent = `${hours}h ${minutes}m`;
+        }
+
+        // Mostrar piezas en tabla
+        function displayPieces(pieces) {
+            if (!pieces || pieces.length === 0) {
+                document.getElementById('piecesContent').innerHTML = '<p>No hay piezas registradas</p>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Usuario</th>
+                            <th>Categoría</th>
+                            <th>Peso (g)</th>
+                            <th>Tiempo</th>
+                            <th>Precio</th>
+                            <th>Creada</th>
+                            <th>Versiones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            pieces.forEach(piece => {
+                const user = allUsers.find(u => u.id === piece.user_id);
+                const userEmail = user ? user.email : 'Usuario no encontrado';
+                
+                const pieceVersions = allPieceVersions.filter(pv => pv.piece_id === piece.id);
+                const versionsCount = pieceVersions.length;
+
+                const weight = piece.est_weight_grams ? `${piece.est_weight_grams}g` : 'N/A';
+                const printTime = piece.est_print_time_min ? `${Math.floor(piece.est_print_time_min / 60)}h ${piece.est_print_time_min % 60}m` : 'N/A';
+                const price = piece.est_price_ars ? `$${parseFloat(piece.est_price_ars).toLocaleString()}` : 'N/A';
+                const category = piece.category || 'Sin categoría';
+                const createdDate = new Date(piece.created_at).toLocaleDateString('es-ES');
+
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${piece.title}</strong>
+                            ${piece.image_url ? `<br><small style="color: #00ff88;">📷 Con imagen</small>` : ''}
+                        </td>
+                        <td>${userEmail}</td>
+                        <td><span class="status-badge" style="background: #666; color: white;">${category}</span></td>
+                        <td>${weight}</td>
+                        <td>${printTime}</td>
+                        <td><strong>${price}</strong></td>
+                        <td>${createdDate}</td>
+                        <td><strong>${versionsCount}</strong></td>
+                        <td>
+                            <button class="action-btn" onclick="viewPieceDetails('${piece.id}')">👁️ Ver</button>
+                            <button class="action-btn secondary" onclick="viewPieceVersions('${piece.id}')">📊 Historial</button>
+                            <button class="action-btn danger" onclick="deletePiece('${piece.id}')">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('piecesContent').innerHTML = html;
+        }
+
+        // Configurar filtros de piezas
+        function setupPieceFilters() {
+            const searchInput = document.getElementById('pieceSearch');
+            const userSearchInput = document.getElementById('pieceUserSearch');
+            const categoryFilter = document.getElementById('pieceCategoryFilter');
+            const dateFromInput = document.getElementById('pieceDateFrom');
+            const dateToInput = document.getElementById('pieceDateTo');
+
+            searchInput.addEventListener('input', filterPieces);
+            userSearchInput.addEventListener('input', filterPieces);
+            categoryFilter.addEventListener('change', filterPieces);
+            dateFromInput.addEventListener('change', filterPieces);
+            dateToInput.addEventListener('change', filterPieces);
+        }
+
+        // Filtrar piezas
+        function filterPieces() {
+            const searchTerm = document.getElementById('pieceSearch').value.toLowerCase();
+            const userSearchTerm = document.getElementById('pieceUserSearch').value.toLowerCase();
+            const categoryFilter = document.getElementById('pieceCategoryFilter').value;
+            const dateFrom = document.getElementById('pieceDateFrom').value;
+            const dateTo = document.getElementById('pieceDateTo').value;
+
+            let filteredPieces = allPieces.filter(piece => {
+                // Filtro por título
+                if (searchTerm && !piece.title.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+
+                // Filtro por usuario
+                if (userSearchTerm) {
+                    const user = allUsers.find(u => u.id === piece.user_id);
+                    const userEmail = user ? user.email.toLowerCase() : '';
+                    if (!userEmail.includes(userSearchTerm)) {
+                        return false;
+                    }
+                }
+
+                // Filtro por categoría
+                if (categoryFilter !== 'all' && piece.category !== categoryFilter) {
+                    return false;
+                }
+
+                // Filtro por fecha
+                const pieceDate = new Date(piece.created_at).toISOString().split('T')[0];
+                if (dateFrom && pieceDate < dateFrom) {
+                    return false;
+                }
+                if (dateTo && pieceDate > dateTo) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            displayPieces(filteredPieces);
+        }
+
+        // Limpiar filtros
+        function clearPieceFilters() {
+            document.getElementById('pieceSearch').value = '';
+            document.getElementById('pieceUserSearch').value = '';
+            document.getElementById('pieceCategoryFilter').value = 'all';
+            document.getElementById('pieceDateFrom').value = '';
+            document.getElementById('pieceDateTo').value = '';
+            displayPieces(allPieces);
+        }
+
+        // Ver detalles de pieza
+        function viewPieceDetails(pieceId) {
+            const piece = allPieces.find(p => p.id === pieceId);
+            const user = allUsers.find(u => u.id === piece.user_id);
+            if (!piece) return;
+
+            const modalContent = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <h4 style="color: #00ff88; margin-bottom: 10px;">📋 Información Básica</h4>
+                        <div style="background: #0f0f0f; padding: 15px; border-radius: 8px;">
+                            <p><strong>ID:</strong> ${piece.id}</p>
+                            <p><strong>Título:</strong> ${piece.title}</p>
+                            <p><strong>Usuario:</strong> ${user?.email || 'No encontrado'}</p>
+                            <p><strong>Categoría:</strong> ${piece.category || 'Sin categoría'}</p>
+                            <p><strong>Creada:</strong> ${new Date(piece.created_at).toLocaleString('es-ES')}</p>
+                            <p><strong>Actualizada:</strong> ${new Date(piece.updated_at).toLocaleString('es-ES')}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: #00ff88; margin-bottom: 10px;">📊 Estimaciones</h4>
+                        <div style="background: #0f0f0f; padding: 15px; border-radius: 8px;">
+                            <p><strong>Peso estimado:</strong> ${piece.est_weight_grams || 'N/A'} gramos</p>
+                            <p><strong>Tiempo impresión:</strong> ${piece.est_print_time_min ? `${Math.floor(piece.est_print_time_min / 60)}h ${piece.est_print_time_min % 60}m` : 'N/A'}</p>
+                            <p><strong>Precio estimado:</strong> ${piece.est_price_ars ? `$${parseFloat(piece.est_price_ars).toLocaleString()}` : 'N/A'}</p>
+                            <p><strong>Filamento ID:</strong> ${piece.filament_id || 'No especificado'}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                ${piece.image_url ? `
+                    <h4 style="color: #00ff88; margin-bottom: 10px;">🖼️ Imagen</h4>
+                    <div style="background: #0f0f0f; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                        <img src="${piece.image_url}" alt="${piece.title}" style="max-width: 300px; max-height: 200px; border-radius: 8px;" onerror="this.style.display='none'; this.nextSibling.style.display='block'">
+                        <p style="display: none; color: #888;">Error cargando imagen</p>
+                    </div>
+                ` : ''}
+                
+                ${piece.notes ? `
+                    <h4 style="color: #00ff88; margin-bottom: 10px;">📝 Notas</h4>
+                    <div style="background: #0f0f0f; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p>${piece.notes}</p>
+                    </div>
+                ` : ''}
+
+                <div style="text-align: right; margin-top: 20px;">
+                    <button class="action-btn secondary" onclick="viewPieceVersions('${piece.id}')">📊 Ver Historial</button>
+                    <button class="action-btn danger" onclick="deletePieceConfirm('${piece.id}')" style="margin-left: 10px;">🗑️ Eliminar</button>
+                    <button class="action-btn secondary" onclick="closePieceModal()" style="margin-left: 10px;">Cerrar</button>
+                </div>
+            `;
+
+            document.getElementById('pieceDetailContent').innerHTML = modalContent;
+            document.getElementById('pieceDetailModal').style.display = 'block';
+        }
+
+        // Ver versiones de pieza
+        function viewPieceVersions(pieceId) {
+            const piece = allPieces.find(p => p.id === pieceId);
+            const user = allUsers.find(u => u.id === piece.user_id);
+            const pieceVersions = allPieceVersions.filter(pv => pv.piece_id === pieceId);
+
+            if (!piece) return;
+
+            let versionsHtml = '';
+            if (pieceVersions.length === 0) {
+                versionsHtml = '<p>No hay versiones guardadas para esta pieza.</p>';
+            } else {
+                versionsHtml = `
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        ${pieceVersions.map((version, index) => {
+                            const versionDate = new Date(version.created_at).toLocaleString('es-ES');
+                            const total = version.total ? `$${parseFloat(version.total).toLocaleString()}` : 'N/A';
+                            const mlPrice = version.ml_price ? `$${parseFloat(version.ml_price).toLocaleString()}` : 'N/A';
+                            
+                            // Parsear parámetros si existen
+                            let paramsHtml = '';
+                            if (version.params) {
+                                try {
+                                    const params = typeof version.params === 'string' ? JSON.parse(version.params) : version.params;
+                                    paramsHtml = `
+                                        <div style="margin-top: 10px; font-size: 0.9em; color: #888;">
+                                            <strong>Parámetros:</strong> 
+                                            Filamento: ${params.gramos || 'N/A'}g, 
+                                            Tiempo: ${params.tiempo_h || 0}h ${params.tiempo_min || 0}m,
+                                            Energía: ${params.energia_kwh || 'N/A'} kWh
+                                        </div>
+                                    `;
+                                } catch (e) {
+                                    paramsHtml = '<div style="margin-top: 10px; font-size: 0.9em; color: #888;">Parámetros no disponibles</div>';
+                                }
+                            }
+
+                            return `
+                                <div style="background: #0f0f0f; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <strong>Versión #${pieceVersions.length - index}</strong>
+                                            <small style="color: #888; margin-left: 10px;">${versionDate}</small>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div><strong>Total: ${total}</strong></div>
+                                            <div style="color: #888; font-size: 0.9em;">ML: ${mlPrice}</div>
+                                        </div>
+                                    </div>
+                                    ${paramsHtml}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            const modalContent = `
+                <h4 style="color: #00ff88; margin-bottom: 15px;">📊 Historial de Cálculos - "${piece.title}"</h4>
+                <p style="color: #888; margin-bottom: 20px;">
+                    Usuario: ${user?.email || 'No encontrado'} | Total de versiones: ${pieceVersions.length}
+                </p>
+                ${versionsHtml}
+                <div style="text-align: right; margin-top: 20px;">
+                    <button class="action-btn secondary" onclick="closePieceModal()">Cerrar</button>
+                </div>
+            `;
+
+            document.getElementById('pieceDetailContent').innerHTML = modalContent;
+            document.getElementById('pieceDetailModal').style.display = 'block';
+        }
+
+        // Eliminar pieza (con confirmación)
+        function deletePieceConfirm(pieceId) {
+            const piece = allPieces.find(p => p.id === pieceId);
+            if (!confirm(`¿Estás seguro de eliminar la pieza "${piece.title}"? Esta acción eliminará también todas sus versiones y no se puede deshacer.`)) return;
+            
+            deletePiece(pieceId);
+        }
+
+        // Eliminar pieza
+        async function deletePiece(pieceId) {
+            if (!checkAdminAuth()) return;
+            try {
+                // Registrar actividad de eliminación
+                const adminSession = window.authGuard?.getCurrentAdmin();
+                if (adminSession) {
+                    window.authGuard?.logActivity(
+                        adminSession.admin_id,
+                        'DELETE',
+                        'PIECE',
+                        pieceId,
+                        { action: 'delete_piece_with_versions' }
+                    );
+                }
+                // Eliminar versiones primero
+                await supabase
+                    .from('piece_versions')
+                    .delete()
+                    .eq('piece_id', pieceId);
+
+                // Eliminar pieza
+                await supabase
+                    .from('pieces')
+                    .delete()
+                    .eq('id', pieceId);
+
+                alert('Pieza eliminada correctamente');
+                closePieceModal();
+                loadDashboard(); // Recargar datos
+                loadPieces(); // Recargar tabla
+
+            } catch (error) {
+                console.error('Error eliminando pieza:', error);
+                alert('Error eliminando pieza: ' + error.message);
+            }
+        }
+
+        // Cerrar modal de pieza
+        function closePieceModal() {
+            document.getElementById('pieceDetailModal').style.display = 'none';
+        }
+
+        // Inicializar dashboard con autenticación
+        async function initSecureDashboard() {
+            try {
+                console.log('🔐 Verificando autenticación de administrador...');
+                
+                // El Auth Guard ya se ejecutó, verificar si estamos autenticados
+                const adminSession = window.authGuard?.getCurrentAdmin();
+                
+                if (!adminSession) {
+                    console.error('❌ No hay sesión de admin válida');
+                    return;
+                }
+                
+                // Crear cliente Supabase con service role SOLO si está autenticado
+                supabase = window.supabase.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+                isAdminAuthenticated = true;
+                
+                console.log('✅ Admin autenticado:', adminSession.email);
+                console.log('🚀 Inicializando dashboard seguro...');
+                
+                // Cargar dashboard solo si está autenticado
+                loadDashboard();
+                
+                // Registrar acceso al dashboard
+                window.authGuard?.logActivity(
+                    adminSession.admin_id, 
+                    'ACCESS', 
+                    'DASHBOARD', 
+                    null,
+                    { page: 'simple-real-data-dashboard' }
+                );
+                
+            } catch (error) {
+                console.error('❌ Error inicializando dashboard seguro:', error);
+            }
+        }
+
+        // Cargar dashboard al inicializar (después de auth guard)
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando dashboard completo con datos reales...');
-            loadDashboard();
+            // Esperar a que el auth guard termine
+            setTimeout(initSecureDashboard, 100);
 
             // Cerrar modal al hacer click fuera
             document.getElementById('userEditModal').addEventListener('click', function(e) {
                 if (e.target === this) {
                     closeUserModal();
+                }
+            });
+
+            // Cerrar modal de piezas al hacer click fuera
+            document.getElementById('pieceDetailModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closePieceModal();
                 }
             });
         });

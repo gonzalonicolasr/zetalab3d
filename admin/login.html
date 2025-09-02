@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZETALAB Admin - Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 15px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #00ff88;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .logo p {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #00ff88;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: #0f0f0f;
+            border: 2px solid #333;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff3333;
+            color: #ff6666;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-link a:hover {
+            color: #00ff88;
+        }
+
+        .loader {
+            border: 2px solid #333;
+            border-top: 2px solid #00ff88;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>ZETALAB</h1>
+            <p>Panel de Administración</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email de Administrador</label>
+                <input type="email" id="email" name="email" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" id="loginBtn" class="login-btn">
+                Iniciar Sesión
+            </button>
+        </form>
+
+        <div class="back-link">
+            <a href="../index.html">← Volver a ZETALAB</a>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://fwmyiovamcxvinoxnput.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzAzODksImV4cCI6MjA3MTc0NjM4OX0.x94-SZj7-BR9CGMzeujkjyk_7iItajoHKkGRgIYPUTc';
+        const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bXlpb3ZhbWN4dmlub3hucHV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjE3MDM4OSwiZXhwIjoyMDcxNzQ2Mzg5fQ.DfuFLgbxVNmrhfqXVgCRIoTCsDvUK02qR9wJqzik2PY';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseAdmin = window.supabase.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+        // Elementos del DOM
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        // Verificar si ya está autenticado al cargar la página
+        window.addEventListener('DOMContentLoaded', async () => {
+            const adminSession = localStorage.getItem('admin_session');
+            if (adminSession) {
+                try {
+                    const session = JSON.parse(adminSession);
+                    if (session.expires_at && new Date(session.expires_at) > new Date()) {
+                        showSuccess('Ya tienes una sesión activa, redirigiendo...');
+                        setTimeout(() => {
+                            window.location.href = 'simple-real-data-dashboard.html';
+                        }, 1500);
+                        return;
+                    }
+                } catch (e) {
+                    localStorage.removeItem('admin_session');
+                }
+            }
+        });
+
+        // Manejar envío del formulario
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!email || !password) {
+                showError('Por favor completa todos los campos');
+                return;
+            }
+
+            await loginAdmin(email, password);
+        });
+
+        // Función principal de login
+        async function loginAdmin(email, password) {
+            try {
+                setLoading(true);
+                hideMessages();
+
+                console.log('🔐 Intentando login admin para:', email);
+
+                // 1. Autenticar con Supabase Auth
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (authError) {
+                    throw new Error(authError.message);
+                }
+
+                if (!authData.user) {
+                    throw new Error('Error de autenticación');
+                }
+
+                console.log('✅ Usuario autenticado:', authData.user.email);
+
+                // 2. Verificar que el usuario esté en admin_users
+                const { data: adminUser, error: adminError } = await supabaseAdmin
+                    .from('admin_users')
+                    .select('*')
+                    .eq('user_id', authData.user.id)
+                    .eq('active', true)
+                    .single();
+
+                if (adminError || !adminUser) {
+                    // Cerrar sesión de Supabase Auth si no es admin
+                    await supabase.auth.signOut();
+                    throw new Error('No tienes permisos de administrador o tu cuenta está desactivada');
+                }
+
+                console.log('✅ Usuario verificado como admin:', adminUser);
+
+                // 3. Crear sesión de administrador
+                const sessionData = {
+                    admin_id: adminUser.id,
+                    user_id: authData.user.id,
+                    email: authData.user.email,
+                    role: adminUser.role,
+                    permissions: adminUser.permissions,
+                    token: authData.session.access_token,
+                    expires_at: authData.session.expires_at,
+                    created_at: new Date().toISOString()
+                };
+
+                // 4. Guardar sesión en localStorage
+                localStorage.setItem('admin_session', JSON.stringify(sessionData));
+
+                // 5. Registrar login en admin_sessions
+                const { error: sessionError } = await supabaseAdmin
+                    .from('admin_sessions')
+                    .insert({
+                        admin_id: adminUser.id,
+                        ip_address: await getUserIP(),
+                        user_agent: navigator.userAgent
+                    });
+
+                if (sessionError) {
+                    console.warn('⚠️ Error guardando sesión:', sessionError);
+                }
+
+                // 6. Actualizar último login
+                const { error: updateError } = await supabaseAdmin
+                    .from('admin_users')
+                    .update({ last_login_at: new Date().toISOString() })
+                    .eq('id', adminUser.id);
+
+                if (updateError) {
+                    console.warn('⚠️ Error actualizando último login:', updateError);
+                }
+
+                // 7. Registrar actividad
+                await logAdminActivity(adminUser.id, 'LOGIN', 'ADMIN_SESSION', null, {
+                    ip_address: await getUserIP(),
+                    user_agent: navigator.userAgent
+                });
+
+                showSuccess('¡Bienvenido! Redirigiendo al dashboard...');
+
+                // 8. Redirigir al dashboard
+                setTimeout(() => {
+                    window.location.href = 'simple-real-data-dashboard.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error('❌ Error en login admin:', error);
+                showError(error.message || 'Error de autenticación');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Registrar actividad del admin
+        async function logAdminActivity(adminId, action, resourceType, resourceId = null, details = {}) {
+            try {
+                await supabaseAdmin.from('admin_activity_log').insert({
+                    admin_id: adminId,
+                    action: action,
+                    resource_type: resourceType,
+                    resource_id: resourceId,
+                    details: details,
+                    ip_address: await getUserIP()
+                });
+            } catch (error) {
+                console.warn('⚠️ Error logging admin activity:', error);
+            }
+        }
+
+        // Obtener IP del usuario (aproximada)
+        async function getUserIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch {
+                return null;
+            }
+        }
+
+        // Funciones de UI
+        function setLoading(loading) {
+            if (loading) {
+                loginBtn.innerHTML = '<div class="loader"></div>Iniciando sesión...';
+                loginBtn.disabled = true;
+                loginForm.classList.add('loading');
+            } else {
+                loginBtn.innerHTML = 'Iniciar Sesión';
+                loginBtn.disabled = false;
+                loginForm.classList.remove('loading');
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
+        // Mejorar UX con Enter
+        emailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                passwordInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>
